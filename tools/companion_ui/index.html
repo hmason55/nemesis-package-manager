@@ -1,0 +1,37 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>NEMESIS · USB companion</title>
+  <link rel="stylesheet" href="/style.css">
+  <script src="/app.js" defer></script>
+</head>
+<body>
+  <main>
+    <header><div class="brand">N<span> / </span> NEMESIS</div><span class="local"><span>●</span> Running locally</span></header>
+    <section class="intro"><p class="eyebrow">USB COMPANION</p><h1>Your packages.<br>Your drive. Ready to go.</h1><p>Set up Package Manager and organize your installers in one place.</p></section>
+    <div id="status" role="status" aria-live="polite">Connecting to your local companion…</div>
+    <section class="panel">
+      <div class="section-title"><h2><span class="step">01</span> Select your drive</h2><button id="refresh" class="quiet" type="button">Refresh</button></div>
+      <form id="select-form"><label for="drive-path">USB drive or mount path</label><div class="inline"><input id="drive-path" list="drives" placeholder="E:\ or /media/you/USB" required autocomplete="off"><datalist id="drives"></datalist><button type="submit">Use this drive</button></div></form>
+      <p class="hint">Check the path before selecting. USB enclosures may need their mount path entered manually.</p>
+      <div id="drive-summary" hidden><div class="stats"><div><span>SELECTED DRIVE</span><strong id="selected-path"></strong></div><div><span>SPACE AVAILABLE</span><strong id="space"></strong></div><div><span>ROOT LAUNCHER</span><strong id="launcher"></strong></div></div></div>
+    </section>
+    <fieldset id="workspace" disabled>
+      <section class="panel">
+        <div class="section-title"><h2><span class="step">02</span> Package Manager</h2><span id="manager-version" class="badge">No drive selected</span></div>
+        <p id="manager-detail">Select your drive to check its setup.</p>
+        <form id="manager-form"><label for="manager-file">Manager release bundle</label><input id="manager-file" type="file" accept=".zip" required><p class="hint">Choose usb-package-manager-ready.zip from a trusted release.</p><div class="actions"><button id="setup" type="submit" value="setup">Set up drive</button><button id="update-manager" type="submit" value="update-manager" class="secondary">Update manager</button></div></form>
+      </section>
+      <section class="panel">
+        <div class="section-title"><h2><span class="step">03</span> Packages on USB</h2><span id="package-count" class="badge">0 packages</span></div>
+        <p class="hint">Versions describe the files on this drive. Install or update them in the vehicle using Package Manager.</p>
+        <div id="packages" class="packages"><p class="empty">Your packages will appear here.</p></div>
+        <form id="package-form" class="import"><h3>Add or update a package</h3><div class="form-grid"><div><label for="package-file">Release ZIP</label><input id="package-file" type="file" accept=".zip" required></div><div><label for="package-name">Package folder</label><input id="package-name" placeholder="Example" pattern="[A-Za-z0-9][A-Za-z0-9._\-]{0,63}" maxlength="64" required><p class="hint">Use the same folder to update an existing package.</p></div></div><label class="check"><input id="overwrite" type="checkbox"> Replace existing installer files, preserving data/</label><button type="submit">Import package</button></form>
+      </section>
+    </fieldset>
+    <footer>Works offline with your downloaded ZIPs. NEMESIS must already be installed on your head unit.<br>Only import trusted releases. Leave this app open until copying finishes.</footer>
+  </main>
+</body>
+</html>

@@ -25,6 +25,18 @@ USB/
       data/
 ```
 
+## Local USB companion
+
+Each new release includes a standalone USB companion for Windows and Linux
+(x86-64). Download `nemesis-usb-companion-windows-x86_64.zip` or
+`nemesis-usb-companion-linux-x86_64.tar.gz` from the
+[latest release](https://github.com/hmason55/nemesis-package-manager/releases/latest),
+extract it, and run the companion. No Python or Node installation is needed.
+Its local browser UI uses a blue, black, and gray theme and handles manager setup,
+package imports, installer replacement, and versions on USB.
+See [the companion guide](docs/USB-COMPANION.md) for usage, source development,
+and recovery details.
+
 ## Everyday use
 
 - Reopen the app through **NEMESIS Manager Ã¢â€ â€™ Packages Ã¢â€ â€™ Package Manager Ã¢â€ â€™ Launch**.

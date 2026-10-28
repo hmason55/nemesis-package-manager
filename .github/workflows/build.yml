@@ -10,6 +10,11 @@ jobs:
     uses: ./.github/workflows/python-quality.yml
     permissions:
       contents: read
+  companion:
+    needs: python-quality
+    uses: ./.github/workflows/usb-companion.yml
+    permissions:
+      contents: read
   build:
     needs: python-quality
     outputs:
@@ -61,7 +66,7 @@ jobs:
           name: nemesis-usb-package-manager
           path: dist/*
   release:
-    needs: build
+    needs: [build, companion]
     if: github.event_name == 'push' && github.ref == 'refs/heads/main'
     runs-on: ubuntu-latest
     concurrency:
@@ -74,6 +79,11 @@ jobs:
       - uses: actions/download-artifact@v4
         with:
           name: nemesis-usb-package-manager
+          path: dist
+      - uses: actions/download-artifact@v4
+        with:
+          pattern: nemesis-usb-companion-*
+          merge-multiple: true
           path: dist
       - name: Publish tested commit with tag, notes and checksums
         uses: actions/github-script@v7
