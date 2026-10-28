@@ -72,6 +72,25 @@ final class NemesisCli {
         return "";
     }
 
+    static Result updateManager(PackageScanner.Item item) {
+        Result metadata = run("pkg-info", item.target.getAbsolutePath());
+        if (metadata.rc != 0) return metadata;
+        if (!"usb.package.manager".equals(findInfo(metadata.out, "id")))
+            return new Result(1, "The selected installer is not Package Manager.");
+        // Copy first, then detach from this APK's process before Android replaces it.
+        String staged = "/data/local/tmp/package-manager-update-" + System.currentTimeMillis() + ".zip";
+        String command = "mkdir -p /data/nemesis/logs || exit 1; cp " + quote(item.target.getAbsolutePath()) + " " + quote(staged) +
+            " || exit 1; : >/data/nemesis/logs/package-manager-update.log || exit 1; (sleep 3; /system/xbin/nemesis install --update " + quote(staged) +
+            "; result=$?; rm -f " + quote(staged) +
+            "; echo Update_exit_code=$result; /system/xbin/nemesis pkg-launch usb.package.manager)" +
+            " </dev/null >/data/nemesis/logs/package-manager-update.log 2>&1 &";
+        Result result = run("root", "-c", command);
+        result.operation = "manager-update";
+        return result;
+    }
+
+    private static String quote(String value) { return "'" + value.replace("'", "'\\''") + "'"; }
+
     static Result execute(PackageScanner.Item item) {
         try {
             String dir = item.folder.getCanonicalPath();
