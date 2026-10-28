@@ -56,6 +56,10 @@ Successful builds on `main` publish tagged releases with change notes and SHA-25
 
 New contributors can start with the [development setup and first PR walkthrough](CONTRIBUTING.md#first-contribution). Documentation fixes and host-side tests do not require a vehicle. Use the [issue templates](https://github.com/hmason55/nemesis-package-manager/issues/new/choose) for bugs and feature requests.
 
+## Credits
+
+Package Manager is built on [NEMESIS](https://github.com/xwtk/hmg_nemesis/), developed by [xwtk](https://github.com/xwtk). Thank you for making community packages possible on these head units.
+
 ## License
 
 GNU Affero General Public License, version 3. See [LICENSE](LICENSE).
