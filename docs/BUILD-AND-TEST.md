@@ -25,7 +25,15 @@ Do not use `tools/build_release.py` with an unbuilt source archive or placeholde
 bash tests/run_tests.sh
 ```
 
-These verify the Python USB importer (including preservation of Windows data-folder aliases), builder, Java package scanner, operation coordinator, installed-package query handling, and launcher shell syntax. They do not emulate the actual Gen5W OS or validate head-unit audio/video functionality.
+These verify the Python USB importer (including preservation of Windows data-folder aliases), builder, Java package scanner, operation coordinator, installed-package query handling, package/result presentation, and launcher shell syntax. They do not emulate the actual Gen5W OS or validate head-unit audio/video functionality.
+
+Android UI smoke tests run separately under Robolectric with API 19, including readable result text under a light OEM-style theme, confirmation/cancel behavior, scrolling long output in landscape, and package list selection/actions:
+
+```shell
+gradle -p tests/ui --no-daemon test
+```
+
+These tests use simulated Android views, not a vehicle. The Actions workflow runs them before building the APK.
 
 ## Manual hardware smoke test
 
@@ -38,6 +46,8 @@ These verify the Python USB importer (including preservation of Windows data-fol
 7. Check compatibility with the existing RearDashcam/Leafia packages only after basic operations work.
 8. During a test package operation, close and reopen this app. Verify that another operation cannot start and that the completed result is shown. Do not use NEMESIS Manager to start a competing operation.
 9. With the NEMESIS command channel unavailable in a controlled test environment, verify that the app displays the registry error and unavailable installed state. Restore the channel and tap Refresh to recover.
+10. Verify that list rows show each name once, selection survives Refresh, and Details exposes the full source path. Check the Install/Update/Run script label for each entry type.
+11. Check successful install and uninstall popups on the head unit: the summary must be readable, name the selected package, and explain the outcome. Open Details and scroll long output. Cancel a confirmation and verify that no operation starts.
 
 ## Known limitations
 

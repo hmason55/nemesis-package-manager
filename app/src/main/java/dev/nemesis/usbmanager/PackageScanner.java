@@ -28,6 +28,8 @@ public final class PackageScanner {
         public String kind;
         public String title;
         public String id;
+        public String version;
+        public String types;
         public String error;
         public String detail;
         public boolean installed;
@@ -91,6 +93,8 @@ public final class PackageScanner {
             Map<String,String> data = parse(manifest);
             String type = value(data, "type");
             i.id = value(data, "id");
+            i.version = value(data, "version");
+            i.types = value(data, "types");
             String friendly = value(data, "name");
             if (friendly.length() > 0) i.title = friendly;
             if (INSTALL.equals(type) || EXECUTE.equals(type)) {
@@ -102,9 +106,12 @@ public final class PackageScanner {
                 i.kind = type; i.error = null;
                 i.detail = i.target.getAbsolutePath();
                 if (INSTALL.equals(type)) {
-                    String zipId = readZipId(i.target);
-                    if (zipId == null) throw new IOException("Referenced ZIP lacks a valid package NEMESIS.data");
-                    i.id = zipId;
+                    Map<String,String> metadata = readZipMetadata(i.target);
+                    if (metadata == null) throw new IOException("Referenced ZIP lacks a valid package NEMESIS.data");
+                    i.id = value(metadata, "id");
+                    i.version = value(metadata, "version");
+                    i.types = value(metadata, "types");
+                    if (friendly.length() == 0 && value(metadata, "name").length() > 0) i.title = value(metadata, "name");
                 }
             } else if (type.length() == 0 && validId(i.id)) {
                 i.kind = RAW; i.target = folder; i.error = null;
@@ -118,21 +125,28 @@ public final class PackageScanner {
 
     private static Item fromZip(File folder, File zip) {
         Item i = base(folder, zip.getName());
+        i.target = zip;
         if (folder.getName().equals("packages")) {
             String base = zip.getName();
             if (base.toLowerCase().endsWith(".zip")) base = base.substring(0, base.length()-4);
             i.customDataDir = new File(new File(folder, base), "data");
         }
         try {
-            String id = readZipId(zip);
-            if (id == null) throw new IOException("ZIP missing installable package metadata; extract USB bundle with import_release.py");
-            i.kind = INSTALL; i.target = zip; i.id = id; i.error = null;
+            Map<String,String> metadata = readZipMetadata(zip);
+            if (metadata == null) throw new IOException("ZIP missing installable package metadata; extract USB bundle with import_release.py");
+            i.kind = INSTALL; i.target = zip; i.id = value(metadata, "id"); i.error = null;
+            i.version = value(metadata, "version"); i.types = value(metadata, "types");
+            if (value(metadata, "name").length() > 0) i.title = value(metadata, "name");
             i.detail = zip.getAbsolutePath();
         } catch (Exception e) { i.error = e.getMessage(); }
         return i;
     }
 
     static String readZipId(File zipFile) throws IOException {
+        Map<String,String> data = readZipMetadata(zipFile);
+        return data == null ? null : value(data, "id");
+    }
+    private static Map<String,String> readZipMetadata(File zipFile) throws IOException {
         ZipFile zip = new ZipFile(zipFile);
         try {
             ZipEntry meta = zip.getEntry("NEMESIS.data");
@@ -152,10 +166,12 @@ public final class PackageScanner {
             }
             if (meta == null) return null;
             if (meta.getSize() > 65536) throw new IOException("Package manifest too large");
-            Map<String,String> data = parse(zip.getInputStream(meta));
+            InputStream input = zip.getInputStream(meta);
+            Map<String,String> data;
+            try { data = parse(input); } finally { input.close(); }
             String id = value(data, "id");
             if (value(data, "type").length() > 0 || !validId(id)) return null;
-            return id;
+            return data;
         } finally { zip.close(); }
     }
 
@@ -188,6 +204,7 @@ public final class PackageScanner {
         String line;
         int n = 0;
         while ((line = br.readLine()) != null && n++ < 1000) {
+            if (n == 1 && line.startsWith("\uFEFF")) line = line.substring(1);
             line = line.trim();
             if (line.startsWith("[") && line.endsWith("]")) {
                 nemesis = "[nemesis]".equalsIgnoreCase(line); continue;

@@ -1,0 +1,33 @@
+plugins { id 'java' }
+
+repositories { mavenCentral(); google() }
+dependencies {
+    compileOnly 'org.robolectric:android-all:9-robolectric-4913185-2'
+    testImplementation 'junit:junit:4.13.2'
+    // This runner still supports an API 19 sandbox. Its shadows compile against newer APIs.
+    testImplementation 'org.robolectric:robolectric:4.9.2'
+    testImplementation 'org.robolectric:android-all:9-robolectric-4913185-2'
+}
+sourceSets.main.java.srcDirs = ['../../app/src/main/java']
+tasks.withType(JavaCompile).configureEach { options.encoding = 'UTF-8' }
+// The standalone Java test build needs the classes inside AndroidX's AARs.
+def androidTestJars = layout.buildDirectory.dir('android-test-jars')
+tasks.register('extractAndroidTestAars') {
+    inputs.files(configurations.testRuntimeClasspath)
+    outputs.dir(androidTestJars)
+    doLast {
+        configurations.testRuntimeClasspath.findAll { it.name.endsWith('.aar') }.each { artifact ->
+            copy {
+                from(zipTree(artifact)) { include 'classes.jar'; rename { artifact.name + '.jar' } }
+                into(androidTestJars)
+            }
+        }
+    }
+}
+test {
+    dependsOn 'extractAndroidTestAars'
+    classpath += files(fileTree(androidTestJars))
+    maxHeapSize = '1g'
+    systemProperty 'robolectric.dependency.repo.url', 'https://repo.maven.apache.org/maven2'
+    testLogging { events 'passed', 'failed'; exceptionFormat 'full' }
+}

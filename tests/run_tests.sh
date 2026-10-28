@@ -10,6 +10,8 @@ javac -source 7 -target 7 -cp "$TMP/classes" -d "$TMP/classes" app/src/main/java
 java -cp "$TMP/classes" dev.nemesis.usbmanager.InstalledPackagesTest
 javac -source 7 -target 7 -d "$TMP/classes" app/src/main/java/dev/nemesis/usbmanager/OperationCoordinator.java tests/OperationCoordinatorTest.java
 java -cp "$TMP/classes" dev.nemesis.usbmanager.OperationCoordinatorTest
+javac -source 7 -target 7 -cp "$TMP/classes" -d "$TMP/classes" app/src/main/java/dev/nemesis/usbmanager/PackagePresentation.java tests/PackagePresentationTest.java
+java -cp "$TMP/classes" dev.nemesis.usbmanager.PackagePresentationTest
 python3 - <<'PY'
 import tempfile
 from pathlib import Path

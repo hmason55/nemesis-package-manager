@@ -15,6 +15,7 @@ final class NemesisCli {
     static final class Result {
         int rc;
         String out;
+        String operation;
         Result(int rc, String out) { this.rc = rc; this.out = out; }
     }
     private NemesisCli() { }
@@ -26,6 +27,7 @@ final class NemesisCli {
             ProcessBuilder pb = new ProcessBuilder(command);
             pb.redirectErrorStream(true);
             Process p = pb.start();
+            p.getOutputStream().close();
             InputStream in = p.getInputStream();
             ByteArrayOutputStream out = new ByteArrayOutputStream();
             byte[] buf = new byte[8192];
@@ -58,8 +60,9 @@ final class NemesisCli {
             if (!PackageScanner.validId(id)) return new Result(1, "Invalid package id: " + id);
             boolean installed = "1".equals(findInfo(info.out, "installed"));
             if ("1".equals(findInfo(info.out, "locked"))) return new Result(1, "Package is locked");
-            if (installed) return run("install", "--update", zip.getAbsolutePath());
-            return run("install", zip.getAbsolutePath());
+            Result result = installed ? run("install", "--update", zip.getAbsolutePath()) : run("install", zip.getAbsolutePath());
+            result.operation = installed ? "update" : "install";
+            return result;
         } finally { if (temporary) zip.delete(); }
     }
 
@@ -89,7 +92,7 @@ final class NemesisCli {
         File[] list = dir.listFiles();
         if (list == null) throw new IOException("Folder cannot be read: " + dir.getPath());
         for (File f : list) {
-            if ((dir.equals(base) && f.getName().equals("data")) || f.getName().equals(".git") || f.getName().equals(".DS_Store")) continue;
+            if ((dir.equals(base) && f.getName().equalsIgnoreCase("data")) || f.getName().equals(".git") || f.getName().equals(".DS_Store")) continue;
             if (!f.getCanonicalPath().startsWith(base.getCanonicalPath() + File.separator))
                 throw new IOException("Symlink escapes source folder: " + f.getName());
             if (f.isDirectory()) { addDir(base, f, zos, depth + 1); continue; }
