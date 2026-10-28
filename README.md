@@ -27,18 +27,22 @@ USB/
 
 ## Everyday use
 
-- Reopen the app through **NEMESIS Manager → Packages → Package Manager → Launch**.
+- Reopen the app through **NEMESIS Manager > Packages > Package Manager > Launch**.
 - Both UIs share the installed packages. Finish one operation before starting another in either UI, and refresh after changes.
 - Completion popups explain the result. Open their **Details** for diagnostic output.
 - USB installers and `data/` remain after uninstall. Other apps retain their own recording/export locations unless configured separately.
 
-The execution prompt can recur when the drive is detected at vehicle startup. To stop automatic opening, rename only the USB root's `NEMESIS.data` to `NEMESIS.data.disabled`, then open Package Manager manually through NEMESIS Manager. Installed packages and services retain their normal startup behavior.
+After a successful first launch, the launcher renames its root descriptor to `NEMESIS.data.disabled`. The drive no longer triggers an execution prompt on each startup. Open Package Manager from NEMESIS Manager. Existing drives need to run the new launcher once; its backup is preserved. If a backup already exists, the launcher keeps it and saves a numbered backup.
 
-## Update or remove Package Manager
+## Updates
 
-Use **NEMESIS's package installer** to install or update Package Manager, and **NEMESIS Manager → Packages → Package Manager → Uninstall** to remove it. The app prevents changing its own installation through its package list.
+Download releases on your PC; Package Manager does not check for or download updates automatically.
 
-**Copying a new bundle onto USB does not update an installed app.** Follow the [explicit update steps](docs/SETUP-WINDOWS.md#e-update-package-manager-itself). The technical package ID remains `usb.package.manager` for compatibility.
+- **Other packages:** replace the installer in the same `packages/<Name>/` folder, preserving `data/`. Open the app, Refresh, select the package, and confirm **Update**.
+- **Package Manager:** replace `manager/usb.package.manager.zip` with the new internal installer. Refresh, select **Package Manager**, and confirm **Update**. NEMESIS replaces the app, which closes and should reopen. **Update started** confirms the handoff; it is not the final installer result.
+- **Removal:** use NEMESIS Manager's Packages screen to uninstall Package Manager itself.
+
+Installer versions describe files on the drive, not the installed version. The app does not decide whether an installer is newer. See [the update guide](docs/UPDATING.md) for exact steps, older-version upgrades, data preservation, and recovery.
 
 ## Before installing packages
 
