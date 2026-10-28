@@ -17,8 +17,9 @@ jobs:
           java-version: '17'
       - uses: gradle/actions/setup-gradle@v4
       - name: Run unit and Android view tests with coverage
-        run: bash gradlew -p tests/ui --no-daemon jacocoTestReport
+        run: bash gradlew -p tests/ui --no-daemon jacocoTestReport jacocoTestCoverageVerification
       - name: Summarize coverage against the targets
+        if: success() || failure()
         run: |
           python3 - <<'PY'
           import os

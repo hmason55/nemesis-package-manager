@@ -45,7 +45,7 @@ module.exports = async ({github, context, core}) => {
       rows.push(`| ${language} | ${label} | ${display} | 85% | ${!available ? 'Not measured' : value >= 85 ? 'Met' : 'Below target'} | ${link} |`);
     }
   }
-  const body = `<!-- package-manager-coverage -->\n## Code coverage\n\n${badges.join(' ')}\n\nCommit: \`${source.head_sha}\`\n\n| Language | Metric | Coverage | Target | Status | Details |\n| --- | --- | --- | --- | --- | --- |\n${rows.join('\n')}\n\nUnavailable reports are not treated as zero or passing. Java coverage is currently reported without a blocking threshold; Python thresholds are enforced by its quality workflow.`;
+  const body = `<!-- package-manager-coverage -->\n## Code coverage\n\n${badges.join(' ')}\n\nCommit: \`${source.head_sha}\`\n\n| Language | Metric | Coverage | Target | Status | Details |\n| --- | --- | --- | --- | --- | --- |\n${rows.join('\n')}\n\nUnavailable reports are not treated as zero or passing. Java and Python each enforce separate 85% line and branch coverage thresholds in their quality workflows.`;
   const latest = (await github.rest.pulls.get({...repo, pull_number: number})).data;
   if (latest.state !== 'open' || latest.head.sha !== source.head_sha) return;
   const comments = await github.paginate(github.rest.issues.listComments, {...repo, issue_number: number});

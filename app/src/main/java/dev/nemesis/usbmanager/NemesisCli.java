@@ -18,15 +18,31 @@ final class NemesisCli {
         String operation;
         Result(int rc, String out) { this.rc = rc; this.out = out; }
     }
+    interface ProcessStarter {
+        Process start(ArrayList<String> command) throws IOException;
+    }
+    interface CommandRunner {
+        Result run(String... args);
+    }
+    private static final CommandRunner COMMANDS = new CommandRunner() {
+        public Result run(String... args) { return NemesisCli.run(args); }
+    };
     private NemesisCli() { }
     static Result run(String... args) {
+        return run(new ProcessStarter() {
+            public Process start(ArrayList<String> command) throws IOException {
+                ProcessBuilder builder = new ProcessBuilder(command);
+                builder.redirectErrorStream(true);
+                return builder.start();
+            }
+        }, args);
+    }
+    static Result run(ProcessStarter starter, String... args) {
         try {
             ArrayList<String> command = new ArrayList<String>();
             command.add("/system/xbin/nemesis");
             for (String arg : args) command.add(arg);
-            ProcessBuilder pb = new ProcessBuilder(command);
-            pb.redirectErrorStream(true);
-            Process p = pb.start();
+            Process p = starter.start(command);
             p.getOutputStream().close();
             InputStream in = p.getInputStream();
             ByteArrayOutputStream out = new ByteArrayOutputStream();
@@ -42,6 +58,9 @@ final class NemesisCli {
     }
 
     static Result install(Context context, PackageScanner.Item item) {
+        return install(context, item, COMMANDS);
+    }
+    static Result install(Context context, PackageScanner.Item item, CommandRunner commands) {
         File zip = item.target;
         boolean temporary = PackageScanner.RAW.equals(item.kind);
         if (temporary) {
@@ -54,13 +73,13 @@ final class NemesisCli {
             }
         }
         try {
-            Result info = run("pkg-info", zip.getAbsolutePath());
+            Result info = commands.run("pkg-info", zip.getAbsolutePath());
             if (info.rc != 0) return info;
             String id = findInfo(info.out, "id");
             if (!PackageScanner.validId(id)) return new Result(1, "Invalid package id: " + id);
             boolean installed = "1".equals(findInfo(info.out, "installed"));
             if ("1".equals(findInfo(info.out, "locked"))) return new Result(1, "Package is locked");
-            Result result = installed ? run("install", "--update", zip.getAbsolutePath()) : run("install", zip.getAbsolutePath());
+            Result result = installed ? commands.run("install", "--update", zip.getAbsolutePath()) : commands.run("install", zip.getAbsolutePath());
             result.operation = installed ? "update" : "install";
             return result;
         } finally { if (temporary) zip.delete(); }
@@ -107,13 +126,16 @@ final class NemesisCli {
     private static String quote(String value) { return "'" + value.replace("'", "'\\''") + "'"; }
 
     static Result execute(PackageScanner.Item item) {
+        return execute(item, COMMANDS);
+    }
+    static Result execute(PackageScanner.Item item, CommandRunner commands) {
         try {
             String dir = item.folder.getCanonicalPath();
             String script = item.target.getCanonicalPath();
             // Shell injection impossible: use only safe absolute-path characters in this prototype.
             if (!dir.matches("[A-Za-z0-9_./ -]+") || !script.matches("[A-Za-z0-9_./ -]+"))
                 return new Result(1, "Unsafe shell path characters; rename package folder");
-            return run("root", "-c", "cd '" + dir + "' && /system/bin/sh '" + script + "'");
+            return commands.run("root", "-c", "cd '" + dir + "' && /system/bin/sh '" + script + "'");
         } catch (IOException e) { return new Result(1, e.toString()); }
     }
 
