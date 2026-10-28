@@ -3,7 +3,7 @@
 PACKAGE_MANIFEST = """[nemesis]
 version=0.2.0
 id=usb.package.manager
-name=USB Package Manager
+name=Package Manager
 types=application
 
 [app.0]

@@ -1,0 +1,52 @@
+name: Java tests and coverage
+on:
+  pull_request:
+  push:
+    branches: [main]
+  workflow_dispatch:
+permissions:
+  contents: read
+jobs:
+  java-quality:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: '17'
+      - uses: gradle/actions/setup-gradle@v4
+        with:
+          gradle-version: '8.10.2'
+      - name: Run unit and Android view tests with coverage
+        run: gradle -p tests/ui --no-daemon jacocoTestReport
+      - name: Summarize coverage against the targets
+        run: |
+          python3 - <<'PY'
+          import os
+          import xml.etree.ElementTree as ET
+          root = ET.parse('tests/ui/build/reports/jacoco/test/jacocoTestReport.xml').getroot()
+          with open(os.environ['GITHUB_STEP_SUMMARY'], 'a', encoding='utf-8') as report:
+              report.write('## Java coverage\n\nMetric | Coverage | Target\n--- | --- | ---\n')
+              for counter in root.findall('counter'):
+                  kind = counter.attrib['type']
+                  if kind not in ('LINE', 'BRANCH'):
+                      continue
+                  covered = int(counter.attrib['covered'])
+                  total = covered + int(counter.attrib['missed'])
+                  if total == 0:
+                      raise SystemExit(f'No measured Java {kind} coverage')
+                  percent = covered / total * 100
+                  report.write(f'{kind} | {percent:.2f}% | 85%\n')
+                  if percent < 85:
+                      print(f'::warning::Java {kind} coverage is {percent:.2f}%; the 85% target is not yet met')
+          PY
+      - name: Retain test and coverage reports
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: java-quality-reports
+          path: |
+            tests/ui/build/reports/tests/
+            tests/ui/build/test-results/
+            tests/ui/build/reports/jacoco/

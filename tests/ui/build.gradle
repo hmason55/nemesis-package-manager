@@ -1,4 +1,19 @@
-plugins { id 'java' }
+plugins { id 'java'; id 'jacoco' }
+
+jacoco { toolVersion = '0.8.12' }
+jacocoTestReport {
+    dependsOn test
+    reports { xml.required = true; html.required = true }
+}
+jacocoTestCoverageVerification {
+    dependsOn jacocoTestReport
+    violationRules {
+        rule {
+            limit { counter = 'LINE'; minimum = 0.85 }
+            limit { counter = 'BRANCH'; minimum = 0.85 }
+        }
+    }
+}
 
 repositories { mavenCentral(); google() }
 dependencies {
@@ -9,6 +24,8 @@ dependencies {
     testImplementation 'org.robolectric:android-all:9-robolectric-4913185-2'
 }
 sourceSets.main.java.srcDirs = ['../../app/src/main/java']
+sourceSets.test.java.srcDirs += ['..']
+sourceSets.test.java.exclude 'ui/**'
 tasks.withType(JavaCompile).configureEach { options.encoding = 'UTF-8' }
 // The standalone Java test build needs the classes inside AndroidX's AARs.
 def androidTestJars = layout.buildDirectory.dir('android-test-jars')
@@ -25,6 +42,11 @@ tasks.register('extractAndroidTestAars') {
     }
 }
 test {
+    jacoco {
+        includeNoLocationClasses = true
+        excludes = ['jdk.internal.*']
+        includes = ['dev.nemesis.usbmanager.*']
+    }
     dependsOn 'extractAndroidTestAars'
     classpath += files(fileTree(androidTestJars))
     maxHeapSize = '1g'
