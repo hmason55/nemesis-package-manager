@@ -41,14 +41,28 @@ Only the root `NEMESIS.data` is consumed by NEMESIS's normal USB handler. The in
 ## First use (after NEMESIS itself is already installed)
 
 1. Build via the supplied GitHub Actions workflow, or locally using the Android SDK and `gradle :app:assembleDebug`.
-2. Download the CI artifact `usb-package-manager-ready.zip` and **extract** it to the USB root. It supplies root `NEMESIS.data`, `NEMESIS.sh`, `manager/`, and `packages/`.
-3. Put other release ZIPs in your PC folder and run `python3 tools/import_release.py ReleaseName-usb.zip --usb E:\\ --name ReleaseName` (Windows) or manually extract each USB-ready ZIP **inside** `USB/packages/ReleaseName/`, never the USB root.
-4. Plug USB into the car after NEMESIS is installed and Android is running. Confirm the one-time `execute` prompt. The launcher installs the manager if needed and starts its activity.
+2. From a successful **Build USB Package Manager** run in this repository's Actions tab, download the artifact **`nemesis-usb-package-manager`**. Extract that downloaded wrapper on your PC, then extract its **`usb-package-manager-ready.zip`** to the USB root. It supplies root `NEMESIS.data`, `NEMESIS.sh`, `manager/`, and `packages/`.
+3. Put other release ZIPs in your PC folder. From a checkout of this source project, run `python tools/import_release.py ReleaseName-usb.zip --usb E:\ --name ReleaseName` on Windows, or manually extract each USB-ready ZIP **inside** `USB/packages/ReleaseName/`, never the USB root. The build artifact does not include the Python import tools.
+4. Plug USB into the car after NEMESIS is installed and Android is running. Confirm the `execute` prompt, which can recur on later insertions. The launcher installs the manager if missing and starts its activity.
 5. Tap an entry, then choose Install/Update, Launch, Uninstall, or Run. Every privilege-changing action requires on-screen confirmation.
 6. Future insertions use the **same root descriptor and launcher**. NEMESIS asks before executing it; you never edit `NEMESIS.data` to switch package selection.
 7. You can also open NEMESIS Manager > Packages > USB Package Manager > Launch without unplugging the USB.
 
 This does **not** install NEMESIS itself. Use NEMESIS's official first-time setup instructions before this package.
+
+## Using both manager UIs
+
+USB Package Manager reads the nested installers on your USB and calls NEMESIS's package commands. NEMESIS Manager and this app share the same installed-package registry: installing through either route makes the package visible to both. Refresh this app, or reopen NEMESIS Manager's Packages screen, after changes made in the other UI.
+
+The current upstream NEMESIS Manager's **Packages** screen lists installed packages with **Launch** and **Uninstall**. Its USB install prompt comes from the USB root `NEMESIS.data`; it does not browse our nested release folders. Our root descriptor launches USB Package Manager, which lets you select among those folders. A package installed through this app can subsequently be launched or uninstalled in NEMESIS Manager. Already-installed packages appear in this app even without a matching USB installer; updating them requires the installer to be present.
+
+Let each install, update, uninstall, or script finish before starting another action in either UI. This app prevents competing actions across its own activity instances, but it does not lock NEMESIS Manager or commands started elsewhere. Closing this app does not cancel an operation. Reopening it in the same running app process shows the active operation or its pending result. This state does not survive process termination or a head-unit reboot.
+
+If `pkg-list` fails, the app shows **INSTALLED STATE UNAVAILABLE** with the error and a Refresh instruction. Package installation, launch, and uninstall remain disabled until a successful refresh; USB scripts can still be run with confirmation.
+
+## Updating USB Package Manager itself
+
+Downloading a new build or replacing the files on your normal USB drive **does not update an already-installed manager**. The launcher only installs when `usb.package.manager` is missing. Follow [the manager update steps](docs/SETUP-WINDOWS.md#e-update-usb-package-manager-itself) to install the new package explicitly, then refresh the files on your normal drive.
 
 ## How each release is recognized
 
@@ -71,6 +85,7 @@ The Android app scans USB paths documented in the upstream project (`/storage/us
 - Only use trusted packages: NEMESIS installation hooks and USB scripts execute as **root**. A bad package can corrupt the head unit.
 - This manager calls upstream `nemesis pkg-info`, `install [--update]`, `uninstall`, `pkg-launch`, `pkg-list`, `root -c`; no custom privilege escalation or firmware patching.
 - No batch installation. Firmware-specific packages may conflict or reboot during installation. A single explicit action at a time prevents unintended chains.
+- Moving a `type=execute` release into a subfolder can break scripts that hard-code paths at the USB root. The importer does not adapt scripts; check the release's instructions before running it. See [supported release layouts](docs/RELEASE-LAYOUTS.md).
 - It cannot guarantee that two third-party packages are compatible. **Leafia Plus** must not be installed alongside original conflicting wireless/projection patches per upstream compatibility notes.
 - APK launching and removable USB mount permissions are **not yet tested on your exact 2023 Ioniq 5 firmware**. The provided CI build should be treated as experimental.
 - Android's debug signature is a development signature, not a trusted production signing identity.
