@@ -58,7 +58,7 @@ New contributors can start with the [development setup and first PR walkthrough]
 
 ## Credits
 
-Package Manager is built on [NEMESIS](https://github.com/xwtk/hmg_nemesis/), developed by [xwtk](https://github.com/xwtk). Thank you for making community packages possible on these head units.
+Package Manager is built on [NEMESIS](https://github.com/xwtk/hmg_nemesis/), developed by [xwtk](https://github.com/xwtk).
 
 ## License
 
