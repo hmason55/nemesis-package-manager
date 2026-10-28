@@ -29,6 +29,8 @@ Do not use `tools/build_release.py` with an unbuilt source archive or placeholde
 
 ## Host-side tests
 
+Once the coverage-comment workflow is merged onto the default branch, PR quality runs post or update one **Code coverage** comment with separate Java/Python line and branch badges, measured percentages, the 85% targets, and report links. The comment refreshes as each language's run completes. Missing reports are marked unavailable, and results from older commits cannot replace current results. The reporter runs trusted default-branch code and reads report artifacts without executing PR code. Its first installation PR will not receive automatic comments until this workflow is on the default branch.
+
 Pull requests run the **Python quality** workflow (unit tests, separate 85% line/branch gates, and module maintainability index >60) and **Java tests and coverage** workflow (JUnit/Robolectric with JaCoCo XML/HTML reports). Java coverage is summarized against the same target with explicit warnings while the existing shortfall is being addressed; the Java 85% target is not yet a blocking gate. Radon maintainability scores apply to Python only. Reports are downloadable from each workflow run.
 
 ```shell
@@ -53,7 +55,7 @@ These tests use simulated Android views, not a vehicle. The Actions workflow run
 4. Test Install -> Launch -> Uninstall (with explicit confirmation) and verify package registry changes.
 5. Verify `packages/Hello/data/` persists after uninstall, and that the USB root descriptor does not change.
 6. Import an official USB-ready package with nested `NEMESIS.data`. Verify it is detected but **do not install firmware-patching packages as part of this smoke test**.
-7. Check compatibility with the existing RearDashcam/Leafia packages only after basic operations work.
+7. Check each package's compatibility requirements before installation.
 8. During a test package operation, close and reopen this app. Verify that another operation cannot start and that the completed result is shown. Do not use NEMESIS Manager to start a competing operation.
 9. With the NEMESIS command channel unavailable in a controlled test environment, verify that the app displays the registry error and unavailable installed state. Restore the channel and tap Refresh to recover.
 10. Verify that list rows show each name once, selection survives Refresh, and Details exposes the full source path. Check the Install/Update/Run script label for each entry type.
