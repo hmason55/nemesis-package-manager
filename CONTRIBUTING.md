@@ -76,7 +76,7 @@ A release implementation must:
 
 1. Select a unique, deterministic version and tag the exact tested commit. Keep the Android version name/code and package manifest version consistent with that release. Never move an existing release tag to another commit.
 2. Publish the validated USB-ready and internal installer ZIPs, with checksums and an explicit description of what each download is for. Clearly identify development/debug signing and preserve the established signing identity for updates where possible.
-3. Include a short user-facing summary of changes since the preceding release, linked PRs where available, and relevant compatibility or upgrade instructions. Copying USB files alone does not update an already-installed manager; link the [explicit update procedure](docs/SETUP-WINDOWS.md#e-update-usb-package-manager-itself).
+3. Include a short user-facing summary of changes since the preceding release, linked PRs where available, and relevant compatibility or upgrade instructions. Copying USB files alone does not update an already-installed manager; link the [explicit update procedure](docs/SETUP-WINDOWS.md#e-update-package-manager-itself).
 4. Make reruns idempotent: verify existing tag/commit identity and avoid duplicate releases or silently replacing published assets. Ensure concurrent runs cannot publish mismatched versions and artifacts.
 5. Grant release-write permission only to the publication job. Never publish from a pull-request run or an unvalidated build.
 

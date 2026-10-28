@@ -30,7 +30,7 @@ module.exports = async function publish({github, context, version, directory = '
     const notes = (await github.rest.repos.generateReleaseNotes({...repo, tag_name: tag, target_commitish: context.sha})).data;
     release = (await github.rest.repos.createRelease({...repo, tag_name: tag, target_commitish: context.sha,
       name: `Package Manager ${version}`, draft: true, prerelease: false,
-      body: `Experimental development build (debug signed).\n\nDownload **usb-package-manager-ready.zip** for USB setup, or **usb.package.manager.zip** for the NEMESIS installer. Verify downloads with SHA256SUMS.\n\nExisting installations require an explicit update through NEMESIS; copying USB files alone does not update the installed app. See [update instructions](https://github.com/${repo.owner}/${repo.repo}/blob/${context.sha}/docs/SETUP-WINDOWS.md#e-update-usb-package-manager-itself).\n\n${notes.body}`
+      body: `Experimental development build (debug signed).\n\nDownload **usb-package-manager-ready.zip** for USB setup, or **usb.package.manager.zip** for the NEMESIS installer. Verify downloads with SHA256SUMS.\n\nExisting installations require an explicit update through NEMESIS; copying USB files alone does not update the installed app. See [update instructions](https://github.com/${repo.owner}/${repo.repo}/blob/${context.sha}/docs/SETUP-WINDOWS.md#e-update-package-manager-itself).\n\n${notes.body}`
     })).data;
   }
   const existing = await github.paginate(github.rest.repos.listReleaseAssets, {...repo, release_id: release.id});

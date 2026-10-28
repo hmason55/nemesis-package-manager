@@ -6,7 +6,7 @@ This project targets Android API 19 (Android 4.4). The Android app has no depend
 
 The workflow `.github/workflows/build.yml` uses Java 17, Gradle 8.10.2, and AGP 8.7.3. Pull requests and pushes to `main` trigger it automatically; maintainers can also launch it manually. A merge into `main` therefore starts a new build. It runs host tests, builds `app-debug.apk`, checks its expected structure and JAR signature, creates the NEMESIS ZIP, and uploads `dist/` as the `nemesis-usb-package-manager` artifact.
 
-Extract the downloaded artifact wrapper on your PC, then extract its `usb-package-manager-ready.zip` onto the normal USB. Installing a new build over an existing manager requires the explicit update procedure in [SETUP-WINDOWS.md](SETUP-WINDOWS.md#e-update-usb-package-manager-itself); copying files alone does not update the installed APK.
+Extract the downloaded artifact wrapper on your PC, then extract its `usb-package-manager-ready.zip` onto the normal USB. Installing a new build over an existing manager requires the explicit update procedure in [SETUP-WINDOWS.md](SETUP-WINDOWS.md#e-update-package-manager-itself); copying files alone does not update the installed APK.
 
 ## Automatic releases
 

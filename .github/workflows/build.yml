@@ -1,4 +1,4 @@
-name: Build USB Package Manager
+name: Build Package Manager
 on:
   pull_request:
   workflow_dispatch:

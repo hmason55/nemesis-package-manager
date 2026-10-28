@@ -31,7 +31,7 @@ LAUNCHER = """#!/system/bin/sh
 # Install manager only if missing, then launch. Never modify package folders.
 export PATH=/data/nemesis/bin:/sbin:/vendor/bin:/system/sbin:/system/bin:/system/xbin
 if [ "$(getprop sys.boot_completed)" != "1" ]; then
-    echo "USB manager: Android not ready, not installing or launching."
+    echo "Package Manager: Android not ready, not installing or launching."
     exit 0
 fi
 ROOT=""
@@ -42,11 +42,11 @@ for CANDIDATE in /storage/usb0 /storage/usb1 /storage/usb2 /mnt/media_rw/usb0 /m
     fi
 done
 if [ -z "$ROOT" ]; then
-    echo "USB manager: manager/usb.package.manager.zip not found."
+    echo "Package Manager: manager/usb.package.manager.zip not found."
     exit 1
 fi
 if ! /system/xbin/nemesis pkg-list | grep -q '^usb.package.manager|'; then
-    echo "Installing USB Package Manager..."
+    echo "Installing Package Manager..."
     /system/xbin/nemesis install "$ROOT/manager/usb.package.manager.zip" || exit 1
 fi
 /system/bin/am start -n dev.nemesis.usbmanager/.MainActivity
