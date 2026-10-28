@@ -9,7 +9,10 @@ module.exports = async function publish({github, context, version, directory = '
   if (!/^\d+\.\d+\.\d+-build\.\d+$/.test(version)) throw new Error('Invalid release version');
   const repo = context.repo;
   const tag = `v${version}`;
-  const names = ['usb-package-manager-ready.zip', 'usb.package.manager.zip'];
+  // Require both companion builds before creating a tag or release. This also
+  // prevents a partial artifact download from publishing an incomplete release.
+  const names = ['usb-package-manager-ready.zip', 'usb.package.manager.zip',
+    'nemesis-usb-companion-windows-x86_64.zip', 'nemesis-usb-companion-linux-x86_64.tar.gz'];
   const assets = names.map(name => ({name, data: fs.readFileSync(path.join(directory, name))}));
   const digest = data => crypto.createHash('sha256').update(data).digest('hex');
   assets.push({name: 'SHA256SUMS', data: Buffer.from(assets.map(a => `${digest(a.data)}  ${a.name}\n`).join(''))});
@@ -30,7 +33,7 @@ module.exports = async function publish({github, context, version, directory = '
     const notes = (await github.rest.repos.generateReleaseNotes({...repo, tag_name: tag, target_commitish: context.sha})).data;
     release = (await github.rest.repos.createRelease({...repo, tag_name: tag, target_commitish: context.sha,
       name: `Package Manager ${version}`, draft: true, prerelease: false,
-      body: `Experimental development build (debug signed).\n\nDownload **usb-package-manager-ready.zip** for USB setup, or **usb.package.manager.zip** for the NEMESIS installer. Verify downloads with SHA256SUMS.\n\nExisting installations require an explicit update through NEMESIS; copying USB files alone does not update the installed app. See [update instructions](https://github.com/${repo.owner}/${repo.repo}/blob/${context.sha}/docs/SETUP-WINDOWS.md#e-update-package-manager-itself).\n\n${notes.body}`
+      body: `Experimental development build (debug signed).\n\nDownload **usb-package-manager-ready.zip** for USB setup, or **usb.package.manager.zip** for the NEMESIS installer.\n\nFor the local USB companion, download **nemesis-usb-companion-windows-x86_64.zip** (Windows) or **nemesis-usb-companion-linux-x86_64.tar.gz** (Linux). Extract and run it to open the local browser UI; no Python or Node installation is needed. See the [companion guide](https://github.com/${repo.owner}/${repo.repo}/blob/${context.sha}/docs/USB-COMPANION.md). Verify all downloads with SHA256SUMS.\n\nExisting installations require an explicit update through NEMESIS; copying USB files alone does not update the installed app. See [update instructions](https://github.com/${repo.owner}/${repo.repo}/blob/${context.sha}/docs/SETUP-WINDOWS.md#e-update-package-manager-itself).\n\n${notes.body}`
     })).data;
   }
   const existing = await github.paginate(github.rest.repos.listReleaseAssets, {...repo, release_id: release.id});

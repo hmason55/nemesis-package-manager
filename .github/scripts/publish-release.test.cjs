@@ -10,6 +10,8 @@ function fixture(t) {
   t.after(() => fs.rmSync(directory, {recursive: true, force: true}));
   fs.writeFileSync(path.join(directory, 'usb-package-manager-ready.zip'), 'usb fixture');
   fs.writeFileSync(path.join(directory, 'usb.package.manager.zip'), 'installer fixture');
+  fs.writeFileSync(path.join(directory, 'nemesis-usb-companion-windows-x86_64.zip'), 'windows fixture');
+  fs.writeFileSync(path.join(directory, 'nemesis-usb-companion-linux-x86_64.tar.gz'), 'linux fixture');
   const state = {ref: null, release: null, assets: [], published: 0, created: 0};
   const missing = () => { const error = new Error('Missing'); error.status = 404; throw error; };
   const github = {rest: {git: {
@@ -42,11 +44,18 @@ test('creates exact-commit tag, notes, checksums and publishes only after all up
   assert.equal(f.state.release.tag_name, 'v0.2.0-build.42');
   assert.match(f.state.release.body, /example merged PR/);
   assert.match(f.state.release.body, /debug signed/);
-  assert.equal(f.state.assets.length, 3);
-  assert.match(f.state.assets[2].data.toString(), /^[a-f0-9]{64}  usb-package-manager-ready.zip/m);
+  assert.equal(f.state.assets.length, 5);
+  const checksums = f.state.assets.find(a => a.name === 'SHA256SUMS').data.toString();
+  for (const name of ['usb-package-manager-ready.zip', 'usb.package.manager.zip', 'nemesis-usb-companion-windows-x86_64.zip', 'nemesis-usb-companion-linux-x86_64.tar.gz']) {
+    assert.ok(checksums.includes(`  ${name}\n`));
+  }
+  assert.equal(checksums.trim().split('\n').length, 4);
+  assert.match(f.state.release.body, /no Python or Node installation is needed/);
+  assert.match(f.state.release.body, /nemesis-usb-companion-windows-x86_64.zip/);
+  assert.match(f.state.release.body, /nemesis-usb-companion-linux-x86_64.tar.gz/);
   assert.equal(f.state.published, 1);
   await publish(f);
-  assert.equal(f.state.assets.length, 3);
+  assert.equal(f.state.assets.length, 5);
   assert.equal(f.state.published, 1);
 });
 test('rejects PR runs, invalid versions and tags on other commits', async t => {
@@ -72,8 +81,44 @@ test('failed upload stays unpublished and retry resumes without duplicate assets
   await publish(f);
   assert.equal(f.state.release, originalDraft);
   assert.equal(f.state.created, 1);
-  assert.equal(f.state.assets.length, 3);
+  assert.equal(f.state.assets.length, 5);
   assert.equal(f.state.published, 1);
   f.state.assets[0].data = Buffer.from('different');
   await assert.rejects(publish(f), /Existing asset differs/);
+});
+
+test('missing companion build prevents tag creation and publication', async t => {
+  for (const name of ['nemesis-usb-companion-windows-x86_64.zip', 'nemesis-usb-companion-linux-x86_64.tar.gz']) {
+    const f = fixture(t);
+    fs.unlinkSync(path.join(f.directory, name));
+    await assert.rejects(publish(f), /ENOENT/);
+    assert.equal(f.state.ref, null);
+    assert.equal(f.state.release, null);
+    assert.equal(f.state.published, 0);
+  }
+});
+
+test('failed companion upload keeps the release private until retry completes', async t => {
+  const f = fixture(t);
+  const upload = f.github.rest.repos.uploadReleaseAsset;
+  f.github.rest.repos.uploadReleaseAsset = async args => {
+    if (args.name.endsWith('linux-x86_64.tar.gz')) throw new Error('companion upload failed');
+    return upload(args);
+  };
+  await assert.rejects(publish(f), /companion upload failed/);
+  assert.equal(f.state.release.draft, true);
+  assert.equal(f.state.published, 0);
+  f.github.rest.repos.uploadReleaseAsset = upload;
+  await publish(f);
+  assert.equal(f.state.assets.length, 5);
+  assert.equal(f.state.created, 1);
+  assert.equal(f.state.published, 1);
+});
+
+test('published releases reject newly missing companion assets on retry', async t => {
+  const f = fixture(t);
+  await publish(f);
+  f.state.assets = f.state.assets.filter(a => !a.name.endsWith('linux-x86_64.tar.gz'));
+  await assert.rejects(publish(f), /cannot receive new assets/);
+  assert.equal(f.state.published, 1);
 });
