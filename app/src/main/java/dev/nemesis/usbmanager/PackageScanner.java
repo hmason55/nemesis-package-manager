@@ -79,6 +79,12 @@ public final class PackageScanner {
                 out.add(fromZip(root, entry));
             }
         }
+        File manager = new File(usbRoot, "manager/usb.package.manager.zip");
+        if (manager.isFile()) {
+            Item item = fromZip(manager.getParentFile(), manager);
+            item.customDataDir = new File(root, "PackageManager/data");
+            out.add(item);
+        }
         return out;
     }
 

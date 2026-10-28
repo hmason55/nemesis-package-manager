@@ -27,18 +27,18 @@ USB/
 
 ## Everyday use
 
-- Reopen the app through **NEMESIS Manager → Packages → Package Manager → Launch**.
+- Reopen the app through **NEMESIS Manager Ã¢â€ â€™ Packages Ã¢â€ â€™ Package Manager Ã¢â€ â€™ Launch**.
 - Both UIs share the installed packages. Finish one operation before starting another in either UI, and refresh after changes.
 - Completion popups explain the result. Open their **Details** for diagnostic output.
 - USB installers and `data/` remain after uninstall. Other apps retain their own recording/export locations unless configured separately.
 
-The execution prompt can recur when the drive is detected at vehicle startup. To stop automatic opening, rename only the USB root's `NEMESIS.data` to `NEMESIS.data.disabled`, then open Package Manager manually through NEMESIS Manager. Installed packages and services retain their normal startup behavior.
+After a successful first launch, the launcher renames its root descriptor to `NEMESIS.data.disabled`. The drive no longer triggers an execution prompt on each startup. Open Package Manager from NEMESIS Manager. Existing drives need to run the new launcher once; its backup is preserved. If a backup already exists, the launcher keeps it and saves a numbered backup.
 
 ## Update or remove Package Manager
 
-Use **NEMESIS's package installer** to install or update Package Manager, and **NEMESIS Manager → Packages → Package Manager → Uninstall** to remove it. The app prevents changing its own installation through its package list.
+Use **NEMESIS's package installer** to install or update Package Manager, and **NEMESIS Manager Ã¢â€ â€™ Packages Ã¢â€ â€™ Package Manager Ã¢â€ â€™ Uninstall** to remove it. The app cannot uninstall itself.
 
-**Copying a new bundle onto USB does not update an installed app.** Follow the [explicit update steps](docs/SETUP-WINDOWS.md#e-update-package-manager-itself). The technical package ID remains `usb.package.manager` for compatibility.
+To update the manager, replace `manager/usb.package.manager.zip` on the drive with the installer from a new release, select **Package Manager** in the app, and tap **Update**. NEMESIS performs the update; the app closes and reopens. Removal remains available only in NEMESIS Manager. See [update steps](docs/SETUP-WINDOWS.md#e-update-package-manager-itself).
 
 ## Before installing packages
 

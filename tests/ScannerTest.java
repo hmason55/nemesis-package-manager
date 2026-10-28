@@ -47,6 +47,12 @@ public class ScannerTest {
         check(wrapped != null && "install".equals(wrapped.kind),"wrapped zip");
         check("Test".equals(wrapped.title) && "1.2".equals(wrapped.version),"friendly ZIP name and version");
         check(wrapped.dataDir().getPath().contains("wrapped"),"unique data dir");
+        zip(new File(root, "manager/usb.package.manager.zip"), meta.replace("aaa.test", "usb.package.manager"), false);
+        ArrayList<PackageScanner.Item> withManager = PackageScanner.scan(root);
+        check(withManager.size() == 6, "manager installer is discovered alongside other packages");
+        boolean managerFound = false;
+        for (PackageScanner.Item item : withManager) if ("usb.package.manager".equals(item.id)) managerFound = true;
+        check(managerFound, "manager updates do not require copying the installer into packages");
         check("aaa.test".equals(PackageScanner.parse(new ByteArrayInputStream(("\uFEFF"+meta).getBytes("UTF-8"))).get("id")),"Windows UTF-8 BOM");
         System.out.println("PackageScanner: all checks passed");
     }

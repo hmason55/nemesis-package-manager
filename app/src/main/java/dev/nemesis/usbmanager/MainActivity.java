@@ -19,6 +19,7 @@ import android.widget.Button;
 import android.widget.LinearLayout;
 import android.widget.ListView;
 import android.widget.TextView;
+import android.widget.ProgressBar;
 import java.io.File;
 import java.io.FileOutputStream;
 import java.util.ArrayList;
@@ -42,6 +43,8 @@ public final class MainActivity extends Activity {
     private Button launch;
     private Button refreshButton;
     private boolean busy;
+    private boolean selfUpdatePending;
+    private ProgressBar progress;
     private boolean destroyed;
     private static final OperationCoordinator operations = new OperationCoordinator();
     private final Handler handler = new Handler();
@@ -59,7 +62,11 @@ public final class MainActivity extends Activity {
                 handler.postDelayed(this, 500);
             } else {
                 final OperationCoordinator.Completion result = operations.takeCompletion();
-                if (result != null) showResult(result);
+                if (result != null) {
+                    if ("Update started".equals(result.title)) selfUpdatePending = true;
+                    showResult(result);
+                    updateButtons();
+                }
                 refresh();
             }
         }
@@ -112,6 +119,11 @@ public final class MainActivity extends Activity {
         header.addView(refreshButton, new LinearLayout.LayoutParams(-2, dp(52)));
         header.addView(close, new LinearLayout.LayoutParams(-2, dp(52)));
         root.addView(header);
+        progress = new ProgressBar(this, null, android.R.attr.progressBarStyleHorizontal);
+        progress.setIndeterminate(true);
+        progress.setContentDescription("Package operation in progress");
+        progress.setVisibility(View.GONE);
+        root.addView(progress, new LinearLayout.LayoutParams(-1, dp(6)));
         status = text("Loading packages…", 14, MUTED);
         status.setMaxLines(3); status.setEllipsize(TextUtils.TruncateAt.END);
         status.setOnClickListener(new View.OnClickListener() {
@@ -148,12 +160,13 @@ public final class MainActivity extends Activity {
     private PackageScanner.Item selection() {
         return selected >= 0 && selected < items.size() ? items.get(selected) : null;
     }
-    private boolean unavailable() { return busy || operations.isRunning(); }
+    private boolean unavailable() { return busy || operations.isRunning() || selfUpdatePending; }
     private void updateButtons() {
+        progress.setVisibility(unavailable() ? View.VISIBLE : View.GONE);
         PackageScanner.Item item = selection();
         boolean ready = !unavailable() && item != null;
         action.setText(PackagePresentation.action(item));
-        action.setEnabled(ready && !PackagePresentation.isManager(item) && !PackageScanner.BROKEN.equals(item.kind) && !"installed".equals(item.kind) && !item.locked &&
+        action.setEnabled(ready && (!PackagePresentation.isManager(item) || item.installed) && !PackageScanner.BROKEN.equals(item.kind) && !"installed".equals(item.kind) && !item.locked &&
             (item.installedStateKnown || PackageScanner.EXECUTE.equals(item.kind)));
         launch.setEnabled(ready && PackagePresentation.canLaunch(item));
         uninstall.setEnabled(ready && PackagePresentation.canUninstall(item));
@@ -208,7 +221,7 @@ public final class MainActivity extends Activity {
                             if (selected >= 0) list.setSelection(selected);
                             status.setText(!registry.available() ? registry.error :
                                 (usb == null ? "No USB installers detected · " + items.size() + " installed packages" :
-                                items.size() + " packages · Select a package to see its actions"));
+                                items.size() + " packages"));
                             empty.setText(!registry.available() ? "Installed packages could not be loaded.\nCheck the error above, then tap Refresh." :
                                 (usb == null ? "No packages found.\nInsert a USB drive with a packages/ folder, then tap Refresh." :
                                 "No packages found.\nAdd a release under packages/ on your USB, then tap Refresh."));
@@ -258,12 +271,12 @@ public final class MainActivity extends Activity {
     }
     private void chooseAction() {
         final PackageScanner.Item item = selection();
-        if (item == null || unavailable() || PackagePresentation.isManager(item) || item.locked || PackageScanner.BROKEN.equals(item.kind) || "installed".equals(item.kind)) return;
+        if (item == null || unavailable() || (PackagePresentation.isManager(item) && !item.installed) || item.locked || PackageScanner.BROKEN.equals(item.kind) || "installed".equals(item.kind)) return;
         if (!item.installedStateKnown && !PackageScanner.EXECUTE.equals(item.kind)) return;
         String action = PackagePresentation.action(item);
         confirm(action + " " + PackagePresentation.name(item) + "?",
             "NEMESIS runs installation hooks and USB scripts with root privileges. Only continue if you trust this package and have checked its compatibility.\n\n" +
-            "Your USB installer and data folder will be kept.", action, new Runnable() {
+            (PackagePresentation.isManager(item) ? "Package Manager will close and reopen while NEMESIS installs the update." : "Your installer and data folder will be kept."), action, new Runnable() {
                 public void run() { startOperation(item, null); }
             });
     }
@@ -284,7 +297,7 @@ public final class MainActivity extends Activity {
         });
     }
     private void startOperation(PackageScanner.Item item, String command) {
-        if (PackagePresentation.isManager(item) && !"pkg-launch".equals(command)) {
+        if (PackagePresentation.isManager(item) && !("pkg-launch".equals(command) || (command == null && item.installed))) {
             message("Use NEMESIS", "Install, update, or uninstall Package Manager using NEMESIS's package installer and Packages screen.");
             return;
         }
@@ -307,7 +320,7 @@ public final class MainActivity extends Activity {
             String operation = PackagePresentation.operation(item, command);
             NemesisCli.Result result;
             try {
-                result = command != null ? NemesisCli.run(command, item.id) :
+                result = command == null && PackagePresentation.isManager(item) ? NemesisCli.updateManager(item) : command != null ? NemesisCli.run(command, item.id) :
                     (PackageScanner.EXECUTE.equals(item.kind) ? NemesisCli.execute(item) : NemesisCli.install(context, item));
             } catch (Exception error) { result = new NemesisCli.Result(1, error.toString()); }
             if (result.operation != null) operation = result.operation;

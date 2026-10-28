@@ -1,166 +1,56 @@
-# NEMESIS Package Manager: Windows setup
+# Package Manager: Windows setup
 
-**Status:** Experimental. Source project must first be built into an Android APK and the two NEMESIS ZIP archives. The source ZIP alone is **not** an installable NEMESIS package. No hardware validation has yet been completed on a US 2023 Ioniq 5.
+## A. Download
 
-## Prerequisites
+NEMESIS must already work on your head unit. Download `usb-package-manager-ready.zip` from a release. Alternatively, open **Actions â†’ Build Package Manager**, download the successful run's `nemesis-usb-package-manager` artifact, and extract that wrapper first.
 
-- The actual NEMESIS framework must already be installed and working on your compatible Gen5W `S5W_M` head unit. The manager is **not** the initial NEMESIS installer and does not replace it.
-- A USB flash drive recognized by the head unit, formatted **FAT32 or exFAT**.
-- A Windows PC, optionally Python 3.8+ for bulk importing release ZIPs.
-- Access to a successful build artifact from this repository. Python import commands additionally require a checkout or extracted source copy of this project; the build artifact does not contain `tools/`.
+## B. Prepare the drive
 
-## A. Download a built package manager (recommended)
+Extract `usb-package-manager-ready.zip` onto a FAT32/exFAT drive recognized by the head unit. Keep `manager/usb.package.manager.zip` compressed. Put community releases under `packages/<Name>/`; follow [supported layouts](RELEASE-LAYOUTS.md).
 
-1. Open [this repository's Actions tab](https://github.com/hmason55/nemesis-package-manager/actions) and select **Build Package Manager**.
-2. Choose a successful run for the version you want, normally the latest successful run on `main`. Merging into `main` starts a build automatically; a maintainer can also select **Run workflow**. You do not need to create a new repository.
-3. Open the run's **Artifacts** section and download **`nemesis-usb-package-manager`**. GitHub downloads a wrapper archive named `nemesis-usb-package-manager.zip`.
-4. Extract that wrapper on your PC. It contains `usb-package-manager-ready.zip` and `usb.package.manager.zip`. The first prepares your normal USB; the second is the compressed NEMESIS installer package.
-5. If the build fails, retain the Actions build log. Do **not** substitute a raw APK or rename a source ZIP to `usb.package.manager.zip`.
-
-To build locally, see [BUILD-AND-TEST.md](BUILD-AND-TEST.md). A source checkout is needed only for building or using the optional Python tools, not for manually preparing a USB from the built bundle.
-
-An Android 4.4-compatible APK needs a **v1 JAR signature**. The build tool checks that a v1 signature file exists, in addition to `classes.dex` and `AndroidManifest.xml`, before creating the NEMESIS archive. It does not guarantee the APK will install on your firmware.
-
-## B. Prepare the USB with the built package manager
-
-Extract **`usb-package-manager-ready.zip`** directly to the USB root. The USB should look like:
-
-```text
-E:\
-  NEMESIS.data                   # type=execute, path=NEMESIS.sh
-  NEMESIS.sh
-  GETTING_STARTED.txt
-  manager\
-    usb.package.manager.zip     # keep compressed
-  packages\
-    README.txt
-  docs\
-    SETUP-WINDOWS.md
-    RELEASE-LAYOUTS.md
-```
-
-The root `NEMESIS.data` is **permanent**. The manager's launcher (`NEMESIS.sh`) installs the APK on its first run and opens it subsequently. NEMESIS will request confirmation to run the script when Android is up. No package installation happens merely because you added a ZIP under `packages/`.
-
-## C. Import each community release in its own folder
-
-For USB-ready releases whose **outer** archive contains a root `NEMESIS.data` and `packages/` folder, extract each outer archive inside its own USB folder, not over the root descriptor:
-
-```text
-E:\
-  NEMESIS.data
-  NEMESIS.sh
-  manager\usb.package.manager.zip
-  packages\
-    Mirror-Diagnostics\
-      NEMESIS.data
-      packages\mirror.diag.zip
-      data\
-    Leafia-Plus\
-      NEMESIS.data
-      packages\<actual-release-zip>.zip
-      data\
-    RearDashcam\
-      NEMESIS.data
-      packages\<actual-release-zip>.zip
-      data\
-```
-
-**Do not extract the inner ZIP** referenced by `type=install`.
-
-For an archive that is itself a NEMESIS package (it has an internal `NEMESIS.data` defining `id=...` and `[app.N]` or `[service.N]`), leave it compressed. You can place the ZIP in `packages\Name\payload.zip` with a nearby descriptor:
-
-```ini
-[nemesis]
-version=1.0
-type=install
-path=payload.zip
-```
-
-Or use the importer to create the wrapper automatically.
-
-To import any supported release ZIP automatically from Windows PowerShell (with Python installed):
+Optional Python tools run from a source checkout:
 
 ```powershell
-python .\tools\prepare_usb.py --usb E:\ --bundle .\usb-package-manager-ready.zip `
-  --add .\downloads\mirror-diag-usb-install.zip `
-  --add .\downloads\leafia-release-usb.zip `
-  --add .\downloads\dashcam-release-usb.zip
+python tools/prepare_usb.py --usb E:\ --bundle .\usb-package-manager-ready.zip --add .\downloads\example-usb.zip
 ```
 
-Use the **actual names** of the downloaded releases. This example runs on a fresh USB. If files already exist, review them before passing `--overwrite`. Release imports preserve each `data\` folder.
-
-Run these Python commands from the source project's directory on your PC. For `type=execute` releases, check whether scripts assume files are at the USB root before moving them into a subfolder; importing does not rewrite their paths. See [RELEASE-LAYOUTS.md](RELEASE-LAYOUTS.md).
-
-If you already extracted the manager ZIP onto USB, import just an additional release:
+For later additions:
 
 ```powershell
-python .\tools\import_release.py .\downloads\another-usb.zip --usb E:\ --name Another-Package
+python tools/import_release.py .\downloads\example-usb.zip --usb E:\ --name Example
 ```
 
-## D. Use the manager on the head unit
+The importer preserves existing data folders. Use `--overwrite` only to replace an existing release's installer files. Scripts that assume files are at the USB root may require their author's adaptation.
 
-1. Start with the vehicle **parked**. Insert the USB into the infotainment data port, with the head unit fully booted.
-2. Approve NEMESIS's prompt to execute `NEMESIS.sh`.
-3. The script checks that Android has booted, installs `usb.package.manager` once, and launches its activity. It does **not** install the third-party ZIPs.
-4. The on-screen app lists package names with short status lines. Tap a row: the main action becomes **Install**, **Update**, or **Run script**. **Launch** and **Uninstall** are enabled when applicable. **Details** shows the full installer path, package ID, USB installer version, and data/history location. **Refresh** and **Close** are in the header.
-5. Read the confirmation message before every privileged action. Install firmware-modifying packages one at a time, and follow their own compatibility and reboot instructions.
-6. Keep the USB inserted. You can reopen the manager anytime from **NEMESIS Manager -> Packages -> Package Manager -> Launch**, without editing `NEMESIS.data` or unplugging the drive.
+## C. First launch
 
-Both UIs operate on the same installed packages. NEMESIS Manager's current upstream **Packages** screen provides Launch and Uninstall; its installation prompt is driven by the descriptor at the USB root. Package Manager adds selection among nested installers under `packages/`. Packages installed here also appear in NEMESIS Manager. After changing packages in either UI, refresh this app or reopen NEMESIS Manager's Packages screen to see the result. An installed package without a USB installer can be launched or uninstalled here, but updating it requires a compatible installer on USB.
+With the vehicle parked and the head unit fully booted, insert the drive and approve the execution prompt. NEMESIS installs Package Manager if missing and opens it. The launcher then backs up its own root descriptor as `NEMESIS.data.disabled`, so future startups do not prompt to execute the drive. Open **NEMESIS Manager â†’ Packages â†’ Package Manager â†’ Launch** afterward.
 
-Use one operation at a time across both UIs. This app's operation protection does not extend to NEMESIS Manager or external commands. Closing this app leaves its operation running; reopening it in the same app process shows progress or the pending result. Process termination and reboots do not preserve that in-memory state.
+Existing drives need the new launcher to run once for this change. It never replaces an existing disabled-descriptor backup or disables an unrelated install descriptor. If a backup already exists, a numbered backup is created instead. Reinserting the drive does not reinstall community packages.
 
-The result popup names the package and operation, even if NEMESIS returned no output. Tap its **Details** button for the exit code and raw output, or **OK** to dismiss it. If the USB history could not be saved, the popup reports that separately. Uninstalling keeps the USB installer and data folder. Known service-only packages have Launch disabled because there is no app to open.
+## D. Install and update packages
+
+Select a package and choose **Install**, **Update**, **Launch**, or **Uninstall**. Scripts use **Run script**. The progress bar animates while work runs; NEMESIS does not provide a trustworthy percentage. Do not remove the drive during an operation. Confirmation buttons are separated to reduce accidental taps.
+
+To update another app, import its new release into the same folder with `--overwrite`, preserving `data/`, then tap **Refresh**, select it, and choose **Update**. Installer versions are shown for reference, not as a claim that a newer version has been detected. Package authors can use arbitrary version formats.
+
+Both manager UIs share installed packages. Wait for one operation to finish before starting another in either UI. Completion popups explain the result; their **Details** shows exit codes and output. Package Details contains full source and data/history paths.
 
 ## E. Update Package Manager itself
 
-The normal USB launcher installs the manager **only if its package ID is missing**. Copying a new bundle to that drive does not update the installed APK.
+1. Download a new release and replace `manager/usb.package.manager.zip` on your existing drive with its internal installer ZIP. Keep existing package folders and data. Do not copy a new active root descriptor merely to update the app.
+2. Open Package Manager, tap **Refresh**, select **Package Manager**, and choose **Update**.
+3. Confirm. The installer is copied to head-unit temporary storage before a detached NEMESIS process updates it. The app closes and reopens; do not start another operation or remove power while it updates.
+4. If it does not reopen, launch it through NEMESIS Manager. Check `/data/nemesis/logs/package-manager-update.log` for the installer result. An update-started message means work was handed off, not that installation has already succeeded.
 
-For an explicit update through NEMESIS, use a separate USB drive so your normal drive's root descriptor stays intact:
+You can still install or update directly through NEMESIS using a separate drive with an install descriptor pointing to `usb.package.manager.zip`. Remove Package Manager only through **NEMESIS Manager â†’ Packages â†’ Package Manager â†’ Uninstall**. Its technical package ID remains `usb.package.manager`.
 
-1. Download and extract the new Actions artifact as described in section A. Keep its standalone `usb.package.manager.zip` compressed.
-2. On the separate update USB, place `usb.package.manager.zip` at the root. Create a plain-text file at that root named exactly `NEMESIS.data`, with this content:
+## Data and troubleshooting
 
-   ```ini
-   [nemesis]
-   version=1.0
-   type=install
-   path=usb.package.manager.zip
-   ```
+- Uninstalling keeps installer files and `packages/<Name>/data/`. Other apps keep their own export locations unless configured separately.
+- **Installed state unavailable:** check the displayed NEMESIS error, then Refresh. Package-changing actions stay disabled until the query succeeds.
+- **Invalid installer:** select Details to inspect the descriptor/path error.
+- **History could not be saved:** inspect the popup Details and check drive connectivity and write access.
+- A recurring execution prompt means an active root descriptor remains; confirm that first-launch disabling succeeded.
 
-3. With the vehicle parked and the head unit fully booted, close Package Manager, remove your normal USB, and insert the update USB. Confirm NEMESIS's installation/update prompt and wait for completion.
-4. Remove the update USB. On your PC, copy the new bundle's `NEMESIS.data`, `NEMESIS.sh`, `GETTING_STARTED.txt`, `manager/usb.package.manager.zip`, and `docs/` onto your normal USB, replacing those manager files. Keep all existing community package folders and recordings. Then reinsert your normal USB and open the updated app.
-
-If you already have an ADB shell, step 3 can instead use `/system/xbin/nemesis install --update /storage/usb0/usb.package.manager.zip` with the update drive mounted at that path. Adjust the path if it is mounted elsewhere. Do not run a second operation in either UI while updating.
-
-Keep the signing identity stable between builds when possible. NEMESIS may uninstall and retry an APK with a different signer; Android app-private data can be lost during that replacement. The USB data folders are separate.
-
-## F. Data and recordings
-
-- `packages\Name\data\` is a stable location that the Package Manager does not erase when uninstalling the package from NEMESIS.
-- **Third-party apps do not automatically use this folder.** Their default export locations still apply unless configured separately.
-- RearDashcam currently writes by default to `E:\Dashcam\` (on the head unit, `/storage/usb0/Dashcam`). Its technical docs describe `DASHCAM_ARGS="--out=/storage/usb0/packages/RearDashcam/data"` in `/data/nemesis/apps/dashcam/dashcam.conf`. Back up the file before changing it; updates may overwrite it. Verify recordings in the new path before deleting the old directory.
-- Package-manager install/run history is appended to `packages\Name\data\package-manager-history.log` when USB writing succeeds.
-
-## G. Common issues
-
-| Symptom | Check |
-| --- | --- |
-| No NEMESIS execute prompt | NEMESIS must be installed first. Ensure `NEMESIS.data` is at the USB root and contains `type=execute`, `path=NEMESIS.sh` (not `NEMESIS.data.txt`). |
-| NEMESIS says the manager ZIP is missing | `manager\usb.package.manager.zip` must exist, still compressed. |
-| Manager shows no USB packages | Confirm `E:\packages\Name\NEMESIS.data` and that `path=` refers to a file within **that** `Name` folder. |
-| Install failed | Tap **Details** in the result popup for the exit code and output. Also check `data\package-manager-history.log` and NEMESIS Manager's Logs. A package may be firmware-incompatible, broken, or require its own setup. |
-| Manager doesn't appear | Check `nemesis pkg-list` and Android logcat; verify `dev.nemesis.usbmanager` was installed. This prototype has not been device-tested. |
-| App's files go to another USB folder | Expected until that app is explicitly configured to use its per-package `data\` folder. |
-| Installed state unavailable | Read the displayed `pkg-list` error, check that NEMESIS is running, then tap Refresh. Install/update, launch, and uninstall are disabled until the query succeeds; script execution still requires its own confirmation. |
-| Package listed as invalid | Select it and tap **Details** to read the discovery error and source location. |
-| History could not be saved | The operation result is still shown; open popup **Details** for the USB write error. Check that the drive remains connected and writable. |
-| Reopened app says an operation is in progress | Wait for that operation to finish. Closing the activity does not cancel it. Do not start a competing operation in NEMESIS Manager. |
-| Copying a new bundle did not update the app | Expected: the launcher skips installation when the manager is already installed. Follow section E for an explicit update. |
-| Execute prompt appears again on insertion | Expected: the confirmation can recur even though the manager is already installed. |
-
-## Important safety notes
-
-- The `type=execute` launcher is run with root rights by NEMESIS. Third-party package hooks and scripts may also run as root. Treat USB content as trusted code and install only vetted releases.
-- The manager does not detect package conflicts. For example, Leafia Plus's published instructions require uninstalling conflicting earlier wireless/projection patches before installing it.
-- Avoid firmware modification or other potentially distracting experiments while driving. This is an experimental application and is not a substitute for the stock infotainment interface.
+Only run trusted packages. Hooks and scripts run as root. This manager does not resolve package conflicts or establish firmware compatibility. New update and launcher behavior still requires head-unit validation.
