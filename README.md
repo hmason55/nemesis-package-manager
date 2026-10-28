@@ -39,7 +39,7 @@ After a successful first launch, the launcher renames its root descriptor to `NE
 Download releases on your PC; Package Manager does not check for or download updates automatically.
 
 - **Other packages:** replace the installer in the same `packages/<Name>/` folder, preserving `data/`. Open the app, Refresh, select the package, and confirm **Update**.
-- **Package Manager:** replace `manager/usb.package.manager.zip` with the new internal installer. Refresh, select **Package Manager**, and confirm **Update**. NEMESIS replaces the app, which closes and should reopen. **Update started** confirms the handoff; it is not the final installer result.
+- **Package Manager:** replace `manager/usb.package.manager.zip` with the new internal installer. Refresh, select **Package Manager**, and confirm **Update**. NEMESIS replaces the app, which closes and should reopen. The progress indicator remains active until the installer finishes or Android replaces the app process.
 - **Removal:** use NEMESIS Manager's Packages screen to uninstall Package Manager itself.
 
 Installer versions describe files on the drive, not the installed version. The app does not decide whether an installer is newer. See [the update guide](docs/UPDATING.md) for exact steps, older-version upgrades, data preservation, and recovery.

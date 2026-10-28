@@ -79,13 +79,28 @@ final class NemesisCli {
             return new Result(1, "The selected installer is not Package Manager.");
         // Copy first, then detach from this APK's process before Android replaces it.
         String staged = "/data/local/tmp/package-manager-update-" + System.currentTimeMillis() + ".zip";
+        File marker = new File(staged + ".result");
         String command = "mkdir -p /data/nemesis/logs || exit 1; cp " + quote(item.target.getAbsolutePath()) + " " + quote(staged) +
             " || exit 1; : >/data/nemesis/logs/package-manager-update.log || exit 1; (sleep 3; /system/xbin/nemesis install --update " + quote(staged) +
-            "; result=$?; rm -f " + quote(staged) +
+            "; result=$?; printf '%s\\n' \"$result\" >" + quote(marker.getAbsolutePath() + ".tmp") +
+            "; chmod 644 " + quote(marker.getAbsolutePath() + ".tmp") +
+            "; mv " + quote(marker.getAbsolutePath() + ".tmp") + " " + quote(marker.getAbsolutePath()) +
+            "; rm -f " + quote(staged) +
             "; echo Update_exit_code=$result; /system/xbin/nemesis pkg-launch usb.package.manager)" +
             " </dev/null >/data/nemesis/logs/package-manager-update.log 2>&1 &";
         Result result = run("root", "-c", command);
-        result.operation = "manager-update";
+        if (result.rc == 0) {
+            try {
+                result = new Result(UpdateHandoff.awaitResult(marker),
+                    "NEMESIS update result received. Log: /data/nemesis/logs/package-manager-update.log");
+            } catch (InterruptedException error) {
+                Thread.currentThread().interrupt();
+                return new Result(1, "Update monitoring interrupted; inspect the NEMESIS update log before starting another operation.");
+            } catch (IOException error) {
+                return new Result(1, "Could not read update result: " + error.toString());
+            }
+        }
+        result.operation = "update";
         return result;
     }
 
