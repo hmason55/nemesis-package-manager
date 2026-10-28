@@ -6,12 +6,34 @@ on:
     branches: [ main ]
 
 jobs:
+  python-quality:
+    uses: ./.github/workflows/python-quality.yml
+    permissions:
+      contents: read
   build:
+    needs: python-quality
+    outputs:
+      version: ${{ steps.version.outputs.version }}
     runs-on: ubuntu-latest
     permissions:
       contents: read
     steps:
       - uses: actions/checkout@v4
+      - name: Select unique build version
+        id: version
+        env:
+          BUILD_NUMBER: ${{ github.run_number }}
+        run: |
+          python3 - <<'PY'
+          import os, re
+          from pathlib import Path
+          base = re.search(r"versionName .*'(\d+\.\d+\.\d+)'", Path('app/build.gradle').read_text()).group(1)
+          version = f"{base}-build.{os.environ['BUILD_NUMBER']}"
+          with open(os.environ['GITHUB_ENV'], 'a') as output:
+              output.write(f"NEMESIS_RELEASE_VERSION={version}\nNEMESIS_VERSION_CODE={1000 + int(os.environ['BUILD_NUMBER'])}\n")
+          with open(os.environ['GITHUB_OUTPUT'], 'a') as output:
+              output.write(f"version={version}\n")
+          PY
       - uses: actions/setup-java@v4
         with:
           distribution: temurin
@@ -28,6 +50,8 @@ jobs:
           gradle-version: '8.10.2'
       - name: Run host tests
         run: bash tests/run_tests.sh
+      - name: Test release publication without publishing
+        run: node --test .github/scripts/publish-release.test.cjs
       - name: Run Android API 19 UI smoke tests
         run: gradle -p tests/ui --no-daemon test
       - name: Build Android 4.4-compatible APK
@@ -38,3 +62,26 @@ jobs:
         with:
           name: nemesis-usb-package-manager
           path: dist/*
+  release:
+    needs: build
+    if: github.event_name == 'push' && github.ref == 'refs/heads/main'
+    runs-on: ubuntu-latest
+    concurrency:
+      group: publish-package-manager-${{ github.run_id }}
+      cancel-in-progress: false
+    permissions:
+      contents: write
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/download-artifact@v4
+        with:
+          name: nemesis-usb-package-manager
+          path: dist
+      - name: Publish tested commit with tag, notes and checksums
+        uses: actions/github-script@v7
+        env:
+          RELEASE_VERSION: ${{ needs.build.outputs.version }}
+        with:
+          script: |
+            const publish = require('./.github/scripts/publish-release.cjs');
+            await publish({github, context, version: process.env.RELEASE_VERSION});

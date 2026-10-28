@@ -6,7 +6,7 @@ Keep changes focused, explain the user-visible problem, and include evidence tha
 
 The contribution targets are a **maintainability index greater than 60** and **at least 85% line coverage and 85% branch coverage** for production code. Line and branch coverage are separate requirements; a combined percentage is not sufficient. Report Java and Python separately so one language cannot hide gaps in the other.
 
-These are the requested standards, not a claim about the current baseline. The existing CI runs host tests, Android API 19 UI smoke tests, the APK build, and bundle generation. Reliable coverage enforcement, maintainability gates, and automatic tagged releases remain pending implementation. Do not describe a passing existing build as evidence that the numeric targets have been met.
+These are the requested standards, not a claim about the current baseline. The existing CI runs host tests, Android API 19 UI smoke tests, the APK build, and bundle generation. Python coverage and maintainability gates are implemented; Java coverage remains below target and is reported without blocking. Tagged releases now follow successful main-branch builds. Do not describe a passing existing build as evidence that the numeric targets have been met.
 
 For each code-changing PR, record the measured baseline and resulting metrics, tool versions, scope, and any remaining shortfall. If tooling cannot measure the code correctly, report the limitation and fix the measurement before claiming compliance. Do not lower thresholds or exclude difficult production code to obtain a passing number. Existing gaps should be identified explicitly and reduced by meaningful tests and refactoring.
 
@@ -70,7 +70,7 @@ Continue to delegate package operations to NEMESIS. Require explicit confirmatio
 
 ## Release requirements
 
-The intended pipeline publishes a release after an update to `main` **only after all quality checks, tests, APK build, and bundle validation succeed**. This automation has not yet been implemented; current Actions artifacts are not GitHub Releases.
+The pipeline publishes a tagged release after a push to `main` only after Python quality gates, host and Android view tests, APK compilation, and bundle validation succeed. Java coverage is still reported without a blocking threshold. PR and manual runs do not publish. See [release details](docs/BUILD-AND-TEST.md#automatic-releases).
 
 A release implementation must:
 

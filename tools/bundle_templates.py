@@ -1,5 +1,7 @@
 """USB launcher and package descriptors kept separate from archive construction."""
 
+import os
+
 PACKAGE_MANIFEST = """[nemesis]
 version=0.2.0
 id=usb.package.manager
@@ -12,6 +14,9 @@ path=app/UsbPackageManager.apk
 package=dev.nemesis.usbmanager
 component=dev.nemesis.usbmanager/.MainActivity
 """
+PACKAGE_MANIFEST = PACKAGE_MANIFEST.replace(
+    "version=0.2.0", "version=" + os.environ.get("NEMESIS_RELEASE_VERSION", "0.2.0"), 1
+)
 
 
 USB_MANIFEST = """[nemesis]
