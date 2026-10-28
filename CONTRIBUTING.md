@@ -61,7 +61,7 @@ The Python dependencies are pinned in `requirements-dev.txt` and must stay align
 
 The contribution targets are a **maintainability index greater than 60** and **at least 85% line coverage and 85% branch coverage** for production code. Line and branch coverage are separate requirements; a combined percentage is not sufficient. Report Java and Python separately so one language cannot hide gaps in the other.
 
-These are the requested standards, not a claim about the current baseline. The existing CI runs host tests, Android API 19 UI smoke tests, the APK build, and bundle generation. Python coverage and maintainability gates are implemented; Java coverage remains below target and is reported without blocking. Tagged releases now follow successful main-branch builds. Do not describe a passing existing build as evidence that the numeric targets have been met.
+These are the requested standards, not a claim about the current baseline. The existing CI runs host tests, Android API 19 UI smoke tests, the APK build, and bundle generation. Python coverage and maintainability gates are implemented. The Java quality workflow enforces separate 85% line and branch coverage gates across all production Java classes. Tagged releases now follow successful main-branch builds. Do not describe a passing existing build as evidence that the numeric targets have been met.
 
 For each code-changing PR, record the measured baseline and resulting metrics, tool versions, scope, and any remaining shortfall. If tooling cannot measure the code correctly, report the limitation and fix the measurement before claiming compliance. Do not lower thresholds or exclude difficult production code to obtain a passing number. Existing gaps should be identified explicitly and reduced by meaningful tests and refactoring.
 
@@ -71,7 +71,7 @@ Use the development environment above and the [build and test notes](docs/BUILD-
 
 ```sh
 bash tests/run_tests.sh
-bash gradlew -p tests/ui --no-daemon jacocoTestReport
+bash gradlew -p tests/ui --no-daemon jacocoTestReport jacocoTestCoverageVerification
 bash gradlew --no-daemon :app:assembleDebug
 python3 tools/build_release.py app/build/outputs/apk/debug/app-debug.apk
 node --test .github/scripts/*.test.cjs
@@ -92,7 +92,7 @@ python3 -m radon mi tools -s
 
 Coverage.py's headline percentage combines statements and branches. Use its JSON report to calculate line coverage from covered/executable statements and branch coverage from covered/total branches separately. Count unimported production modules through an explicit source scope. Radon's letter grade alone is not sufficient: compare the numeric index against greater than 60 for each production Python module.
 
-Java coverage should use JaCoCo with JUnit/Robolectric once that integration is reliable. Existing standalone Java test mains must be included in the measurement or wrapped in JUnit tests; running them outside the coverage agent does not contribute to the Java report. Account for Robolectric's class loading and instrumentation before trusting zero or missing coverage. Upload human-readable and machine-readable reports. A Java maintainability tool and formula must be documented and reproducible before enforcing the same numeric target; Radon measures Python and must not be presented as a Java metric. Until that tool is selected, report Java maintainability as unmeasured.
+Java coverage uses JaCoCo with JUnit/Robolectric, and HostRegressionTest wraps the standalone Java test mains so they contribute to the report. Account for Robolectric's class loading and instrumentation before trusting zero or missing coverage. Upload human-readable and machine-readable reports. A Java maintainability tool and formula must be documented and reproducible before enforcing the same numeric target; Radon measures Python and must not be presented as a Java metric. Until that tool is selected, report Java maintainability as unmeasured.
 
 ## Tests that demonstrate behavior
 
@@ -127,7 +127,7 @@ Continue to delegate package operations to NEMESIS. Require explicit confirmatio
 
 ## Release requirements
 
-The pipeline publishes a tagged release after a push to `main` only after Python quality gates, host and Android view tests, APK compilation, and bundle validation succeed. Java coverage is still reported without a blocking threshold. PR and manual runs do not publish. See [release details](docs/BUILD-AND-TEST.md#automatic-releases).
+The pipeline publishes a tagged release after a push to `main` only after Python quality gates, host and Android view tests, APK compilation, and bundle validation succeed. Java coverage is enforced separately by the Java quality workflow; the release job does not depend on that separate workflow. PR and manual runs do not publish. See [release details](docs/BUILD-AND-TEST.md#automatic-releases).
 
 A release implementation must:
 
