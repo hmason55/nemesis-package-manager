@@ -22,6 +22,11 @@ module.exports = async function publish({github, context, version, directory = '
   if (!ref) await github.rest.git.createRef({...repo, ref: `refs/tags/${tag}`, sha: context.sha});
   let release = await optional(() => github.rest.repos.getReleaseByTag({...repo, tag}));
   if (!release) {
+    // getReleaseByTag omits drafts; recover partially uploaded drafts via listing.
+    const releases = await github.paginate(github.rest.repos.listReleases, {...repo, per_page: 100});
+    release = releases.find(candidate => candidate.tag_name === tag);
+  }
+  if (!release) {
     const notes = (await github.rest.repos.generateReleaseNotes({...repo, tag_name: tag, target_commitish: context.sha})).data;
     release = (await github.rest.repos.createRelease({...repo, tag_name: tag, target_commitish: context.sha,
       name: `Package Manager ${version}`, draft: true, prerelease: false,

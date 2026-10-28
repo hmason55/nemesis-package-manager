@@ -10,20 +10,27 @@ function fixture(t) {
   t.after(() => fs.rmSync(directory, {recursive: true, force: true}));
   fs.writeFileSync(path.join(directory, 'usb-package-manager-ready.zip'), 'usb fixture');
   fs.writeFileSync(path.join(directory, 'usb.package.manager.zip'), 'installer fixture');
-  const state = {ref: null, release: null, assets: [], published: 0};
+  const state = {ref: null, release: null, assets: [], published: 0, created: 0};
   const missing = () => { const error = new Error('Missing'); error.status = 404; throw error; };
   const github = {rest: {git: {
     getRef: async () => ({data: state.ref || missing()}),
     createRef: async args => { state.ref = {object: {sha: args.sha}}; return {data: state.ref}; }
   }, repos: {
-    getReleaseByTag: async () => ({data: state.release || missing()}),
+    getReleaseByTag: async () => ({data: (state.release && !state.release.draft) ? state.release : missing()}),
+    listReleases: async () => {},
     generateReleaseNotes: async () => ({data: {body: 'Changes: example merged PR'}}),
-    createRelease: async args => { state.release = {...args, id: 1}; return {data: state.release}; },
+    createRelease: async args => { state.created++; state.release = {...args, id: 1}; return {data: state.release}; },
     listReleaseAssets: async () => {},
     uploadReleaseAsset: async args => { state.assets.push({...args, id: state.assets.length + 1}); },
     getReleaseAsset: async args => ({data: state.assets.find(a => a.id === args.asset_id).data}),
     updateRelease: async () => { state.release.draft = false; state.published++; }
-  }}, paginate: async () => state.assets};
+  }}, paginate: async endpoint => {
+    if (endpoint === github.rest.repos.listReleases) {
+      return [{tag_name: 'unrelated', draft: true, id: 999}, ...(state.release ? [state.release] : [])];
+    }
+    assert.equal(endpoint, github.rest.repos.listReleaseAssets);
+    return state.assets;
+  }};
   const context = {eventName: 'push', ref: 'refs/heads/main', sha: 'tested-sha', repo: {owner: 'example', repo: 'manager'}};
   return {github, context, directory, state, version: '0.2.0-build.42'};
 }
@@ -59,9 +66,12 @@ test('failed upload stays unpublished and retry resumes without duplicate assets
   };
   await assert.rejects(publish(f), /network failed/);
   assert.equal(f.state.release.draft, true);
+  const originalDraft = f.state.release;
   assert.equal(f.state.published, 0);
   f.github.rest.repos.uploadReleaseAsset = upload;
   await publish(f);
+  assert.equal(f.state.release, originalDraft);
+  assert.equal(f.state.created, 1);
   assert.equal(f.state.assets.length, 3);
   assert.equal(f.state.published, 1);
   f.state.assets[0].data = Buffer.from('different');

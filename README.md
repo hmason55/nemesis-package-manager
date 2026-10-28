@@ -116,7 +116,11 @@ Files in `dist/`:
 
 GitHub Actions includes an equivalent workflow and uploads both artifacts. Build locally or upload this source to a GitHub repository and run the `Build USB Package Manager` workflow.
 
-## References
+## License
+
+This project is licensed under the GNU Affero General Public License, version 3. See [LICENSE](LICENSE) for the full terms.
+
+## Project references
 
 For development, testing, quality targets, and release requirements, see [CONTRIBUTING.md](CONTRIBUTING.md).
 
