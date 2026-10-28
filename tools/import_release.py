@@ -12,6 +12,11 @@ MAX_ENTRIES = 20000
 MAX_UNCOMPRESSED = 3 * 1024**3
 
 
+def is_data_name(name):
+    # Reserve Windows aliases too, even when preparing the drive on Linux.
+    return name.rstrip(' .').casefold() == 'data'
+
+
 def read_config(content):
     cfg = configparser.ConfigParser(interpolation=None)
     cfg.read_string(content.decode('utf-8-sig'))
@@ -72,7 +77,7 @@ def import_release(source, usb, name=None, overwrite=False):
         kind, prefix = detect(z)
         if dst.exists() and overwrite:
             for child in dst.iterdir():
-                if child.name == 'data': continue
+                if is_data_name(child.name): continue
                 if child.is_dir(): shutil.rmtree(child)
                 else: child.unlink()
         dst.mkdir(exist_ok=True)
@@ -87,7 +92,7 @@ def import_release(source, usb, name=None, overwrite=False):
                     if not rel.startswith(prefix): continue
                     rel = rel[len(prefix):]
                 if not rel: continue
-                if PurePosixPath(rel).parts[0] == 'data':
+                if is_data_name(PurePosixPath(rel).parts[0]):
                     # Release archives do not overwrite exported/user data.
                     continue
                 target = dst.joinpath(*PurePosixPath(rel).parts)

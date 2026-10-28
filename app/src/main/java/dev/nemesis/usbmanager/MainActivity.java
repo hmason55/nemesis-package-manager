@@ -4,6 +4,8 @@ import android.app.Activity;
 import android.app.AlertDialog;
 import android.content.DialogInterface;
 import android.os.Bundle;
+import android.os.Handler;
+import android.content.Context;
 import android.graphics.Color;
 import android.graphics.Typeface;
 import android.view.Gravity;
@@ -37,6 +39,34 @@ public final class MainActivity extends Activity {
     private Button uninstall;
     private Button launch;
     private volatile boolean busy;
+    private static final OperationCoordinator operations = new OperationCoordinator();
+    private final Handler handler = new Handler();
+    private boolean resumed;
+    private final Runnable monitorOperation = new Runnable() {
+        public void run() {
+            if (!resumed) return;
+            updateButtons();
+            if (operations.isRunning()) {
+                status.setText("Package operation in progress. Do not remove USB.");
+                handler.postDelayed(this, 500);
+            } else {
+                OperationCoordinator.Completion result = operations.takeCompletion();
+                if (result != null) message(result.success ? "Completed" : "Failed", result.output);
+                refresh();
+            }
+        }
+    };
+
+    @Override protected void onResume() {
+        super.onResume();
+        resumed = true;
+        monitorOperation.run();
+    }
+    @Override protected void onPause() {
+        resumed = false;
+        handler.removeCallbacks(monitorOperation);
+        super.onPause();
+    }
     private final int BG = Color.rgb(20, 24, 30);
     private final int PANEL = Color.rgb(38, 45, 55);
     private final int TEXT = Color.rgb(235, 238, 244);
@@ -95,15 +125,17 @@ public final class MainActivity extends Activity {
         updateButtons();
     }
     private void updateButtons() {
+        boolean unavailable = busy || operations.isRunning();
         boolean chosen = selected >= 0 && selected < items.size();
         PackageScanner.Item item = chosen ? items.get(selected) : null;
-        action.setEnabled(!busy && chosen && !PackageScanner.BROKEN.equals(item.kind) && !"installed".equals(item.kind) && !item.locked);
-        launch.setEnabled(!busy && chosen && item.installed && item.id != null);
-        uninstall.setEnabled(!busy && chosen && item.installed && !item.locked && item.id != null);
-        folder.setEnabled(!busy && chosen && item.dataDir() != null);
+        action.setEnabled(!unavailable && chosen && !PackageScanner.BROKEN.equals(item.kind) && !"installed".equals(item.kind) && !item.locked &&
+            (item.installedStateKnown || PackageScanner.EXECUTE.equals(item.kind)));
+        launch.setEnabled(!unavailable && chosen && item.installedStateKnown && item.installed && item.id != null);
+        uninstall.setEnabled(!unavailable && chosen && item.installedStateKnown && item.installed && !item.locked && item.id != null);
+        folder.setEnabled(!unavailable && chosen && item.dataDir() != null);
     }
     private void refresh() {
-        if (busy) return;
+        if (busy || operations.isRunning()) return;
         busy = true;
         selected = -1; updateButtons();
         status.setText("Scanning USB and installed NEMESIS packages...");
@@ -111,18 +143,13 @@ public final class MainActivity extends Activity {
             public void run() {
                 final File nextUsb = PackageScanner.findUsbRoot();
                 final ArrayList<PackageScanner.Item> next = PackageScanner.scan(nextUsb);
-                String installed = NemesisCli.run("pkg-list").out;
-                final Map<String, String> names = new HashMap<String, String>();
-                final Set<String> locked = new HashSet<String>();
-                for (String line : installed.split("\n")) {
-                    String[] a = line.split("\\|");
-                    if (a.length >= 3 && PackageScanner.validId(a[0])) {
-                        names.put(a[0], a[1]);
-                        if ("1".equals(a[2])) locked.add(a[0]);
-                    }
-                }
+                NemesisCli.Result query = NemesisCli.run("pkg-list");
+                final InstalledPackages registry = InstalledPackages.parse(query.rc, query.out);
+                final Map<String, String> names = registry.names;
+                final Set<String> locked = registry.locked;
                 final Set<String> seen = new HashSet<String>();
                 for (PackageScanner.Item item : next) {
+                    item.installedStateKnown = registry.available();
                     item.installed = item.id != null && names.containsKey(item.id);
                     item.locked = item.id != null && locked.contains(item.id);
                     if (item.id != null) seen.add(item.id);
@@ -147,8 +174,9 @@ public final class MainActivity extends Activity {
                             labels.add(label);
                         }
                         list.setAdapter(new ArrayAdapter<String>(MainActivity.this, android.R.layout.simple_list_item_activated_1, labels));
-                        status.setText(usb == null ? "USB/packages not detected; showing installed packages" :
-                            usb.getAbsolutePath() + "/packages/ | " + items.size() + " entries");
+                        status.setText(!registry.available() ? registry.error :
+                            (usb == null ? "USB/packages not detected; showing installed packages" :
+                            usb.getAbsolutePath() + "/packages/ | " + items.size() + " entries"));
                         busy = false; updateButtons();
                     }
                 });
@@ -157,8 +185,9 @@ public final class MainActivity extends Activity {
     }
 
     private void chooseAction() {
-        if (selected < 0 || selected >= items.size()) return;
+        if (selected < 0 || selected >= items.size() || busy || operations.isRunning()) return;
         final PackageScanner.Item item = items.get(selected);
+        if (!item.installedStateKnown && !PackageScanner.EXECUTE.equals(item.kind)) return;
         final String verb = PackageScanner.EXECUTE.equals(item.kind) ? "RUN SCRIPT" :
             (item.installed ? "UPDATE PACKAGE" : "INSTALL PACKAGE");
         String warning = "Selected: " + item.title + "\n" + item.detail +
@@ -173,23 +202,7 @@ public final class MainActivity extends Activity {
             }).show();
     }
     private void perform(final PackageScanner.Item item) {
-        status.setText("Working on " + item.title + ". Do not remove USB.");
-        busy = true; updateButtons();
-        new Thread(new Runnable() {
-            public void run() {
-                final NemesisCli.Result result = PackageScanner.EXECUTE.equals(item.kind)
-                    ? NemesisCli.execute(item) : NemesisCli.install(MainActivity.this, item);
-                final String log = "Return code: " + result.rc + "\n" + result.out;
-                writeActionLog(item, log);
-                runOnUiThread(new Runnable() {
-                    public void run() {
-                        busy = false;
-                        message(result.rc == 0 ? "Completed" : "Failed", log);
-                        refresh();
-                    }
-                });
-            }
-        }).start();
+        startOperation(item, null);
     }
     private void confirmUninstall() {
         if (selected < 0 || selected >= items.size() || busy) return;
@@ -215,21 +228,32 @@ public final class MainActivity extends Activity {
             }).show();
     }
     private void performCommand(final PackageScanner.Item item, final String command) {
-        busy = true; updateButtons();
-        status.setText("Running " + command + " " + item.id + "...");
-        new Thread(new Runnable() {
-            public void run() {
-                final NemesisCli.Result result = NemesisCli.run(command, item.id);
-                writeActionLog(item, "Operation: " + command + "\nReturn code: " + result.rc + "\n" + result.out);
-                runOnUiThread(new Runnable() {
-                    public void run() {
-                        busy = false;
-                        message(result.rc == 0 ? "Completed" : "Failed", result.out);
-                        refresh();
-                    }
-                });
-            }
-        }).start();
+        startOperation(item, command);
+    }
+    private void startOperation(PackageScanner.Item item, String command) {
+        if (busy || !operations.start(new PackageTask(getApplicationContext(), item, command))) {
+            message("Busy", "A package operation is already in progress or awaiting its result.");
+            return;
+        }
+        handler.removeCallbacks(monitorOperation);
+        monitorOperation.run();
+    }
+    // A worker must not retain an activity or call its dialogs after it closes.
+    private static final class PackageTask implements OperationCoordinator.Task {
+        private final Context context;
+        private final PackageScanner.Item item;
+        private final String command;
+        PackageTask(Context context, PackageScanner.Item item, String command) {
+            this.context = context; this.item = item; this.command = command;
+        }
+        public OperationCoordinator.Completion run() {
+            NemesisCli.Result result = command != null ? NemesisCli.run(command, item.id) :
+                (PackageScanner.EXECUTE.equals(item.kind) ? NemesisCli.execute(item) : NemesisCli.install(context, item));
+            String log = (command == null ? "" : "Operation: " + command + "\n") +
+                "Return code: " + result.rc + "\n" + result.out;
+            writeActionLog(item, log);
+            return new OperationCoordinator.Completion(result.rc == 0, log);
+        }
     }
     private void dataFolder() {
         if (selected < 0 || selected >= items.size()) return;
@@ -248,7 +272,7 @@ public final class MainActivity extends Activity {
             "Check the package's own documentation for its configurable output directory.");
         message("App data", content);
     }
-    private void writeActionLog(PackageScanner.Item item, String result) {
+    private static void writeActionLog(PackageScanner.Item item, String result) {
         try {
             File dir = item.dataDir();
             if (dir == null) return;

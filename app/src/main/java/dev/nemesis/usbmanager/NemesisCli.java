@@ -43,9 +43,13 @@ final class NemesisCli {
         File zip = item.target;
         boolean temporary = PackageScanner.RAW.equals(item.kind);
         if (temporary) {
-            zip = new File(context.getCacheDir(), "source-package.zip");
-            try { zipDirectory(item.folder, zip); }
-            catch (Exception e) { return new Result(1, "Could not package source folder: " + e.getMessage()); }
+            try {
+                zip = File.createTempFile("source-package-", ".zip", context.getCacheDir());
+                zipDirectory(item.folder, zip);
+            } catch (Exception e) {
+                if (zip != item.target) zip.delete();
+                return new Result(1, "Could not package source folder: " + e.getMessage());
+            }
         }
         try {
             Result info = run("pkg-info", zip.getAbsolutePath());
