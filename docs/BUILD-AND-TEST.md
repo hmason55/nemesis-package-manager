@@ -18,10 +18,10 @@ Each release contains the two installer ZIPs and `SHA256SUMS`, generated change 
 
 ## Local build commands
 
-Install Java 17+, Android SDK platform 35/build tools, and Gradle 8.10.2. Accept SDK licenses. Then:
+Follow the [contributor setup](../CONTRIBUTING.md#development-setup) for JDK 17, Python 3.12, and Android SDK platform 35/build tools 35.0.0. Accept SDK licenses. The checked-in wrapper downloads Gradle 8.10.2 and verifies its SHA-256; no global Gradle installation is needed. Then:
 
 ```shell
-gradle --no-daemon :app:assembleDebug
+bash gradlew --no-daemon :app:assembleDebug
 python3 tools/build_release.py app/build/outputs/apk/debug/app-debug.apk
 ```
 
@@ -42,10 +42,12 @@ These verify the Python USB importer (including preservation of Windows data-fol
 Android UI smoke tests run separately under Robolectric with API 19, including readable result text under a light OEM-style theme, confirmation/cancel behavior, scrolling long output in landscape, and package list selection/actions:
 
 ```shell
-gradle -p tests/ui --no-daemon test
+bash gradlew -p tests/ui --no-daemon jacocoTestReport
 ```
 
 These tests use simulated Android views, not a vehicle. The Actions workflow runs them before building the APK.
+
+In PowerShell, replace `bash gradlew` with `.\gradlew.bat`. See the [local validation checklist](../CONTRIBUTING.md#local-validation) for the Python formatting, coverage, maintainability, and Node workflow-script checks required by CI.
 
 ## Manual hardware smoke test
 

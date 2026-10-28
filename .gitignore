@@ -8,3 +8,22 @@ dist/
 *.keystore
 __pycache__/
 *.pyc
+
+# Python development environments, caches, and reports
+.venv/
+venv/
+.ruff_cache/
+.pytest_cache/
+.coverage
+.coverage.*
+/coverage.json
+/coverage.xml
+htmlcov/
+
+# Local credentials and operating-system files
+.env
+.env.*
+!.env.example
+*.jks
+.DS_Store
+Thumbs.db

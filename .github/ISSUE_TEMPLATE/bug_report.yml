@@ -1,0 +1,47 @@
+name: Bug report
+description: Report a reproducible problem with Package Manager or its tools.
+body:
+  - type: markdown
+    attributes:
+      value: |
+        Search existing issues first. For vulnerabilities, follow [the security policy](https://github.com/hmason55/nemesis-package-manager/blob/main/SECURITY.md).
+        Remove credentials, VINs, personal paths, and recordings from anything you share. Do not repeat a potentially damaging operation on a vehicle to reproduce a bug.
+  - type: input
+    id: version
+    attributes:
+      label: Release version or commit
+      description: Include the version or commit you tested.
+    validations:
+      required: true
+  - type: textarea
+    id: environment
+    attributes:
+      label: Environment
+      description: Host OS and tool versions for development issues, or head unit model, Android/firmware, and NEMESIS version for device issues. Identify simulated tests.
+    validations:
+      required: true
+  - type: textarea
+    id: steps
+    attributes:
+      label: Steps to reproduce
+      description: Include the action and relevant package layout. A minimal example using disposable files is helpful.
+    validations:
+      required: true
+  - type: textarea
+    id: expected
+    attributes:
+      label: Expected behavior
+    validations:
+      required: true
+  - type: textarea
+    id: actual
+    attributes:
+      label: Actual behavior
+      description: Include the error message and whether any data was affected.
+    validations:
+      required: true
+  - type: textarea
+    id: evidence
+    attributes:
+      label: Logs or screenshots (optional)
+      description: Include sanitized diagnostic output and any workaround you tried.

@@ -46,16 +46,14 @@ jobs:
       - name: Install required Android SDK components
         run: sdkmanager --install "platforms;android-35" "build-tools;35.0.0"
       - uses: gradle/actions/setup-gradle@v4
-        with:
-          gradle-version: '8.10.2'
       - name: Run host tests
         run: bash tests/run_tests.sh
       - name: Test release publication without publishing
         run: node --test .github/scripts/*.test.cjs
       - name: Run Android API 19 UI smoke tests
-        run: gradle -p tests/ui --no-daemon test
+        run: bash gradlew -p tests/ui --no-daemon test
       - name: Build Android 4.4-compatible APK
-        run: gradle --no-daemon --stacktrace :app:assembleDebug
+        run: bash gradlew --no-daemon --stacktrace :app:assembleDebug
       - name: Create NEMESIS USB bundles
         run: python3 tools/build_release.py app/build/outputs/apk/debug/app-debug.apk
       - uses: actions/upload-artifact@v4

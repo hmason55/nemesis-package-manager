@@ -16,10 +16,8 @@ jobs:
           distribution: temurin
           java-version: '17'
       - uses: gradle/actions/setup-gradle@v4
-        with:
-          gradle-version: '8.10.2'
       - name: Run unit and Android view tests with coverage
-        run: gradle -p tests/ui --no-daemon jacocoTestReport
+        run: bash gradlew -p tests/ui --no-daemon jacocoTestReport
       - name: Summarize coverage against the targets
         run: |
           python3 - <<'PY'

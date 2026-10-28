@@ -1,0 +1,4 @@
+# Match .github/workflows/python-quality.yml. Runtime tools use the standard library.
+coverage==7.6.12
+radon==6.0.1
+ruff==0.9.10

@@ -50,7 +50,11 @@ Successful builds on `main` publish tagged releases with change notes and SHA-25
 
 - [Build, tests, and releases](docs/BUILD-AND-TEST.md)
 - [Contribution and quality standards](CONTRIBUTING.md)
+- [Code of conduct](CODE_OF_CONDUCT.md)
+- [Report a security vulnerability privately](SECURITY.md)
 - [NEMESIS documentation](https://github.com/xwtk/hmg_nemesis)
+
+New contributors can start with the [development setup and first PR walkthrough](CONTRIBUTING.md#first-contribution). Documentation fixes and host-side tests do not require a vehicle. Use the [issue templates](https://github.com/hmason55/nemesis-package-manager/issues/new/choose) for bugs and feature requests.
 
 ## License
 
