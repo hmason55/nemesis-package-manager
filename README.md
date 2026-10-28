@@ -114,6 +114,8 @@ GitHub Actions includes an equivalent workflow and uploads both artifacts. Build
 
 ## References
 
+For development, testing, quality targets, and release requirements, see [CONTRIBUTING.md](CONTRIBUTING.md).
+
 - [NEMESIS package specification](https://github.com/xwtk/hmg_nemesis/blob/main/04-Packages.md)
 - [NEMESIS USB handler](https://github.com/xwtk/hmg_nemesis/blob/main/05-Run-Scripts.md)
 - [NEMESIS Manager source](https://github.com/xwtk/hmg_nemesis/tree/main/Sources/manager)
