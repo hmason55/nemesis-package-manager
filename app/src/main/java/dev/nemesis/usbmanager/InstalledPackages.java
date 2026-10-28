@@ -10,9 +10,38 @@ final class InstalledPackages {
     final Map<String, String> names = new HashMap<String, String>();
     final Set<String> locked = new HashSet<String>();
     final Map<String, String> types = new HashMap<String, String>();
+    final Map<String, String> versions = new HashMap<String, String>();
     final String error;
     private InstalledPackages(String error) { this.error = error; }
     boolean available() { return error == null; }
+
+    String versionQuery() {
+        StringBuilder command = new StringBuilder();
+        for (String id : new java.util.TreeSet<String>(names.keySet())) {
+            if (!PackageScanner.validId(id)) continue;
+            command.append("printf '\\n[installed:").append(id).append("]\\n'; cat '/data/nemesis/apps/")
+                .append(id).append("/NEMESIS.data' 2>/dev/null; ");
+        }
+        return command.append("true").toString();
+    }
+
+    void readVersions(int rc, String output) {
+        if (rc != 0 || output == null) return;
+        String id = null;
+        boolean metadata = false;
+        for (String raw : output.split("\n")) {
+            String line = raw.trim();
+            if (line.startsWith("[installed:") && line.endsWith("]")) {
+                id = line.substring(11, line.length() - 1); metadata = false;
+            } else if (line.startsWith("[")) {
+                metadata = "[nemesis]".equalsIgnoreCase(line.replace("\uFEFF", ""));
+            } else if (metadata && id != null && names.containsKey(id)) {
+                int equals = line.indexOf('=');
+                if (equals > 0 && "version".equalsIgnoreCase(line.substring(0, equals).trim()))
+                    versions.put(id, line.substring(equals + 1).trim());
+            }
+        }
+    }
 
     static InstalledPackages parse(int rc, String output) {
         if (rc != 0) {

@@ -4,7 +4,73 @@ import java.io.File;
 
 /** Plain text shared by the package list, details, and operation results. */
 final class PackagePresentation {
+    static final int INSTALLED = 0;
+    static final int UPDATES = 1;
+    static final int NOT_INSTALLED = 2;
+    static final int SCRIPTS = 3;
     private PackagePresentation() { }
+    // Only order numeric releases and the manager's numeric build suffix.
+    // Authors use arbitrary version strings; unknown ordering must stay explicit.
+    static Integer compareVersions(String candidate, String installed) {
+        if (candidate == null || installed == null || candidate.trim().length() == 0 || installed.trim().length() == 0) return null;
+        candidate = candidate.trim(); installed = installed.trim();
+        if (candidate.equals(installed)) return 0;
+        if (!candidate.matches("[0-9]+(\\.[0-9]+)*(-build\\.[0-9]+)?") ||
+            !installed.matches("[0-9]+(\\.[0-9]+)*(-build\\.[0-9]+)?")) return null;
+        String[] a = candidate.replace("-build.", ".").split("\\.");
+        String[] b = installed.replace("-build.", ".").split("\\.");
+        for (int i = 0; i < Math.max(a.length, b.length); i++) {
+            java.math.BigInteger x = new java.math.BigInteger(i < a.length ? a[i] : "0");
+            java.math.BigInteger y = new java.math.BigInteger(i < b.length ? b[i] : "0");
+            int difference = x.compareTo(y);
+            if (difference != 0) return difference;
+        }
+        return 0;
+    }
+    static boolean updateAvailable(PackageScanner.Item item) {
+        Integer comparison = compareVersions(item.version, item.installedVersion);
+        return item.installedStateKnown && item.installed && !item.locked &&
+            !PackageScanner.EXECUTE.equals(item.kind) && !PackageScanner.BROKEN.equals(item.kind) &&
+            !"installed".equals(item.kind) && comparison != null && comparison > 0;
+    }
+    static boolean canInstall(PackageScanner.Item item) {
+        if (item == null || item.locked || PackageScanner.BROKEN.equals(item.kind) || "installed".equals(item.kind)) return false;
+        if (PackageScanner.EXECUTE.equals(item.kind)) return true;
+        if (!item.installedStateKnown || (isManager(item) && !item.installed)) return false;
+        Integer comparison = compareVersions(item.version, item.installedVersion);
+        return !item.installed || comparison == null || comparison > 0;
+    }
+    static boolean inCategory(PackageScanner.Item item, int category) {
+        if (category == SCRIPTS) return PackageScanner.EXECUTE.equals(item.kind);
+        if (PackageScanner.EXECUTE.equals(item.kind)) return false;
+        if (category == NOT_INSTALLED) return item.installedStateKnown && !item.installed;
+        if (category == UPDATES) return updateAvailable(item);
+        return category == INSTALLED && item.installedStateKnown && item.installed;
+    }
+    static String installedVersion(PackageScanner.Item item) {
+        if (PackageScanner.EXECUTE.equals(item.kind)) return "N/A";
+        if (!item.installedStateKnown) return "Unknown";
+        if (!item.installed) return "Not installed";
+        return versionText(item.installedVersion);
+    }
+    static String usbVersion(PackageScanner.Item item) {
+        return "installed".equals(item.kind) ? "No installer" : versionText(item.version);
+    }
+    static String versionColumn(PackageScanner.Item item, int category) {
+        if (category == UPDATES)
+            return formattedVersion(item.installedVersion) + " \u2192 " + formattedVersion(item.version);
+        if (category == INSTALLED)
+            return item.installedStateKnown && item.installed ? formattedVersion(item.installedVersion) : installedVersion(item);
+        return "installed".equals(item.kind) ? usbVersion(item) : formattedVersion(item.version);
+    }
+    private static String formattedVersion(String version) {
+        String value = versionText(version);
+        if ("Unknown".equals(value) || value.startsWith("v") || value.startsWith("V")) return value;
+        return "v" + value;
+    }
+    private static String versionText(String version) {
+        return version == null || version.trim().length() == 0 ? "Unknown" : version.trim();
+    }
     static boolean isManager(PackageScanner.Item item) {
         return item != null && "usb.package.manager".equals(item.id);
     }
@@ -19,20 +85,27 @@ final class PackagePresentation {
     }
     static String state(PackageScanner.Item item) {
         if (!item.installedStateKnown) return "Installed state unavailable";
-        if (item.locked) return "Installed Â· Locked";
+        if (PackageScanner.EXECUTE.equals(item.kind)) return "Script";
+        if (item.locked) return "Installed | Locked";
+        if (updateAvailable(item)) return "Update available";
         if (item.installed) return "Installed";
         return PackageScanner.EXECUTE.equals(item.kind) ? "Script" : "Not installed";
     }
     static String subtitle(PackageScanner.Item item) {
         if (PackageScanner.BROKEN.equals(item.kind)) return "Invalid installer";
         String state = state(item);
-        if (item.version != null && item.version.length() > 0) state += " Â· Installer " + item.version;
+        if (item.installed && !PackageScanner.EXECUTE.equals(item.kind))
+            state += " | Installed " + (item.installedVersion == null || item.installedVersion.length() == 0 ? "version unknown" : item.installedVersion);
+        if (item.version != null && item.version.length() > 0) state += " | USB " + item.version;
         return state;
     }
     static String action(PackageScanner.Item item) {
         if (item == null || "installed".equals(item.kind)) return "Install";
         if (PackageScanner.EXECUTE.equals(item.kind)) return "Run script";
-        return item.installed ? "Update" : "Install";
+        if (!item.installed) return "Install";
+        Integer comparison = compareVersions(item.version, item.installedVersion);
+        if (comparison == null) return "Install version";
+        return comparison == 0 ? "Up to date" : comparison > 0 ? "Update" : "Older installer";
     }
     static boolean canLaunch(PackageScanner.Item item) {
         if (!item.installedStateKnown || !item.installed || !PackageScanner.validId(item.id)) return false;
@@ -56,6 +129,9 @@ final class PackagePresentation {
         if (isManager(item)) text.append("\n\nUse Update to install the manager bundle on this drive through NEMESIS. Remove Package Manager from NEMESIS Manager's Packages screen.");
         if (item.id != null && item.id.length() > 0) text.append("\nPackage ID: ").append(item.id);
         if (item.version != null && item.version.length() > 0) text.append("\nUSB version: ").append(item.version);
+        if (item.installed) text.append("\nInstalled version: ").append(item.installedVersion == null ? "Unknown" : item.installedVersion);
+        if (item.installed && compareVersions(item.version, item.installedVersion) == null)
+            text.append("\nVersion ordering is unavailable. Install version uses the selected USB installer; check its release instructions first.");
         if (item.error != null) text.append("\n\nProblem: ").append(item.error);
         if (item.target != null) text.append("\n\nUSB source:\n").append(item.target.getAbsolutePath());
         else if (item.folder != null) text.append("\n\nUSB folder:\n").append(item.folder.getAbsolutePath());

@@ -13,6 +13,12 @@ public final class InstalledPackagesTest {
         InstalledPackages recovered = InstalledPackages.parse(0, "demo|Demo|0|application\r\ncore|Core|1|service\n");
         check(recovered.available() && recovered.names.size() == 2, "refresh recovers registry");
         check(recovered.locked.contains("core") && !recovered.locked.contains("demo"), "lock state preserved");
+        recovered.readVersions(0, "[installed:demo]\n[nemesis]\nversion = 1.2.3\n[launch]\nversion=wrong\n[installed:core]\n[nemesis]\nversion=2\n");
+        check("1.2.3".equals(recovered.versions.get("demo")), "installed manifest version uses nemesis section only");
+        check("2".equals(recovered.versions.get("core")), "multiple installed versions parsed");
+        recovered.readVersions(1, "[installed:demo]\n[nemesis]\nversion=wrong\n");
+        check("1.2.3".equals(recovered.versions.get("demo")), "failed metadata reads do not replace versions");
+        check(recovered.versionQuery().contains("/data/nemesis/apps/demo/NEMESIS.data"), "reads NEMESIS installed metadata");
         PackageScanner.Item item = new PackageScanner.Item();
         item.title = "Demo"; item.kind = PackageScanner.INSTALL; item.installedStateKnown = failed.available();
         check(item.label().contains("INSTALLED STATE UNAVAILABLE"), "USB entry exposes unknown state");

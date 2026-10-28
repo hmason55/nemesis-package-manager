@@ -66,6 +66,6 @@ In PowerShell, replace `bash gradlew` with `.\gradlew.bat`. See the [local valid
 ## Known limitations
 
 - The Android UI and USB read permissions are not hardware-tested.
-- This build does not implement version comparisons, dependencies, conflict resolution, or automated batch installations.
+- Version ordering supports numeric dotted releases and numeric `-build.N` suffixes. Other differing version formats remain unknown; unavailable installed manifests cannot establish update availability. Dependencies, conflict resolution, and automated batch installations are not implemented.
 - Android framework availability and permissions vary by Gen5W firmware; the first unit test is required to establish compatibility.
 - A v1-signed debug APK is for development. Keep the signing key stable for future updates or you may need to uninstall before installing a differently signed APK.
