@@ -46,6 +46,7 @@ test('creates exact-commit tag, notes, checksums and publishes only after all up
   assert.match(f.state.release.body, /debug signed/);
   assert.equal(f.state.assets.length, 5);
   const checksums = f.state.assets.find(a => a.name === 'SHA256SUMS').data.toString();
+  assert.match(checksums, /^[a-f0-9]{64}  usb-package-manager-ready.zip/m);
   for (const name of ['usb-package-manager-ready.zip', 'usb.package.manager.zip', 'nemesis-usb-companion-windows-x86_64.zip', 'nemesis-usb-companion-linux-x86_64.tar.gz']) {
     assert.ok(checksums.includes(`  ${name}\n`));
   }
