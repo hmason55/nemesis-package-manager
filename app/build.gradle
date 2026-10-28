@@ -7,8 +7,8 @@ android {
         applicationId 'dev.nemesis.usbmanager'
         minSdk 19
         targetSdk 19
-        versionCode 2
-        versionName '0.2.0'
+        versionCode Integer.parseInt(System.getenv('NEMESIS_VERSION_CODE') ?: '2')
+        versionName System.getenv('NEMESIS_RELEASE_VERSION') ?: '0.2.0'
     }
     compileOptions {
         sourceCompatibility JavaVersion.VERSION_1_7

@@ -100,6 +100,8 @@ The Android app scans USB paths documented in the upstream project (`/storage/us
 
 ## Build
 
+Successful pushes to `main` automatically publish tagged GitHub Releases after the build and Python quality gates pass. Download the USB-ready ZIP or internal installer ZIP from the release; `SHA256SUMS` verifies their contents. Versions look like `v0.2.0-build.42`, and release notes summarize merged changes. PR builds do not publish releases. See [automatic release details](docs/BUILD-AND-TEST.md#automatic-releases).
+
 Requirements: Java 17+, Android SDK platform 35, Android Gradle Plugin 8.7.3, Gradle 8.10.2, Python 3.8+.
 
 ```bash

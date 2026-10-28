@@ -8,7 +8,15 @@ The workflow `.github/workflows/build.yml` uses Java 17, Gradle 8.10.2, and AGP 
 
 Extract the downloaded artifact wrapper on your PC, then extract its `usb-package-manager-ready.zip` onto the normal USB. Installing a new build over an existing manager requires the explicit update procedure in [SETUP-WINDOWS.md](SETUP-WINDOWS.md#e-update-usb-package-manager-itself); copying files alone does not update the installed APK.
 
-## Local build
+## Automatic releases
+
+After this workflow change is merged, every successful push to `main` publishes a GitHub Release. Python quality gates, host tests, Android view tests, APK compilation, and bundle validation must pass first. PR and manually dispatched runs build artifacts but never publish releases.
+
+Versions use the Android base version plus the workflow run number, for example `0.2.0-build.42`, tagged as `v0.2.0-build.42` at the tested commit. CI writes the same version into the APK and NEMESIS manifest and assigns an increasing Android version code. Local builds retain the checked-in version defaults.
+
+Each release contains the two installer ZIPs and `SHA256SUMS`, generated change notes since the previous release, and links to update instructions. These remain experimental debug-signed builds. Uploads are staged in an unpublished release until complete; retries verify tag identity and existing asset contents instead of overwriting published files. A failed publishing run can be rerun after resolving the error.
+
+## Local build commands
 
 Install Java 17+, Android SDK platform 35/build tools, and Gradle 8.10.2. Accept SDK licenses. Then:
 
