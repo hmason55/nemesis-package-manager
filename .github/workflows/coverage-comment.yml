@@ -1,0 +1,26 @@
+name: PR coverage comment
+on:
+  workflow_run:
+    workflows: [Python quality, Java tests and coverage]
+    types: [completed]
+permissions:
+  contents: read
+  actions: read
+  pull-requests: write
+concurrency:
+  group: coverage-comment-${{ github.event.workflow_run.head_sha }}
+  cancel-in-progress: false
+jobs:
+  comment:
+    if: github.event.workflow_run.event == 'pull_request'
+    runs-on: ubuntu-latest
+    steps:
+      # workflow_run uses trusted default-branch code, never the PR checkout.
+      - uses: actions/checkout@v4
+        with:
+          ref: ${{ github.event.repository.default_branch }}
+          persist-credentials: false
+      - uses: actions/github-script@v7
+        with:
+          script: |
+            await require('./.github/scripts/coverage-comment.cjs')({github, context, core});

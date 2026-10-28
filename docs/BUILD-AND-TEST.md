@@ -29,6 +29,8 @@ Do not use `tools/build_release.py` with an unbuilt source archive or placeholde
 
 ## Host-side tests
 
+Once the coverage-comment workflow is merged onto the default branch, PR quality runs post or update one **Code coverage** comment with separate Java/Python line and branch badges, measured percentages, the 85% targets, and report links. The comment refreshes as each language's run completes. Missing reports are marked unavailable, and results from older commits cannot replace current results. The reporter runs trusted default-branch code and reads report artifacts without executing PR code. Its first installation PR will not receive automatic comments until this workflow is on the default branch.
+
 Pull requests run the **Python quality** workflow (unit tests, separate 85% line/branch gates, and module maintainability index >60) and **Java tests and coverage** workflow (JUnit/Robolectric with JaCoCo XML/HTML reports). Java coverage is summarized against the same target with explicit warnings while the existing shortfall is being addressed; the Java 85% target is not yet a blocking gate. Radon maintainability scores apply to Python only. Reports are downloadable from each workflow run.
 
 ```shell

@@ -51,7 +51,7 @@ jobs:
       - name: Run host tests
         run: bash tests/run_tests.sh
       - name: Test release publication without publishing
-        run: node --test .github/scripts/publish-release.test.cjs
+        run: node --test .github/scripts/*.test.cjs
       - name: Run Android API 19 UI smoke tests
         run: gradle -p tests/ui --no-daemon test
       - name: Build Android 4.4-compatible APK
