@@ -43,7 +43,6 @@ public final class MainActivity extends Activity {
     private Button launch;
     private Button refreshButton;
     private boolean busy;
-    private boolean selfUpdatePending;
     private ProgressBar progress;
     private boolean destroyed;
     private static final OperationCoordinator operations = new OperationCoordinator();
@@ -63,7 +62,6 @@ public final class MainActivity extends Activity {
             } else {
                 final OperationCoordinator.Completion result = operations.takeCompletion();
                 if (result != null) {
-                    if ("Update started".equals(result.title)) selfUpdatePending = true;
                     showResult(result);
                     updateButtons();
                 }
@@ -160,7 +158,7 @@ public final class MainActivity extends Activity {
     private PackageScanner.Item selection() {
         return selected >= 0 && selected < items.size() ? items.get(selected) : null;
     }
-    private boolean unavailable() { return busy || operations.isRunning() || selfUpdatePending; }
+    private boolean unavailable() { return busy || operations.isRunning(); }
     private void updateButtons() {
         progress.setVisibility(unavailable() ? View.VISIBLE : View.GONE);
         PackageScanner.Item item = selection();

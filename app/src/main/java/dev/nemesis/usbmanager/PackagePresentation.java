@@ -19,14 +19,14 @@ final class PackagePresentation {
     }
     static String state(PackageScanner.Item item) {
         if (!item.installedStateKnown) return "Installed state unavailable";
-        if (item.locked) return "Installed · Locked";
+        if (item.locked) return "Installed Â· Locked";
         if (item.installed) return "Installed";
         return PackageScanner.EXECUTE.equals(item.kind) ? "Script" : "Not installed";
     }
     static String subtitle(PackageScanner.Item item) {
         if (PackageScanner.BROKEN.equals(item.kind)) return "Invalid installer";
         String state = state(item);
-        if (item.version != null && item.version.length() > 0) state += " · Installer " + item.version;
+        if (item.version != null && item.version.length() > 0) state += " Â· Installer " + item.version;
         return state;
     }
     static String action(PackageScanner.Item item) {
@@ -68,9 +68,6 @@ final class PackagePresentation {
     }
     static OperationCoordinator.Completion completion(PackageScanner.Item item, String operation, int rc, String output) {
         boolean success = rc == 0;
-        if ("manager-update".equals(operation) && success)
-            return new OperationCoordinator.Completion(true, "Update started",
-                "NEMESIS is updating Package Manager. The app will close and reopen.\n\nIf it does not reopen, launch it from NEMESIS Manager. The update log is /data/nemesis/logs/package-manager-update.log.", output);
         String verb;
         String title;
         if ("uninstall".equals(operation)) { verb = "uninstalled"; title = "Uninstall"; }
