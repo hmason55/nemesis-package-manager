@@ -102,13 +102,15 @@ python .\tools\import_release.py .\downloads\another-usb.zip --usb E:\ --name An
 1. Start with the vehicle **parked**. Insert the USB into the infotainment data port, with the head unit fully booted.
 2. Approve NEMESIS's prompt to execute `NEMESIS.sh`.
 3. The script checks that Android has booted, installs `usb.package.manager` once, and launches its activity. It does **not** install the third-party ZIPs.
-4. The on-screen app lists found USB installers and already-installed NEMESIS packages. Tap a row, then choose **Install / Run**, **Launch**, **Uninstall**, or **Data folder** as applicable.
+4. The on-screen app lists package names with short status lines. Tap a row: the main action becomes **Install**, **Update**, or **Run script**. **Launch** and **Uninstall** are enabled when applicable. **Details** shows the full installer path, package ID, USB installer version, and data/history location. **Refresh** and **Close** are in the header.
 5. Read the confirmation message before every privileged action. Install firmware-modifying packages one at a time, and follow their own compatibility and reboot instructions.
 6. Keep the USB inserted. You can reopen the manager anytime from **NEMESIS Manager -> Packages -> USB Package Manager -> Launch**, without editing `NEMESIS.data` or unplugging the drive.
 
 Both UIs operate on the same installed packages. NEMESIS Manager's current upstream **Packages** screen provides Launch and Uninstall; its installation prompt is driven by the descriptor at the USB root. USB Package Manager adds selection among nested installers under `packages/`. Packages installed here also appear in NEMESIS Manager. After changing packages in either UI, refresh this app or reopen NEMESIS Manager's Packages screen to see the result. An installed package without a USB installer can be launched or uninstalled here, but updating it requires a compatible installer on USB.
 
 Use one operation at a time across both UIs. This app's operation protection does not extend to NEMESIS Manager or external commands. Closing this app leaves its operation running; reopening it in the same app process shows progress or the pending result. Process termination and reboots do not preserve that in-memory state.
+
+The result popup names the package and operation, even if NEMESIS returned no output. Tap its **Details** button for the exit code and raw output, or **OK** to dismiss it. If the USB history could not be saved, the popup reports that separately. Uninstalling keeps the USB installer and data folder. Known service-only packages have Launch disabled because there is no app to open.
 
 ## E. Update USB Package Manager itself
 
@@ -147,11 +149,12 @@ Keep the signing identity stable between builds when possible. NEMESIS may unins
 | No NEMESIS execute prompt | NEMESIS must be installed first. Ensure `NEMESIS.data` is at the USB root and contains `type=execute`, `path=NEMESIS.sh` (not `NEMESIS.data.txt`). |
 | NEMESIS says the manager ZIP is missing | `manager\usb.package.manager.zip` must exist, still compressed. |
 | Manager shows no USB packages | Confirm `E:\packages\Name\NEMESIS.data` and that `path=` refers to a file within **that** `Name` folder. |
-| Package listed as invalid | Check `path=` syntax, missing files, or whether you imported a source archive rather than a USB-ready/installable archive. |
-| Install failed | Open `data\package-manager-history.log` and NEMESIS Manager's Logs. A package may be firmware-incompatible, broken, or require its own setup. |
+| Install failed | Tap **Details** in the result popup for the exit code and output. Also check `data\package-manager-history.log` and NEMESIS Manager's Logs. A package may be firmware-incompatible, broken, or require its own setup. |
 | Manager doesn't appear | Check `nemesis pkg-list` and Android logcat; verify `dev.nemesis.usbmanager` was installed. This prototype has not been device-tested. |
 | App's files go to another USB folder | Expected until that app is explicitly configured to use its per-package `data\` folder. |
-| INSTALLED STATE UNAVAILABLE | Read the displayed `pkg-list` error, check that NEMESIS is running, then tap Refresh. Install/update, launch, and uninstall are disabled until the query succeeds; script execution still requires its own confirmation. |
+| Installed state unavailable | Read the displayed `pkg-list` error, check that NEMESIS is running, then tap Refresh. Install/update, launch, and uninstall are disabled until the query succeeds; script execution still requires its own confirmation. |
+| Package listed as invalid | Select it and tap **Details** to read the discovery error and source location. |
+| History could not be saved | The operation result is still shown; open popup **Details** for the USB write error. Check that the drive remains connected and writable. |
 | Reopened app says an operation is in progress | Wait for that operation to finish. Closing the activity does not cancel it. Do not start a competing operation in NEMESIS Manager. |
 | Copying a new bundle did not update the app | Expected: the launcher skips installation when the manager is already installed. Follow section E for an explicit update. |
 | Execute prompt appears again on insertion | Expected: the confirmation can recur even though the manager is already installed. |

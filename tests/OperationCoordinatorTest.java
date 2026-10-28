@@ -26,7 +26,8 @@ public final class OperationCoordinatorTest {
         OperationCoordinator.Task failure = new OperationCoordinator.Task() {
             public OperationCoordinator.Completion run() { throw new IllegalStateException("failure"); }
         };
-        check(owner.start(first), "first activity can start work");
+        check(owner.start("Install Test", first), "first activity can start work");
+        check("Install Test".equals(owner.description()), "reopened activity sees the package operation label");
         check(entered.await(5, TimeUnit.SECONDS), "worker started");
         // A reopened activity uses the same owner, without the first activity's busy flag.
         check(owner.isRunning(), "reopened activity observes running work");

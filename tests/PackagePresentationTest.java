@@ -1,0 +1,48 @@
+package dev.nemesis.usbmanager;
+
+import java.io.File;
+
+public final class PackagePresentationTest {
+    static void check(boolean value, String message) { if (!value) throw new AssertionError(message); }
+    public static void main(String[] args) {
+        PackageScanner.Item item = new PackageScanner.Item();
+        item.title = "Rear Dashcam"; item.id = "dashcam"; item.kind = PackageScanner.INSTALL;
+        item.target = new File("/storage/usb0/packages/RearDashcam/packages/dashcam.zip");
+        item.folder = item.target.getParentFile(); item.version = "1.2";
+        String[] operations = { "install", "update", "uninstall", "pkg-launch", "execute" };
+        String[] verbs = { "installed", "updated", "uninstalled", "launched", "run" };
+        for (int i = 0; i < operations.length; i++) {
+            OperationCoordinator.Completion result = PackagePresentation.completion(item, operations[i], 0, "");
+            check(result.success && result.output.contains("Rear Dashcam was " + verbs[i] + " successfully."), operations[i] + " has useful summary with empty stdout");
+            check(result.details.contains("Exit code: 0") && result.details.contains("no additional output"), "empty output has explicit details");
+        }
+        OperationCoordinator.Completion failure = PackagePresentation.completion(item, "install", 7, "firmware mismatch");
+        check(!failure.success && failure.output.contains("failed for Rear Dashcam") && failure.details.contains("firmware mismatch"), "failure retains error and package identity");
+        check(failure.details.contains("Exit code: 7"), "exit code is available");
+        check(PackagePresentation.completion(item, "uninstall", 0, null).output.contains("data folder were kept"), "uninstall explains USB data retention");
+        check("Install".equals(PackagePresentation.action(item)), "new package action");
+        item.installed = true;
+        check("Update".equals(PackagePresentation.action(item)), "installed package action");
+        check(!PackagePresentation.subtitle(item).contains("/storage") && !PackagePresentation.subtitle(item).contains("Rear Dashcam"), "list does not repeat name or path");
+        check(PackagePresentation.details(item).contains(item.target.getAbsolutePath()) && PackagePresentation.details(item).contains("USB version: 1.2"), "full source and version remain in Details");
+        String firstKey = PackagePresentation.key(item);
+        item.target = new File("/storage/usb0/packages/Other/dashcam.zip");
+        check(!firstKey.equals(PackagePresentation.key(item)), "release selection keys do not collapse equal IDs");
+        item.types = "service";
+        check(!PackagePresentation.canLaunch(item), "service-only package cannot be launched as an app");
+        item.types = "application,service";
+        check(PackagePresentation.canLaunch(item), "app and service package remains launchable");
+        item.installedStateKnown = false;
+        check(!PackagePresentation.canLaunch(item) && PackagePresentation.subtitle(item).contains("unavailable"), "unknown installed state is visible");
+        item.kind = PackageScanner.BROKEN;
+        check(PackagePresentation.subtitle(item).contains("Tap Details"), "invalid installer has an actionable hint");
+        item.target = null;
+        check(PackagePresentation.details(item).contains("USB folder:") && !PackagePresentation.details(item).contains("Installed on the head unit"), "invalid descriptor does not claim it is installed");
+        item.kind = PackageScanner.EXECUTE;
+        check("Run script".equals(PackagePresentation.action(item)), "script action");
+        item.kind = "installed"; item.folder = null; item.target = null;
+        check(PackagePresentation.details(item).contains("head unit"), "installed-only details tolerate missing USB folder");
+        check(new OperationCoordinator.Completion(true, "").output.length() > 0, "generic result cannot be blank");
+        System.out.println("PackagePresentation: all checks passed");
+    }
+}

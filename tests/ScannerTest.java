@@ -18,7 +18,7 @@ public class ScannerTest {
     }
     public static void main(String[] args) throws Exception {
         File root = new File(args[0]); root.mkdirs();
-        String meta="[nemesis]\nid=aaa.test\nname=Test\n[app.0]\nkind=sh\npath=bin/go.sh\n";
+        String meta="[nemesis]\nid=aaa.test\nname=Test\nversion=1.2\ntypes=application\n[app.0]\nkind=sh\npath=bin/go.sh\n";
         File named = new File(root,"packages/Named");
         zip(new File(named,"packages/one.zip"),meta,false);
         write(new File(named,"NEMESIS.data"),"[nemesis]\ntype=install\npath=packages/one.zip\nname=Named\n");
@@ -37,10 +37,17 @@ public class ScannerTest {
         check("install".equals(byName.get("Named").kind),"installer");
         check("aaa.test".equals(byName.get("Named").id),"zip metadata");
         check("execute".equals(byName.get("Script").kind),"execute");
-        check("raw".equals(byName.get("Test").kind),"source");
+        PackageScanner.Item source = null, wrapped = null;
+        for (PackageScanner.Item item : rows) {
+            if ("raw".equals(item.kind)) source = item;
+            if (item.target != null && item.target.getName().equals("wrapped.zip")) wrapped = item;
+        }
+        check(source != null && "Test".equals(source.title),"source");
         check("invalid".equals(byName.get("Bad").kind),"unsafe traversal rejected");
-        check("install".equals(byName.get("wrapped.zip").kind),"wrapped zip");
-        check(byName.get("wrapped.zip").dataDir().getPath().contains("wrapped"),"unique data dir");
+        check(wrapped != null && "install".equals(wrapped.kind),"wrapped zip");
+        check("Test".equals(wrapped.title) && "1.2".equals(wrapped.version),"friendly ZIP name and version");
+        check(wrapped.dataDir().getPath().contains("wrapped"),"unique data dir");
+        check("aaa.test".equals(PackageScanner.parse(new ByteArrayInputStream(("\uFEFF"+meta).getBytes("UTF-8"))).get("id")),"Windows UTF-8 BOM");
         System.out.println("PackageScanner: all checks passed");
     }
 }

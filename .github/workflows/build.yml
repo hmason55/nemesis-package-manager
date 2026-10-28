@@ -28,6 +28,8 @@ jobs:
           gradle-version: '8.10.2'
       - name: Run host tests
         run: bash tests/run_tests.sh
+      - name: Run Android API 19 UI smoke tests
+        run: gradle -p tests/ui --no-daemon test
       - name: Build Android 4.4-compatible APK
         run: gradle --no-daemon --stacktrace :app:assembleDebug
       - name: Create NEMESIS USB bundles

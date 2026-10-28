@@ -5,7 +5,7 @@ import zipfile
 from pathlib import Path
 
 PACKAGE_MANIFEST = """[nemesis]
-version=0.1.0
+version=0.2.0
 id=usb.package.manager
 name=USB Package Manager
 types=application
