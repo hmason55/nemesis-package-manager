@@ -1,7 +1,8 @@
 #!/bin/sh
 set -eu
 cd "$(dirname "$0")/.."
-python3 -m unittest discover -s tests -p 'test_*.py' -v
+PYTHON="${PYTHON:-python3}"
+"$PYTHON" -m unittest discover -s tests -p 'test_*.py' -v
 TMP="$(mktemp -d)"
 trap 'rm -rf "$TMP"' EXIT
 javac -d "$TMP/classes" app/src/main/java/dev/nemesis/usbmanager/PackageScanner.java tests/ScannerTest.java
@@ -12,7 +13,7 @@ javac -source 7 -target 7 -d "$TMP/classes" app/src/main/java/dev/nemesis/usbman
 java -cp "$TMP/classes" dev.nemesis.usbmanager.OperationCoordinatorTest
 javac -source 7 -target 7 -cp "$TMP/classes" -d "$TMP/classes" app/src/main/java/dev/nemesis/usbmanager/PackagePresentation.java tests/PackagePresentationTest.java
 java -cp "$TMP/classes" dev.nemesis.usbmanager.PackagePresentationTest
-python3 - <<'PY'
+"$PYTHON" - <<'PY'
 import tempfile
 from pathlib import Path
 from tools.build_release import build

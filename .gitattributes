@@ -1,0 +1,5 @@
+# Keep executable scripts usable in Unix CI and Windows Git Bash checkouts.
+* text=auto
+*.sh text eol=lf
+gradlew text eol=lf
+*.bat text eol=crlf

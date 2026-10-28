@@ -1,0 +1,29 @@
+name: Feature request
+description: Suggest an improvement and explain the problem it would solve.
+body:
+  - type: markdown
+    attributes:
+      value: Search existing requests first. Small, focused proposals are easier to discuss and implement.
+  - type: textarea
+    id: problem
+    attributes:
+      label: Problem or use case
+      description: Who encounters this problem, and what are they trying to do?
+    validations:
+      required: true
+  - type: textarea
+    id: proposal
+    attributes:
+      label: Proposed behavior
+      description: Describe what the user should be able to do, with an example.
+    validations:
+      required: true
+  - type: textarea
+    id: alternatives
+    attributes:
+      label: Alternatives and workarounds (optional)
+  - type: textarea
+    id: compatibility
+    attributes:
+      label: Compatibility and data considerations (optional)
+      description: Mention Android 4.4/API 19, package layouts, permissions, or data preservation if relevant.
