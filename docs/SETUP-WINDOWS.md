@@ -30,18 +30,22 @@ Existing drives need the new launcher to run once for this change. It never repl
 
 ## D. Install and update packages
 
-Select a package and choose **Install**, **Update**, **Launch**, or **Uninstall**. Scripts use **Run script**. The progress bar animates while work runs; NEMESIS does not provide a trustworthy percentage. Do not remove the drive during an operation. Confirmation buttons are separated to reduce accidental taps.
+For the full update procedure, including replacing another package's installer, updating Package Manager itself, and handling failures, see [Updating packages](UPDATING.md).
 
-To update another app, import its new release into the same folder with `--overwrite`, preserving `data/`, then tap **Refresh**, select it, and choose **Update**. Installer versions are shown for reference, not as a claim that a newer version has been detected. Package authors can use arbitrary version formats.
+Select a package and choose **Install**, **Update**, **Launch**, or **Uninstall**. Scripts use **Run script**. The spinner animates while work runs; NEMESIS does not provide a trustworthy percentage. Do not remove the drive during an operation. Confirmation buttons are separated to reduce accidental taps.
+
+To update another app, import its new release into the same folder with `--overwrite`, preserving `data/`, then tap **Refresh**, select it, and choose **Update**. The Updates tab shows confirmed newer versions. Identical versions show **Up to date**; unavailable or unorderable installed versions use **Install version**. Check Details and the package's instructions when version ordering is unknown.
 
 Both manager UIs share installed packages. Wait for one operation to finish before starting another in either UI. Completion popups explain the result; their **Details** shows exit codes and output. Package Details contains full source and data/history paths.
 
 ## E. Update Package Manager itself
 
+See [the detailed manager update steps](UPDATING.md#update-package-manager), including the fallback for older versions without the Update action.
+
 1. Download a new release and replace `manager/usb.package.manager.zip` on your existing drive with its internal installer ZIP. Keep existing package folders and data. Do not copy a new active root descriptor merely to update the app.
 2. Open Package Manager, tap **Refresh**, select **Package Manager**, and choose **Update**.
-3. Confirm. The installer is copied to head-unit temporary storage before a detached NEMESIS process updates it. The app closes and reopens; do not start another operation or remove power while it updates.
-4. If it does not reopen, launch it through NEMESIS Manager. Check `/data/nemesis/logs/package-manager-update.log` for the installer result. The progress indicator remains active until NEMESIS reports its installer result or replaces the app process. Closing and reopening the activity does not release the busy state.
+3. Confirm. The installer is copied to head-unit temporary storage before a detached NEMESIS process updates it. The app closes and should reopen; do not start another operation or remove power while it updates.
+4. If it does not reopen, launch it through NEMESIS Manager. Check `/data/nemesis/logs/package-manager-update.log` for the installer result. The app stays busy until the installer finishes or Android replaces its process.
 
 You can still install or update directly through NEMESIS using a separate drive with an install descriptor pointing to `usb.package.manager.zip`. Remove Package Manager only through **NEMESIS Manager â†’ Packages â†’ Package Manager â†’ Uninstall**. Its technical package ID remains `usb.package.manager`.
 

@@ -59,6 +59,7 @@ public class ActivityOperationsTest {
             calls.add(Arrays.asList(args));
             if ("pkg-list".equals(args[0])) return new NemesisCli.Result(registryStatus, registry);
             if ("pkg-info".equals(args[0])) return new NemesisCli.Result(0, "id=demo.app\ninstalled=1\nlocked=0\n");
+            if ("root".equals(args[0])) return new NemesisCli.Result(0, "[installed:demo.app]\n[nemesis]\nversion=1.0\n");
             return new NemesisCli.Result(actionStatus, actionStatus == 0 ? "done" : "permission denied");
         }
     }
@@ -137,7 +138,7 @@ public class ActivityOperationsTest {
 
     private File usbInstaller() throws Exception {
         File root = temporary.newFolder("usb");
-        ScannerTest.zip(new File(root, "packages/Demo/demo.zip"), "[nemesis]\nid=demo.app\nname=Demo\n", false);
+        ScannerTest.zip(new File(root, "packages/Demo/demo.zip"), "[nemesis]\nid=demo.app\nname=Demo\nversion=1.1\n", false);
         UsbLocation.root = root;
         return root;
     }
@@ -228,15 +229,16 @@ public class ActivityOperationsTest {
         Commands.registryStatus = 2;
         Commands.registry = "daemon unavailable";
         open();
-        select("demo.app");
+        assertEquals(0, ((BaseAdapter) field("adapter")).getCount());
         assertFalse(((View) field("action")).isEnabled());
         assertFalse(((View) field("uninstall")).isEnabled());
-        assertTrue(((View) field("details")).isEnabled());
+        assertFalse(((View) field("details")).isEnabled());
         assertTrue(((TextView) field("status")).getText().toString().contains("daemon unavailable"));
         Commands.registryStatus = 0;
         Commands.registry = "";
         click("refreshButton");
         await(() -> !((Boolean) field("busy")));
+        ((android.widget.Button[]) field("tabs"))[PackagePresentation.NOT_INSTALLED].performClick();
         select("demo.app");
         assertEquals("Install", ((TextView) field("action")).getText().toString());
         assertTrue(((View) field("action")).isEnabled());
@@ -247,6 +249,61 @@ public class ActivityOperationsTest {
         open();
         assertTrue(((TextView) field("empty")).getText().toString().contains("Insert a USB drive"));
         assertFalse(((View) field("details")).isEnabled());
+    }
+
+    @Test public void categoryTabsFilterAndSameVersionCannotStartUpdate() throws Exception {
+        File root = usbInstaller();
+        ScannerTest.zip(new File(root, "packages/Demo/demo.zip"), "[nemesis]\nid=demo.app\nname=Demo\nversion=1.0\n", false);
+        open();
+        select("demo.app");
+        assertEquals("Up to date", ((TextView) field("action")).getText().toString());
+        assertFalse(((View) field("action")).isEnabled());
+        android.widget.Button[] tabs = (android.widget.Button[]) field("tabs");
+        assertEquals(4, tabs.length);
+        String[] expectedTabs = { "Installed", "Updates", "Not Installed", "Scripts" };
+        for (int i = 0; i < tabs.length; i++) assertTrue(tabs[i].getText().toString().startsWith(expectedTabs[i] + " ("));
+        tabs[PackagePresentation.UPDATES].performClick();
+        assertEquals(0, ((BaseAdapter) field("adapter")).getCount());
+        assertTrue(((TextView) field("empty")).getText().toString().contains("No confirmed updates"));
+        assertFalse(((View) field("uninstall")).isEnabled());
+        tabs[PackagePresentation.INSTALLED].performClick();
+        assertEquals(3, ((BaseAdapter) field("adapter")).getCount());
+        select("demo.app");
+        click("refreshButton");
+        await(() -> !((Boolean) field("busy")));
+        assertEquals("Up to date", ((TextView) field("action")).getText().toString());
+        tabs[PackagePresentation.SCRIPTS].performClick();
+        assertEquals(0, ((BaseAdapter) field("adapter")).getCount());
+        tabs[PackagePresentation.INSTALLED].performClick();
+        assertEquals(3, ((BaseAdapter) field("adapter")).getCount());
+        assertFalse(Commands.calls.stream().anyMatch(call -> "install".equals(call.get(0))));
+    }
+
+    @Test public void installedUpdateAndNewInstallerTabsHaveConsistentMembership() throws Exception {
+        File root = usbInstaller();
+        ScannerTest.zip(new File(root, "packages/New/new.zip"), "[nemesis]\nid=new.app\nname=New App\nversion=2.0\n", false);
+        open();
+        android.widget.Button[] tabs = (android.widget.Button[]) field("tabs");
+        BaseAdapter adapter = (BaseAdapter) field("adapter");
+        assertEquals(3, adapter.getCount());
+        select("demo.app");
+        assertTrue(((View) field("action")).isEnabled());
+        tabs[PackagePresentation.UPDATES].performClick();
+        assertEquals(1, adapter.getCount());
+        assertEquals("demo.app", ((PackageScanner.Item) adapter.getItem(0)).id);
+        ViewGroup updateRow = (ViewGroup) adapter.getView(0, null, (ListView) field("list"));
+        assertEquals(2, updateRow.getChildCount());
+        assertEquals("v1.0 \u2192 v1.1", ((TextView) updateRow.getChildAt(1)).getText().toString());
+        tabs[PackagePresentation.NOT_INSTALLED].performClick();
+        assertEquals(1, adapter.getCount());
+        assertEquals("new.app", ((PackageScanner.Item) adapter.getItem(0)).id);
+        ViewGroup newRow = (ViewGroup) adapter.getView(0, updateRow, (ListView) field("list"));
+        assertEquals("v2.0", ((TextView) newRow.getChildAt(1)).getText().toString());
+        select("new.app");
+        assertEquals("Install", ((TextView) field("action")).getText().toString());
+        tabs[PackagePresentation.INSTALLED].performClick();
+        assertEquals(3, adapter.getCount());
+        for (int i = 0; i < adapter.getCount(); i++) assertTrue(((PackageScanner.Item) adapter.getItem(i)).installed);
     }
 
     @Test public void dialogsExplainBlankOutputAndOptionalSecondaryActionIsSafe() {

@@ -50,13 +50,32 @@ public class UsabilityTest {
         PackageScanner.Item item = new PackageScanner.Item();
         item.title = "Example App"; item.id = "example.app"; item.kind = PackageScanner.INSTALL;
         item.types = "application,service"; item.installed = true;
+        item.version = "1.2"; item.installedVersion = "1.1";
         item.target = new File("/storage/usb0/packages/ExampleApp/example.app.zip");
         ((ArrayList<PackageScanner.Item>) field(activity, "items")).add(item);
         ((BaseAdapter) field(activity, "adapter")).notifyDataSetChanged();
         View root = activity.findViewById(android.R.id.content);
         root.measure(View.MeasureSpec.makeMeasureSpec(1280, View.MeasureSpec.EXACTLY), View.MeasureSpec.makeMeasureSpec(720, View.MeasureSpec.EXACTLY));
         root.layout(0, 0, 1280, 720);
+        TextView refresh = (TextView) field(activity, "refreshButton");
+        TextView close = null;
+        for (TextView view : texts(root)) if ("Close".equals(view.getText().toString())) close = view;
+        assertNotNull(close);
+        assertTrue("Refresh and Close have separate touch targets", close.getLeft() - refresh.getRight() >= 20);
+        assertTrue("Header buttons fit on screen", close.getRight() <= ((View) close.getParent()).getWidth());
+        for (android.widget.Button tab : (android.widget.Button[]) field(activity, "tabs")) {
+            assertTrue("Category touch targets remain usable", tab.getHeight() >= 48);
+            assertTrue("Category labels fit in landscape", tab.getWidth() > 100);
+        }
         ListView list = (ListView) field(activity, "list");
+        ViewGroup packageRow = (ViewGroup) ((BaseAdapter) field(activity, "adapter")).getView(0, null, list);
+        assertEquals(2, packageRow.getChildCount());
+        assertEquals("v1.1", ((TextView) packageRow.getChildAt(1)).getText().toString());
+        for (String heading : new String[] { "Name", "Version" }) {
+            boolean present = false;
+            for (TextView view : texts(root)) if (heading.equals(view.getText().toString())) present = true;
+            assertTrue("Column heading is visible: " + heading, present);
+        }
         list.performItemClick(list.getChildAt(0), 0, 0);
         int names = 0;
         TextView update = null;
