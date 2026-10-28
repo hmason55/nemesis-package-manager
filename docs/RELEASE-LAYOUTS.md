@@ -1,6 +1,6 @@
 # Supported release layouts
 
-Keep only the **package manager's** `NEMESIS.data` at the USB root. Other release descriptors belong under `packages/<Name>/`.
+For initial setup, keep only Package Manager's `NEMESIS.data` at the USB root. After a successful launch it is backed up as `NEMESIS.data.disabled`. Other release descriptors belong under `packages/<Name>/`.
 
 ## USB-ready installer
 

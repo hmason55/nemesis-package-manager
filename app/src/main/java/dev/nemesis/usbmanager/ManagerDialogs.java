@@ -69,7 +69,9 @@ final class ManagerDialogs {
                 if (confirmed != null) confirmed.run();
             }
         });
-        buttons.addView(ok, new LinearLayout.LayoutParams(-2, dp(activity, 52)));
+        LinearLayout.LayoutParams positiveLayout = new LinearLayout.LayoutParams(-2, dp(activity, 52));
+        positiveLayout.leftMargin = dp(activity, 12);
+        buttons.addView(ok, positiveLayout);
         root.addView(buttons, new LinearLayout.LayoutParams(-1, -2));
         dialog.setContentView(root);
         dialog.setCanceledOnTouchOutside(false);

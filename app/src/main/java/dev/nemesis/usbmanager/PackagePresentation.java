@@ -19,17 +19,14 @@ final class PackagePresentation {
     }
     static String state(PackageScanner.Item item) {
         if (!item.installedStateKnown) return "Installed state unavailable";
-        if (item.locked) return "Installed · Locked";
+        if (item.locked) return "Installed Â· Locked";
         if (item.installed) return "Installed";
-        return PackageScanner.EXECUTE.equals(item.kind) ? "USB script" : "Not installed";
+        return PackageScanner.EXECUTE.equals(item.kind) ? "Script" : "Not installed";
     }
     static String subtitle(PackageScanner.Item item) {
-        if (PackageScanner.BROKEN.equals(item.kind)) return "Invalid installer · Tap Details";
+        if (PackageScanner.BROKEN.equals(item.kind)) return "Invalid installer";
         String state = state(item);
-        if (item.version != null && item.version.length() > 0) state += " · USB " + item.version;
-        if ("installed".equals(item.kind)) return state + " · No USB installer";
-        if (item.installedStateKnown && item.installed && !item.locked && !PackageScanner.EXECUTE.equals(item.kind))
-            return state + " · USB installer available";
+        if (item.version != null && item.version.length() > 0) state += " Â· Installer " + item.version;
         return state;
     }
     static String action(PackageScanner.Item item) {
@@ -56,7 +53,7 @@ final class PackagePresentation {
     }
     static String details(PackageScanner.Item item) {
         StringBuilder text = new StringBuilder(state(item));
-        if (isManager(item)) text.append("\n\nInstall, update, or uninstall Package Manager using NEMESIS's package installer and Packages screen.");
+        if (isManager(item)) text.append("\n\nUse Update to install the manager bundle on this drive through NEMESIS. Remove Package Manager from NEMESIS Manager's Packages screen.");
         if (item.id != null && item.id.length() > 0) text.append("\nPackage ID: ").append(item.id);
         if (item.version != null && item.version.length() > 0) text.append("\nUSB version: ").append(item.version);
         if (item.error != null) text.append("\n\nProblem: ").append(item.error);

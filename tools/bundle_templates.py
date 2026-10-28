@@ -28,15 +28,16 @@ path=NEMESIS.sh
 
 LAUNCHER = """#!/system/bin/sh
 # Run by NEMESIS with root rights and USB root as cwd.
-# Install manager only if missing, then launch. Never modify package folders.
+# Install if missing, launch, then disable only this launcher's root descriptor.
 export PATH=/data/nemesis/bin:/sbin:/vendor/bin:/system/sbin:/system/bin:/system/xbin
 if [ "$(getprop sys.boot_completed)" != "1" ]; then
     echo "Package Manager: Android not ready, not installing or launching."
     exit 0
 fi
 ROOT=""
+if [ -f "$PWD/manager/usb.package.manager.zip" ]; then ROOT="$PWD"; fi
 for CANDIDATE in /storage/usb0 /storage/usb1 /storage/usb2 /mnt/media_rw/usb0 /mnt/media_rw/usb1 /mnt/media_rw/usb2; do
-    if [ -f "$CANDIDATE/manager/usb.package.manager.zip" ]; then
+    if [ -z "$ROOT" ] && [ -f "$CANDIDATE/manager/usb.package.manager.zip" ]; then
         ROOT="$CANDIDATE"
         break
     fi
@@ -49,5 +50,16 @@ if ! /system/xbin/nemesis pkg-list | grep -q '^usb.package.manager|'; then
     echo "Installing Package Manager..."
     /system/xbin/nemesis install "$ROOT/manager/usb.package.manager.zip" || exit 1
 fi
-/system/bin/am start -n dev.nemesis.usbmanager/.MainActivity
+/system/bin/am start -n dev.nemesis.usbmanager/.MainActivity || exit 1
+# Keep the original descriptor as a backup; never touch another installer type.
+if grep -q '^type=execute$' "$ROOT/NEMESIS.data" && grep -q '^path=NEMESIS.sh$' "$ROOT/NEMESIS.data"; then
+    BACKUP="$ROOT/NEMESIS.data.disabled"
+    NUMBER=0
+    while [ -e "$BACKUP" ]; do
+        NUMBER=$((NUMBER + 1))
+        BACKUP="$ROOT/NEMESIS.data.disabled.$NUMBER"
+    done
+    mv "$ROOT/NEMESIS.data" "$BACKUP" || exit 1
+    echo "Package Manager: automatic USB launch disabled. Open from NEMESIS Manager."
+fi
 """

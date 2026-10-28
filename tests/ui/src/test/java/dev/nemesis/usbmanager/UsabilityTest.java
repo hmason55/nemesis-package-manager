@@ -48,9 +48,9 @@ public class UsabilityTest {
         // Supply a local fixture without starting a head-unit command or a USB scan.
         Field resumed = MainActivity.class.getDeclaredField("resumed"); resumed.setAccessible(true); resumed.set(activity, true);
         PackageScanner.Item item = new PackageScanner.Item();
-        item.title = "Rear Dashcam"; item.id = "dashcam"; item.kind = PackageScanner.INSTALL;
+        item.title = "Example App"; item.id = "example.app"; item.kind = PackageScanner.INSTALL;
         item.types = "application,service"; item.installed = true;
-        item.target = new File("/storage/usb0/packages/RearDashcam/dashcam.zip");
+        item.target = new File("/storage/usb0/packages/ExampleApp/example.app.zip");
         ((ArrayList<PackageScanner.Item>) field(activity, "items")).add(item);
         ((BaseAdapter) field(activity, "adapter")).notifyDataSetChanged();
         View root = activity.findViewById(android.R.id.content);
@@ -61,7 +61,7 @@ public class UsabilityTest {
         int names = 0;
         TextView update = null;
         for (TextView text : texts(root)) {
-            if ("Rear Dashcam".equals(text.getText().toString())) names++;
+            if ("Example App".equals(text.getText().toString())) names++;
             assertFalse("Full USB paths belong in Details", text.getText().toString().contains("/storage/usb0"));
             if ("Update".equals(text.getText().toString())) update = text;
         }
@@ -73,8 +73,13 @@ public class UsabilityTest {
         item.id = "usb.package.manager";
         list.performItemClick(list.getChildAt(0), 0, 0);
         assertFalse("Manager cannot uninstall itself", ((View) field(activity, "uninstall")).isEnabled());
-        assertFalse("Manager updates use NEMESIS installer", ((View) field(activity, "action")).isEnabled());
+        assertTrue("Installed manager can update through NEMESIS", ((View) field(activity, "action")).isEnabled());
         assertTrue("Manager details stay accessible", ((View) field(activity, "details")).isEnabled());
+        Field busy = MainActivity.class.getDeclaredField("busy"); busy.setAccessible(true); busy.set(activity, true);
+        java.lang.reflect.Method updateMethod = MainActivity.class.getDeclaredMethod("updateButtons");
+        updateMethod.setAccessible(true); updateMethod.invoke(activity);
+        assertEquals("Busy operations display progress", View.VISIBLE, ((View) field(activity, "progress")).getVisibility());
+        assertFalse(((View) field(activity, "action")).isEnabled());
         controller.stop().destroy();
         assertFalse("Destroyed activity dismisses its dialogs", details.isShowing());
     }
@@ -82,7 +87,7 @@ public class UsabilityTest {
         ActivityController<Activity> controller = Robolectric.buildActivity(Activity.class).setup();
         Activity activity = controller.get();
         activity.setTheme(android.R.style.Theme_Holo_Light);
-        PackageScanner.Item item = new PackageScanner.Item(); item.title = "Rear Dashcam";
+        PackageScanner.Item item = new PackageScanner.Item(); item.title = "Example App";
         OperationCoordinator.Completion result = PackagePresentation.completion(item, "install", 0, "");
         Dialog dialog = ManagerDialogs.show(activity, result.title, result.output, "OK", null, null, null);
         TextView body = find(dialog, result.output);
@@ -99,10 +104,11 @@ public class UsabilityTest {
         Activity activity = controller.get();
         final AtomicBoolean executed = new AtomicBoolean();
         Runnable action = new Runnable() { public void run() { executed.set(true); } };
-        Dialog cancelled = ManagerDialogs.show(activity, "Uninstall Rear Dashcam?", "USB data will be kept.", "Uninstall", action, null, null);
+        Dialog cancelled = ManagerDialogs.show(activity, "Uninstall Example App?", "USB data will be kept.", "Uninstall", action, null, null);
         find(cancelled, "Cancel").performClick();
         assertFalse(executed.get());
-        Dialog confirmed = ManagerDialogs.show(activity, "Uninstall Rear Dashcam?", "USB data will be kept.", "Uninstall", action, null, null);
+        Dialog confirmed = ManagerDialogs.show(activity, "Uninstall Example App?", "USB data will be kept.", "Uninstall", action, null, null);
+        assertTrue(((android.widget.LinearLayout.LayoutParams) find(confirmed, "Uninstall").getLayoutParams()).leftMargin > 0);
         find(confirmed, "Uninstall").performClick();
         assertTrue(executed.get()); assertFalse(confirmed.isShowing());
         controller.pause().stop().destroy();

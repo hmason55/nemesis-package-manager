@@ -53,7 +53,7 @@ These tests use simulated Android views, not a vehicle. The Actions workflow run
 4. Test Install -> Launch -> Uninstall (with explicit confirmation) and verify package registry changes.
 5. Verify `packages/Hello/data/` persists after uninstall, and that the USB root descriptor does not change.
 6. Import an official USB-ready package with nested `NEMESIS.data`. Verify it is detected but **do not install firmware-patching packages as part of this smoke test**.
-7. Check compatibility with the existing RearDashcam/Leafia packages only after basic operations work.
+7. Check each package's compatibility requirements before installation.
 8. During a test package operation, close and reopen this app. Verify that another operation cannot start and that the completed result is shown. Do not use NEMESIS Manager to start a competing operation.
 9. With the NEMESIS command channel unavailable in a controlled test environment, verify that the app displays the registry error and unavailable installed state. Restore the channel and tap Refresh to recover.
 10. Verify that list rows show each name once, selection survives Refresh, and Details exposes the full source path. Check the Install/Update/Run script label for each entry type.
