@@ -21,6 +21,8 @@ Do not use `tools/build_release.py` with an unbuilt source archive or placeholde
 
 ## Host-side tests
 
+Pull requests run the **Python quality** workflow (unit tests, separate 85% line/branch gates, and module maintainability index >60) and **Java tests and coverage** workflow (JUnit/Robolectric with JaCoCo XML/HTML reports). Java coverage is summarized against the same target with explicit warnings while the existing shortfall is being addressed; the Java 85% target is not yet a blocking gate. Radon maintainability scores apply to Python only. Reports are downloadable from each workflow run.
+
 ```shell
 bash tests/run_tests.sh
 ```

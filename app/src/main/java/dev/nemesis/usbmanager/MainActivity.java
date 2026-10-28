@@ -104,7 +104,7 @@ public final class MainActivity extends Activity {
         root.setOrientation(LinearLayout.VERTICAL); root.setPadding(dp(18), dp(12), dp(18), dp(14)); root.setBackgroundColor(BG);
         LinearLayout header = new LinearLayout(this);
         header.setGravity(Gravity.CENTER_VERTICAL);
-        TextView title = text("USB Package Manager", 24, TEXT);
+        TextView title = text("Package Manager", 24, TEXT);
         title.setTypeface(Typeface.DEFAULT, Typeface.BOLD);
         header.addView(title, new LinearLayout.LayoutParams(0, -2, 1));
         refreshButton = button("Refresh");
@@ -153,10 +153,10 @@ public final class MainActivity extends Activity {
         PackageScanner.Item item = selection();
         boolean ready = !unavailable() && item != null;
         action.setText(PackagePresentation.action(item));
-        action.setEnabled(ready && !PackageScanner.BROKEN.equals(item.kind) && !"installed".equals(item.kind) && !item.locked &&
+        action.setEnabled(ready && !PackagePresentation.isManager(item) && !PackageScanner.BROKEN.equals(item.kind) && !"installed".equals(item.kind) && !item.locked &&
             (item.installedStateKnown || PackageScanner.EXECUTE.equals(item.kind)));
         launch.setEnabled(ready && PackagePresentation.canLaunch(item));
-        uninstall.setEnabled(ready && item.installedStateKnown && item.installed && !item.locked && PackageScanner.validId(item.id));
+        uninstall.setEnabled(ready && PackagePresentation.canUninstall(item));
         details.setEnabled(ready);
         refreshButton.setEnabled(!unavailable());
         for (Button button : new Button[] { action, launch, uninstall, details, refreshButton })
@@ -258,7 +258,7 @@ public final class MainActivity extends Activity {
     }
     private void chooseAction() {
         final PackageScanner.Item item = selection();
-        if (item == null || unavailable() || item.locked || PackageScanner.BROKEN.equals(item.kind) || "installed".equals(item.kind)) return;
+        if (item == null || unavailable() || PackagePresentation.isManager(item) || item.locked || PackageScanner.BROKEN.equals(item.kind) || "installed".equals(item.kind)) return;
         if (!item.installedStateKnown && !PackageScanner.EXECUTE.equals(item.kind)) return;
         String action = PackagePresentation.action(item);
         confirm(action + " " + PackagePresentation.name(item) + "?",
@@ -269,7 +269,7 @@ public final class MainActivity extends Activity {
     }
     private void confirmUninstall() {
         final PackageScanner.Item item = selection();
-        if (item == null || unavailable() || !item.installedStateKnown || !item.installed || item.locked || !PackageScanner.validId(item.id)) return;
+        if (unavailable() || !PackagePresentation.canUninstall(item)) return;
         confirm("Uninstall " + PackagePresentation.name(item) + "?",
             "This removes the installed package from the head unit and runs its uninstall hooks as root. Follow the package's removal instructions.\n\n" +
             "The installer and data on your USB will be kept.", "Uninstall", new Runnable() {
@@ -284,6 +284,10 @@ public final class MainActivity extends Activity {
         });
     }
     private void startOperation(PackageScanner.Item item, String command) {
+        if (PackagePresentation.isManager(item) && !"pkg-launch".equals(command)) {
+            message("Use NEMESIS", "Install, update, or uninstall Package Manager using NEMESIS's package installer and Packages screen.");
+            return;
+        }
         String description = (command == null ? PackagePresentation.action(item) :
             ("uninstall".equals(command) ? "Uninstall" : "Launch")) + " · " + PackagePresentation.name(item);
         if (unavailable() || !operations.start(description, new PackageTask(getApplicationContext(), item, command))) {

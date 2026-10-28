@@ -69,6 +69,12 @@ public class UsabilityTest {
         ((View) field(activity, "details")).performClick();
         Dialog details = ShadowDialog.getLatestDialog();
         find(details, PackagePresentation.details(item));
+        details.dismiss();
+        item.id = "usb.package.manager";
+        list.performItemClick(list.getChildAt(0), 0, 0);
+        assertFalse("Manager cannot uninstall itself", ((View) field(activity, "uninstall")).isEnabled());
+        assertFalse("Manager updates use NEMESIS installer", ((View) field(activity, "action")).isEnabled());
+        assertTrue("Manager details stay accessible", ((View) field(activity, "details")).isEnabled());
         controller.stop().destroy();
         assertFalse("Destroyed activity dismisses its dialogs", details.isShowing());
     }

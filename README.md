@@ -46,11 +46,13 @@ Only the root `NEMESIS.data` is consumed by NEMESIS's normal USB handler. The in
 4. Plug USB into the car after NEMESIS is installed and Android is running. Confirm the `execute` prompt, which can recur on later insertions. The launcher installs the manager if missing and starts its activity.
 5. Tap an entry, then choose **Install**, **Update**, **Run script**, **Launch**, or **Uninstall** as applicable. The main action label changes with the selection. **Details** shows the package ID, USB installer version, full source path, and data/history location. Every privilege-changing action requires on-screen confirmation.
 6. Future insertions use the **same root descriptor and launcher**. NEMESIS asks before executing it; you never edit `NEMESIS.data` to switch package selection.
-7. You can also open NEMESIS Manager > Packages > USB Package Manager > Launch without unplugging the USB.
+7. You can also open NEMESIS Manager > Packages > Package Manager > Launch without unplugging the USB.
 
 This does **not** install NEMESIS itself. Use NEMESIS's official first-time setup instructions before this package.
 
 ## Using both manager UIs
+
+The app is displayed as **Package Manager** in NEMESIS after installing the updated package. Its stable package ID remains `usb.package.manager`, so this rename does not create a second installation. Use NEMESIS's package installer to install or update the manager, and NEMESIS Manager's Packages screen to remove it. This app disables its own Install/Update and Uninstall actions; it can still be launched and its details inspected.
 
 USB Package Manager reads the nested installers on your USB and calls NEMESIS's package commands. NEMESIS Manager and this app share the same installed-package registry: installing through either route makes the package visible to both. Refresh this app, or reopen NEMESIS Manager's Packages screen, after changes made in the other UI.
 

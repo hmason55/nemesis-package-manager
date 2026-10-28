@@ -104,7 +104,7 @@ python .\tools\import_release.py .\downloads\another-usb.zip --usb E:\ --name An
 3. The script checks that Android has booted, installs `usb.package.manager` once, and launches its activity. It does **not** install the third-party ZIPs.
 4. The on-screen app lists package names with short status lines. Tap a row: the main action becomes **Install**, **Update**, or **Run script**. **Launch** and **Uninstall** are enabled when applicable. **Details** shows the full installer path, package ID, USB installer version, and data/history location. **Refresh** and **Close** are in the header.
 5. Read the confirmation message before every privileged action. Install firmware-modifying packages one at a time, and follow their own compatibility and reboot instructions.
-6. Keep the USB inserted. You can reopen the manager anytime from **NEMESIS Manager -> Packages -> USB Package Manager -> Launch**, without editing `NEMESIS.data` or unplugging the drive.
+6. Keep the USB inserted. You can reopen the manager anytime from **NEMESIS Manager -> Packages -> Package Manager -> Launch**, without editing `NEMESIS.data` or unplugging the drive.
 
 Both UIs operate on the same installed packages. NEMESIS Manager's current upstream **Packages** screen provides Launch and Uninstall; its installation prompt is driven by the descriptor at the USB root. USB Package Manager adds selection among nested installers under `packages/`. Packages installed here also appear in NEMESIS Manager. After changing packages in either UI, refresh this app or reopen NEMESIS Manager's Packages screen to see the result. An installed package without a USB installer can be launched or uninstalled here, but updating it requires a compatible installer on USB.
 

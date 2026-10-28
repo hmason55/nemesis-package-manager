@@ -5,6 +5,13 @@ import java.io.File;
 /** Plain text shared by the package list, details, and operation results. */
 final class PackagePresentation {
     private PackagePresentation() { }
+    static boolean isManager(PackageScanner.Item item) {
+        return item != null && "usb.package.manager".equals(item.id);
+    }
+    static boolean canUninstall(PackageScanner.Item item) {
+        return item != null && item.installedStateKnown && item.installed &&
+            !item.locked && PackageScanner.validId(item.id) && !isManager(item);
+    }
     static String name(PackageScanner.Item item) {
         if (item.title != null && item.title.trim().length() > 0) return item.title.trim();
         if (item.id != null && item.id.length() > 0) return item.id;
@@ -49,6 +56,7 @@ final class PackagePresentation {
     }
     static String details(PackageScanner.Item item) {
         StringBuilder text = new StringBuilder(state(item));
+        if (isManager(item)) text.append("\n\nInstall, update, or uninstall Package Manager using NEMESIS's package installer and Packages screen.");
         if (item.id != null && item.id.length() > 0) text.append("\nPackage ID: ").append(item.id);
         if (item.version != null && item.version.length() > 0) text.append("\nUSB version: ").append(item.version);
         if (item.error != null) text.append("\n\nProblem: ").append(item.error);

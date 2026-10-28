@@ -5,6 +5,14 @@ import java.io.File;
 public final class PackagePresentationTest {
     static void check(boolean value, String message) { if (!value) throw new AssertionError(message); }
     public static void main(String[] args) {
+        PackageScanner.Item manager = new PackageScanner.Item();
+        manager.id = "usb.package.manager"; manager.installed = true;
+        check(PackagePresentation.isManager(manager), "manager is recognized by stable ID");
+        check(!PackagePresentation.canUninstall(manager), "manager cannot remove itself");
+        manager.id = "other.package";
+        check(PackagePresentation.canUninstall(manager), "other installed packages remain removable");
+        manager.locked = true;
+        check(!PackagePresentation.canUninstall(manager), "locked packages remain protected");
         PackageScanner.Item item = new PackageScanner.Item();
         item.title = "Rear Dashcam"; item.id = "dashcam"; item.kind = PackageScanner.INSTALL;
         item.target = new File("/storage/usb0/packages/RearDashcam/packages/dashcam.zip");
