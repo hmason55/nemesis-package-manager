@@ -4,7 +4,9 @@ This project targets Android API 19 (Android 4.4). The Android app has no depend
 
 ## Automated GitHub Actions build
 
-The workflow `.github/workflows/build.yml` uses Java 17, Gradle 8.10.2, and AGP 8.7.3. Push the repository to `main`, or launch the workflow manually. It runs host tests, builds `app-debug.apk`, checks its expected structure and JAR signature, creates the NEMESIS ZIP, and uploads `dist/` as an artifact.
+The workflow `.github/workflows/build.yml` uses Java 17, Gradle 8.10.2, and AGP 8.7.3. Pull requests and pushes to `main` trigger it automatically; maintainers can also launch it manually. A merge into `main` therefore starts a new build. It runs host tests, builds `app-debug.apk`, checks its expected structure and JAR signature, creates the NEMESIS ZIP, and uploads `dist/` as the `nemesis-usb-package-manager` artifact.
+
+Extract the downloaded artifact wrapper on your PC, then extract its `usb-package-manager-ready.zip` onto the normal USB. Installing a new build over an existing manager requires the explicit update procedure in [SETUP-WINDOWS.md](SETUP-WINDOWS.md#e-update-usb-package-manager-itself); copying files alone does not update the installed APK.
 
 ## Local build
 
@@ -23,7 +25,7 @@ Do not use `tools/build_release.py` with an unbuilt source archive or placeholde
 bash tests/run_tests.sh
 ```
 
-These verify the Python USB importer and builder, the Java package scanner, and launcher shell syntax. They do not emulate the actual Gen5W OS or validate head-unit audio/video functionality.
+These verify the Python USB importer (including preservation of Windows data-folder aliases), builder, Java package scanner, operation coordinator, installed-package query handling, and launcher shell syntax. They do not emulate the actual Gen5W OS or validate head-unit audio/video functionality.
 
 ## Manual hardware smoke test
 
@@ -34,6 +36,8 @@ These verify the Python USB importer and builder, the Java package scanner, and 
 5. Verify `packages/Hello/data/` persists after uninstall, and that the USB root descriptor does not change.
 6. Import an official USB-ready package with nested `NEMESIS.data`. Verify it is detected but **do not install firmware-patching packages as part of this smoke test**.
 7. Check compatibility with the existing RearDashcam/Leafia packages only after basic operations work.
+8. During a test package operation, close and reopen this app. Verify that another operation cannot start and that the completed result is shown. Do not use NEMESIS Manager to start a competing operation.
+9. With the NEMESIS command channel unavailable in a controlled test environment, verify that the app displays the registry error and unavailable installed state. Restore the channel and tap Refresh to recover.
 
 ## Known limitations
 

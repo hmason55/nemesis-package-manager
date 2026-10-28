@@ -34,6 +34,25 @@ class ImportTests(unittest.TestCase):
         self.assertEqual(kind,'pkg')
         self.assertIn('path=payload.zip',(dest/'NEMESIS.data').read_text())
         self.assertTrue((dest/'payload.zip').is_file())
+    def test_overwrite_preserves_existing_uppercase_data(self):
+        release=self.archive('tool.zip', {'NEMESIS.data':'[nemesis]\nid=tool\n'})
+        dest=self.usb/'packages'/'tool'
+        (dest/'DATA').mkdir(parents=True)
+        (dest/'DATA'/'saved.txt').write_text('user export')
+        mod.import_release(release,self.usb,'tool',True)
+        self.assertEqual((dest/'DATA'/'saved.txt').read_text(),'user export')
+    def test_archive_data_aliases_cannot_replace_exports(self):
+        for alias in ('data', 'DATA', 'Data', 'data.', 'DATA '):
+            with self.subTest(alias=alias):
+                release=self.archive('tool-usb.zip', {
+                    'NEMESIS.data':'[nemesis]\ntype=execute\npath=run.sh\n',
+                    'run.sh':'exit 0\n', alias+'/saved.txt':'archive export'})
+                dest=self.usb/'packages'/'tool'
+                (dest/'data').mkdir(parents=True,exist_ok=True)
+                (dest/'data'/'saved.txt').write_text('user export')
+                mod.import_release(release,self.usb,'tool',True)
+                self.assertEqual((dest/'data'/'saved.txt').read_text(),'user export')
+                self.assertEqual({p.name for p in dest.iterdir()}, {'data','NEMESIS.data','run.sh'})
     def test_reject_traversal(self):
         release=self.archive('bad.zip', {'NEMESIS.data':'[nemesis]\ntype=execute\npath=run.sh\n','../attack':'oops'})
         with self.assertRaises(ValueError): mod.import_release(release,self.usb,'bad')

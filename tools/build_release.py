@@ -89,6 +89,10 @@ def build(apk: Path, dist: Path):
             'Add each USB-ready release under packages/<Name>/ with its own NEMESIS.data.\n'
             'Do not overwrite the ROOT NEMESIS.data with third-party descriptors.\n'
             'Use NEMESIS Manager -> Packages -> USB Package Manager -> Launch after first install.\n'
+            'The execute prompt can recur on later USB insertions.\n'
+            'Copying a new bundle does not update an already-installed manager.\n'
+            'For explicit manager updates, follow section E of docs/SETUP-WINDOWS.md.\n'
+            'Both manager UIs share installed packages; finish one operation before starting another.\n'
             'Read docs/SETUP-WINDOWS.md for complete steps and warnings.\n')
         for path in sorted(docs_dir.glob('*.md')):
             z.write(path, 'docs/' + path.name)

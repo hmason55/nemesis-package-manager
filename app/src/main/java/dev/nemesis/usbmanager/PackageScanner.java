@@ -31,9 +31,11 @@ public final class PackageScanner {
         public String error;
         public String detail;
         public boolean installed;
+        public boolean installedStateKnown = true;
         public boolean locked;
         public File dataDir() { return customDataDir != null ? customDataDir : (folder == null ? null : new File(folder, "data")); }
-        public String label() { return title + "  [" + kind + "]" + (installed ? "  INSTALLED" : ""); }
+        public String label() { return title + "  [" + kind + "]" +
+            (!installedStateKnown ? "  INSTALLED STATE UNAVAILABLE" : (installed ? "  INSTALLED" : "")); }
     }
     private PackageScanner() { }
 
