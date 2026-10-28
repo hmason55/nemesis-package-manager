@@ -1,0 +1,30 @@
+name: Build USB Package Manager
+on:
+  workflow_dispatch:
+  push:
+    branches: [ main ]
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: '17'
+      - uses: android-actions/setup-android@v3
+      - uses: gradle/actions/setup-gradle@v4
+        with:
+          gradle-version: '8.10.2'
+      - name: Run host tests
+        run: bash tests/run_tests.sh
+      - name: Build Android 4.4-compatible APK
+        run: gradle --no-daemon :app:assembleDebug
+      - name: Create NEMESIS USB bundles
+        run: python3 tools/build_release.py app/build/outputs/apk/debug/app-debug.apk
+      - uses: actions/upload-artifact@v4
+        with:
+          name: nemesis-usb-package-manager
+          path: dist/*

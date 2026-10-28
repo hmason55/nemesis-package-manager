@@ -1,0 +1,6 @@
+NEMESIS USB Package Manager prototype v0.1.0
+SOURCE/BUILD KIT ONLY. This archive does not include a compiled Android APK.
+This environment did not have the Android SDK or Gradle installed.
+See docs/SETUP-WINDOWS.md for the GitHub Actions build workflow.
+After the workflow completes, use its usb-package-manager-ready.zip on USB.
+Host tests passed; Gen5W hardware testing is pending.
