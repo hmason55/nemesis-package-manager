@@ -32,7 +32,7 @@ def build(apk: Path, dist: Path):
         z.write(package, "manager/usb.package.manager.zip")
         z.writestr(
             "GETTING_STARTED.txt",
-            "NEMESIS USB PACKAGE MANAGER - EXPERIMENTAL\n"
+            "NEMESIS PACKAGE MANAGER - EXPERIMENTAL\n"
             "Requires NEMESIS already installed.\n"
             "Copy these extracted files to the USB ROOT, not a nested directory.\n"
             "On insert, confirm NEMESIS execute to install/launch the manager.\n"

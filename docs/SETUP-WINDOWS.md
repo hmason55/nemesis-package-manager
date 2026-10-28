@@ -1,4 +1,4 @@
-# NEMESIS USB Package Manager: Windows setup
+# NEMESIS Package Manager: Windows setup
 
 **Status:** Experimental. Source project must first be built into an Android APK and the two NEMESIS ZIP archives. The source ZIP alone is **not** an installable NEMESIS package. No hardware validation has yet been completed on a US 2023 Ioniq 5.
 
@@ -11,7 +11,7 @@
 
 ## A. Download a built package manager (recommended)
 
-1. Open [this repository's Actions tab](https://github.com/hmason55/nemesis-package-manager/actions) and select **Build USB Package Manager**.
+1. Open [this repository's Actions tab](https://github.com/hmason55/nemesis-package-manager/actions) and select **Build Package Manager**.
 2. Choose a successful run for the version you want, normally the latest successful run on `main`. Merging into `main` starts a build automatically; a maintainer can also select **Run workflow**. You do not need to create a new repository.
 3. Open the run's **Artifacts** section and download **`nemesis-usb-package-manager`**. GitHub downloads a wrapper archive named `nemesis-usb-package-manager.zip`.
 4. Extract that wrapper on your PC. It contains `usb-package-manager-ready.zip` and `usb.package.manager.zip`. The first prepares your normal USB; the second is the compressed NEMESIS installer package.
@@ -106,13 +106,13 @@ python .\tools\import_release.py .\downloads\another-usb.zip --usb E:\ --name An
 5. Read the confirmation message before every privileged action. Install firmware-modifying packages one at a time, and follow their own compatibility and reboot instructions.
 6. Keep the USB inserted. You can reopen the manager anytime from **NEMESIS Manager -> Packages -> Package Manager -> Launch**, without editing `NEMESIS.data` or unplugging the drive.
 
-Both UIs operate on the same installed packages. NEMESIS Manager's current upstream **Packages** screen provides Launch and Uninstall; its installation prompt is driven by the descriptor at the USB root. USB Package Manager adds selection among nested installers under `packages/`. Packages installed here also appear in NEMESIS Manager. After changing packages in either UI, refresh this app or reopen NEMESIS Manager's Packages screen to see the result. An installed package without a USB installer can be launched or uninstalled here, but updating it requires a compatible installer on USB.
+Both UIs operate on the same installed packages. NEMESIS Manager's current upstream **Packages** screen provides Launch and Uninstall; its installation prompt is driven by the descriptor at the USB root. Package Manager adds selection among nested installers under `packages/`. Packages installed here also appear in NEMESIS Manager. After changing packages in either UI, refresh this app or reopen NEMESIS Manager's Packages screen to see the result. An installed package without a USB installer can be launched or uninstalled here, but updating it requires a compatible installer on USB.
 
 Use one operation at a time across both UIs. This app's operation protection does not extend to NEMESIS Manager or external commands. Closing this app leaves its operation running; reopening it in the same app process shows progress or the pending result. Process termination and reboots do not preserve that in-memory state.
 
 The result popup names the package and operation, even if NEMESIS returned no output. Tap its **Details** button for the exit code and raw output, or **OK** to dismiss it. If the USB history could not be saved, the popup reports that separately. Uninstalling keeps the USB installer and data folder. Known service-only packages have Launch disabled because there is no app to open.
 
-## E. Update USB Package Manager itself
+## E. Update Package Manager itself
 
 The normal USB launcher installs the manager **only if its package ID is missing**. Copying a new bundle to that drive does not update the installed APK.
 
@@ -128,7 +128,7 @@ For an explicit update through NEMESIS, use a separate USB drive so your normal 
    path=usb.package.manager.zip
    ```
 
-3. With the vehicle parked and the head unit fully booted, close USB Package Manager, remove your normal USB, and insert the update USB. Confirm NEMESIS's installation/update prompt and wait for completion.
+3. With the vehicle parked and the head unit fully booted, close Package Manager, remove your normal USB, and insert the update USB. Confirm NEMESIS's installation/update prompt and wait for completion.
 4. Remove the update USB. On your PC, copy the new bundle's `NEMESIS.data`, `NEMESIS.sh`, `GETTING_STARTED.txt`, `manager/usb.package.manager.zip`, and `docs/` onto your normal USB, replacing those manager files. Keep all existing community package folders and recordings. Then reinsert your normal USB and open the updated app.
 
 If you already have an ADB shell, step 3 can instead use `/system/xbin/nemesis install --update /storage/usb0/usb.package.manager.zip` with the update drive mounted at that path. Adjust the path if it is mounted elsewhere. Do not run a second operation in either UI while updating.
@@ -137,7 +137,7 @@ Keep the signing identity stable between builds when possible. NEMESIS may unins
 
 ## F. Data and recordings
 
-- `packages\Name\data\` is a stable location that the USB Package Manager does not erase when uninstalling the package from NEMESIS.
+- `packages\Name\data\` is a stable location that the Package Manager does not erase when uninstalling the package from NEMESIS.
 - **Third-party apps do not automatically use this folder.** Their default export locations still apply unless configured separately.
 - RearDashcam currently writes by default to `E:\Dashcam\` (on the head unit, `/storage/usb0/Dashcam`). Its technical docs describe `DASHCAM_ARGS="--out=/storage/usb0/packages/RearDashcam/data"` in `/data/nemesis/apps/dashcam/dashcam.conf`. Back up the file before changing it; updates may overwrite it. Verify recordings in the new path before deleting the old directory.
 - Package-manager install/run history is appended to `packages\Name\data\package-manager-history.log` when USB writing succeeds.

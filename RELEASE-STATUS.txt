@@ -1,4 +1,4 @@
-NEMESIS USB Package Manager prototype v0.2.0
+NEMESIS Package Manager prototype v0.2.0
 SOURCE/BUILD KIT ONLY. This archive does not include a compiled Android APK.
 See docs/SETUP-WINDOWS.md for the GitHub Actions build workflow.
 After the workflow completes, use its usb-package-manager-ready.zip on USB.
