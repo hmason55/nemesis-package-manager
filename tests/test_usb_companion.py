@@ -203,7 +203,79 @@ class CompanionTests(CompanionFixture):
         state = scan_drive(self.usb)
         self.assertEqual(state["manager"]["version"], "2.0")
         self.assertEqual(state["launcher"], "Active")
+        self.assertTrue((self.usb / "packages").is_dir())
         self.assertEqual((self.usb / "recording.mp4").read_bytes(), b"recording")
+
+    def test_setup_preserves_existing_packages_directory(self):
+        add_package(self.usb, self.release, "Existing")
+        data = self.usb / "packages/Existing/data/export"
+        data.write_bytes(b"user export")
+        setup_manager(self.usb, self.bundle)
+        self.assertEqual(data.read_bytes(), b"user export")
+        self.assertEqual(scan_drive(self.usb)["packages"][0]["version"], "1.2")
+
+    def test_setup_rejects_packages_file_before_publishing_launcher(self):
+        (self.usb / "packages").write_bytes(b"existing user file")
+        with self.assertRaises(OSError):
+            setup_manager(self.usb, self.bundle)
+        self.assertFalse((self.usb / "NEMESIS.data").exists())
+        self.assertEqual((self.usb / "packages").read_bytes(), b"existing user file")
+
+    def test_scan_includes_root_zip_and_multiple_folder_local_zips(self):
+        packages = self.usb / "packages"
+        folder = packages / "Legacy"
+        folder.mkdir(parents=True)
+        (packages / "root.zip").write_bytes(payload("1.0", "root.package"))
+        (folder / "a.zip").write_bytes(payload("2.0", "first.package"))
+        (folder / "b.ZIP").write_bytes(payload("3.0", "second.package"))
+        rows = scan_drive(self.usb)["packages"]
+        self.assertEqual(
+            [(r["id"], r["version"]) for r in rows],
+            [
+                ("first.package", "2.0"),
+                ("second.package", "3.0"),
+                ("root.package", "1.0"),
+            ],
+        )
+        self.assertEqual(
+            [r["path"] for r in rows],
+            ["packages/Legacy/a.zip", "packages/Legacy/b.ZIP", "packages/root.zip"],
+        )
+        self.assertTrue(
+            all(
+                r["kind"] == "install" and not r["error"] and not r["replaceable"]
+                for r in rows
+            )
+        )
+
+    def test_scan_preserves_manifest_precedence_and_ignores_data_only_folders(self):
+        add_package(self.usb, self.release, "Managed")
+        packages = self.usb / "packages"
+        (packages / "Managed/other.zip").write_bytes(payload("9.0", "ignored"))
+        (packages / "DataOnly/data").mkdir(parents=True)
+        (packages / "DataOnly/data/export.zip").write_bytes(b"recording")
+        (packages / ".hidden").mkdir()
+        (packages / ".hidden/archive.zip").write_bytes(payload())
+        (packages / ".hidden.zip").write_bytes(payload())
+        (packages / "readme.txt").write_text("Not an installer")
+        rows = scan_drive(self.usb)["packages"]
+        self.assertEqual(len(rows), 1)
+        self.assertEqual(rows[0]["id"], "example")
+        self.assertTrue(rows[0]["replaceable"])
+
+    def test_scan_shows_broken_loose_archives_and_versionless_metadata(self):
+        packages = self.usb / "packages"
+        packages.mkdir()
+        (packages / "broken.zip").write_bytes(b"not a ZIP")
+        (packages / "unknown.zip").write_bytes(
+            zipped({"NEMESIS.data": "[nemesis]\nid=no.version\n"})
+        )
+        rows = scan_drive(self.usb)["packages"]
+        self.assertEqual(rows[0]["name"], "broken.zip")
+        self.assertTrue(rows[0]["error"])
+        self.assertEqual(rows[1]["name"], "no.version")
+        self.assertEqual(rows[1]["version"], "")
+        self.assertFalse(rows[1]["error"])
 
     def test_manager_update_preserves_disabled_launcher_and_packages(self):
         setup_manager(self.usb, self.bundle)
@@ -344,7 +416,7 @@ class CompanionHttpTests(CompanionFixture):
             "POST", "/api/select", json.dumps({"path": str(self.usb)})
         )
         self.assertEqual(status, 200)
-        self.assertEqual(json.loads(body)["path"], str(self.usb))
+        self.assertEqual(Path(json.loads(body)["path"]), self.usb.resolve())
         status, body = self.request(
             "POST", "/api/package?name=Example", self.release.read_bytes()
         )
@@ -379,6 +451,7 @@ class CompanionHttpTests(CompanionFixture):
             self.request("POST", "/api/select", json.dumps({"path": str(self.usb)}))[0],
             200,
         )
+
         self.assertEqual(
             self.request("POST", "/api/package?name=Example", b"bad ZIP")[0], 400
         )
@@ -390,6 +463,26 @@ class CompanionHttpTests(CompanionFixture):
             self.request("POST", "/api/update-manager", self.bundle.read_bytes())[0],
             200,
         )
+
+    def test_selection_returns_canonical_path_for_an_alias(self):
+        child = self.usb / "nested"
+        child.mkdir()
+        status, body = self.request(
+            "POST", "/api/select", json.dumps({"path": str(child) + "/.."})
+        )
+        self.assertEqual(status, 200)
+        self.assertEqual(Path(json.loads(body)["path"]), self.usb.resolve())
+
+    def test_state_includes_existing_loose_installers(self):
+        packages = self.usb / "packages"
+        packages.mkdir()
+        (packages / "existing.zip").write_bytes(payload())
+        self.request("POST", "/api/select", json.dumps({"path": str(self.usb)}))
+        status, body = self.request("GET", "/api/state")
+        self.assertEqual(status, 200)
+        rows = json.loads(body)["drive"]["packages"]
+        self.assertEqual(rows[0]["version"], "1.2")
+        self.assertFalse(rows[0]["replaceable"])
 
     def test_drive_identity_change_blocks_writes_and_rescan(self):
         self.request("POST", "/api/select", json.dumps({"path": str(self.usb)}))

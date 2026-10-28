@@ -54,7 +54,7 @@ function render(drive) {
   for (const pkg of drive.packages) {
     const row = textElement("div", "", "package");
     const details = document.createElement("div");
-    details.append(textElement("strong", pkg.name), textElement("code", `packages/${pkg.folder}/ · ${pkg.kind || "Unknown layout"}`));
+    details.append(textElement("strong", pkg.name), textElement("code", `${pkg.path || `packages/${pkg.folder}/`} · ${pkg.kind || "Unknown layout"}`));
     if (pkg.description) details.append(textElement("p", pkg.description));
     if (pkg.error) details.append(textElement("p", pkg.error, "issue"));
     const side = document.createElement("div");
@@ -66,7 +66,8 @@ function render(drive) {
       $("overwrite").checked = true;
       $("package-file").focus();
     });
-    side.append(update);
+    if (pkg.replaceable !== false) side.append(update);
+    else details.append(textElement("p", "Loose ZIP installer. Import a release into a new package folder to manage updates.", "hint"));
     row.append(details, side);
     $("packages").append(row);
   }

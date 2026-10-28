@@ -6,31 +6,12 @@ directory. Execute scripts can supply names and descriptions; their protocol
 version stays separate so the UI says Unknown instead of guessing app versions.
 """
 
-import configparser
 import shutil
-import zipfile
-from tools.companion_archives import package_layout
 from tools.release_metadata import read_config
 from tools.companion_drives import checked_path
+from tools.companion_scan import package_locations
 
-
-def package_metadata(payload):
-    """Inspect only the manifest; never extract or execute the installer.
-
-    The archive safety checks also bound entry count and expanded size. The
-    manifest has a smaller limit because it is read into memory for parsing.
-    """
-    with zipfile.ZipFile(payload) as archive:
-        kind, prefix = package_layout(archive)
-        if kind != "pkg":
-            raise ValueError(
-                "Installer ZIP does not contain an internal package manifest."
-            )
-        member = archive.getinfo(prefix + "NEMESIS.data")
-        cfg = read_config(archive.read(member))
-        return {
-            key: cfg.get(key, "") for key in ("id", "name", "version", "description")
-        }
+from tools.companion_installers import METADATA_ERRORS, describe_zip, package_metadata
 
 
 def describe_package(root, folder):
@@ -39,7 +20,15 @@ def describe_package(root, folder):
     Broken packages should not hide the healthy packages on the same drive.
     Resolve descriptor paths under the selected root before inspecting payloads.
     """
-    result = {"folder": folder, "name": folder, "version": "", "kind": "", "error": ""}
+    result = {
+        "folder": folder,
+        "name": folder,
+        "version": "",
+        "kind": "",
+        "error": "",
+        "path": f"packages/{folder}/",
+        "replaceable": True,
+    }
     try:
         directory = checked_path(root, "packages/" + folder)
         descriptor = checked_path(root, directory.relative_to(root) / "NEMESIS.data")
@@ -68,13 +57,7 @@ def describe_package(root, folder):
             {key: metadata.get(key, "") for key in ("id", "version", "description")}
         )
         result["name"] = metadata.get("name") or metadata.get("id") or folder
-    except (
-        OSError,
-        ValueError,
-        KeyError,
-        configparser.Error,
-        zipfile.BadZipFile,
-    ) as error:
+    except METADATA_ERRORS as error:
         result["error"] = str(error)
     return result
 
@@ -92,20 +75,8 @@ def scan_drive(root):
         manager["present"] = payload.is_file()
         if manager["present"]:
             manager.update(package_metadata(payload))
-    except (
-        OSError,
-        ValueError,
-        KeyError,
-        configparser.Error,
-        zipfile.BadZipFile,
-    ) as error:
+    except METADATA_ERRORS as error:
         manager["error"] = str(error)
-    packages = checked_path(root, "packages")
-    entries = (
-        sorted(packages.iterdir(), key=lambda p: p.name.casefold())
-        if packages.is_dir()
-        else []
-    )
     active = checked_path(root, "NEMESIS.data").exists()
     return {
         "path": str(root),
@@ -113,5 +84,10 @@ def scan_drive(root):
         "total": usage.total,
         "manager": manager,
         "launcher": "Active" if active else "Disabled or absent",
-        "packages": [describe_package(root, p.name) for p in entries if p.is_dir()],
+        "packages": [
+            describe_package(root, path.removeprefix("packages/"))
+            if descriptor
+            else describe_zip(root, path)
+            for path, descriptor in package_locations(root)
+        ],
     }

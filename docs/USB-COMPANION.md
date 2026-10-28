@@ -70,6 +70,12 @@ not installed head-unit versions. The USB wrapper's protocol version is not used
 as the installer's version. Scripts and missing package versions display as
 **Unknown**. Broken
 layouts show an error alongside the package instead of disappearing from the list.
+Existing raw installer ZIPs directly under `packages/`, or inside a package folder
+without a descriptor, are also shown with their internal names and versions.
+Loose ZIPs are inspection-only in this UI; import a release into a new managed
+folder for future updates. Folders containing a descriptor remain a single package
+row, and data-only folders are ignored. Initial setup creates `packages/` even
+when no community packages are imported, so the head-unit app can find the drive.
 No release downloads, version ordering, firmware compatibility decisions, package
 execution, package removal, or vehicle connection are included in this version.
 

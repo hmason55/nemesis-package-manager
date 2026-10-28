@@ -16,7 +16,8 @@ from pathlib import Path
 from tools.import_release import import_release
 from tools.release_storage import is_data_name
 from tools.companion_drives import checked_path
-from tools.companion_metadata import describe_package, package_layout
+from tools.companion_metadata import describe_package
+from tools.companion_archives import package_layout
 
 
 def _no_links(root, path):

@@ -52,6 +52,9 @@ def setup_manager(root, bundle, update=False):
                 target.parent.mkdir(exist_ok=True)
                 os.replace(work / required[2], target)
             else:
+                # The head-unit scanner uses packages/ to recognize a USB root,
+                # even when no community packages have been imported yet.
+                checked_path(root, "packages").mkdir(exist_ok=True)
                 published = []
                 try:
                     for name in targets:
