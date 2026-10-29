@@ -21,7 +21,7 @@ public final class PackagePresentationTest {
         String[] verbs = { "installed", "updated", "uninstalled", "launched", "run" };
         for (int i = 0; i < operations.length; i++) {
             OperationCoordinator.Completion result = PackagePresentation.completion(item, operations[i], 0, "");
-            check(result.success && result.output.contains("Example App was " + verbs[i] + " successfully."), operations[i] + " has useful summary with empty stdout");
+            check(result.success && result.output.contains("Example App was " + verbs[i] + "."), operations[i] + " has useful summary with empty stdout");
             check(result.details.contains("Exit code: 0") && result.details.contains("no additional output"), "empty output has explicit details");
         }
         OperationCoordinator.Completion failure = PackagePresentation.completion(item, "install", 7, "firmware mismatch");

@@ -40,9 +40,10 @@ and recovery details.
 ## Everyday use
 
 - Reopen the app through **NEMESIS Manager > Packages > Package Manager > Launch**.
+- Tap **Help** beside Refresh for a quick guide to the tabs, updates, and common actions.
 - Both UIs share the installed packages. Finish one operation before starting another in either UI, and refresh after changes.
 - Completion popups explain the result. Open their **Details** for diagnostic output.
-- **Installed** opens first, followed by **Updates**, **Not Installed**, and **Scripts**. Each tab has **Name** and **Version** columns. Installed shows the installed version; Not Installed and Scripts show the USB version. Updates compares both in one cell, such as `v0.5 -> v0.6`. Tab counts include every matching installer; scripts have their own category. Installed packages with a confirmed newer USB installer appear in both Installed and Updates, and never in Not Installed. If installed-state detection fails, tap Refresh to retry before browsing package categories.
+- **Installed** opens first, followed by **Updates**, **Available**, and **Scripts**. Each tab has **Name** and **Version** columns. Installed shows the installed version; Available and Scripts show the USB version. Updates compares both in one cell, such as `v0.5 -> v0.6`. Tab counts include every matching installer; scripts have their own category. Installed packages with a confirmed newer USB installer appear in both Installed and Updates, and never in Available. If installed-state detection fails, tap Refresh to retry before browsing package categories.
 - A spinner and operation text remain visible during scanning, installing, updating, and uninstalling. Wait for the result before removing USB.
 - USB installers and `data/` remain after uninstall. Other apps retain their own recording/export locations unless configured separately.
 
@@ -56,7 +57,7 @@ Download releases on your PC; Package Manager does not check for or download upd
 - **Package Manager:** replace `manager/usb.package.manager.zip` with the new internal installer. Refresh, select **Package Manager**, and confirm **Update**. NEMESIS replaces the app, which closes and should reopen. The progress indicator remains active until the installer finishes or Android replaces the app process.
 - **Removal:** use NEMESIS Manager's Packages screen to uninstall Package Manager itself.
 
-The **Version** column shows the installed release in Installed, the USB release in Not Installed and Scripts, and a comparison in Updates. Details lists installed and USB versions separately. Identical releases show a disabled **Up to date** action; older numeric releases show **Older installer**. **Updates** contains confirmed newer releases. If version metadata is unavailable or custom version strings cannot be ordered, **Install version** allows an explicit installation after confirmation without claiming an update is available. See [the update guide](docs/UPDATING.md).
+The **Version** column shows the installed release in Installed, the USB release in Available and Scripts, and a comparison in Updates. Details lists installed and USB versions separately. Identical releases show a disabled **Up to date** action; older numeric releases show **Older installer**. **Updates** contains confirmed newer releases. If version metadata is unavailable or custom version strings cannot be ordered, **Install version** allows an explicit installation after confirmation without claiming an update is available. See [the update guide](docs/UPDATING.md).
 
 ## Before installing packages
 

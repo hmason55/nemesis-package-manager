@@ -233,7 +233,14 @@ public class ActivityOperationsTest {
         assertFalse(((View) field("action")).isEnabled());
         assertFalse(((View) field("uninstall")).isEnabled());
         assertFalse(((View) field("details")).isEnabled());
-        assertTrue(((TextView) field("status")).getText().toString().contains("daemon unavailable"));
+        String status = ((TextView) field("status")).getText().toString();
+        assertTrue(status.contains("Tap Refresh"));
+        assertFalse("Technical errors belong in Details", status.contains("daemon unavailable"));
+        click("status");
+        dialogClick("Details");
+        assertNotNull(findContaining(ShadowDialog.getLatestDialog().getWindow().getDecorView(), "daemon unavailable"));
+        dialogClick("OK");
+        dialogClick("OK");
         Commands.registryStatus = 0;
         Commands.registry = "";
         click("refreshButton");

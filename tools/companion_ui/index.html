@@ -10,9 +10,10 @@
 <body>
   <main>
     <header class="topbar"><h1>USB companion</h1><span class="local">● Local</span></header>
+    <details class="quick-guide"><summary>Quick guide</summary><ol><li>Select your USB drive.</li><li>Use <strong>Drive setup</strong> to add Package Manager, then <strong>Add / update</strong> to copy package releases.</li><li>Safely eject the drive. In the vehicle, open Package Manager, tap <strong>Refresh</strong>, and choose <strong>Install</strong> or <strong>Update</strong>.</li></ol><p>Copying a release to USB does not install it on the head unit. Your existing data folder is kept when updating.</p></details>
     <section class="drive-bar" aria-label="USB drive">
       <div class="drive-selector"><label for="drive-select">USB drive</label><select id="drive-select"><option value="">Select a drive…</option></select></div>
-      <button id="refresh" class="secondary" type="button">Refresh drives</button>
+      <button id="refresh" class="secondary" type="button">Refresh</button>
       <details id="manual-drive" class="manual-drive"><summary>Drive not listed?</summary><form id="select-form"><label for="drive-path">Drive or mount path</label><div class="inline"><input id="drive-path" placeholder="E:\ or /media/you/USB" required autocomplete="off"><button type="submit">Select drive</button></div><p class="hint">For USB enclosures or mounts that do not appear in the selector.</p></form></details>
     </section>
     <section id="drive-summary" class="drive-summary" aria-label="Drive summary" hidden>
@@ -37,9 +38,10 @@
         <form id="package-form" class="editor" novalidate>
           <div class="form-grid"><div><label for="import-mode">Action</label><select id="import-mode"><option value="add">Add a new package</option><option value="update" id="update-option" disabled>Update an existing package</option></select></div><div id="target-group" hidden><label for="package-target">Package to update</label><select id="package-target"><option value="">Choose a package…</option></select></div></div>
           <label for="package-file">Release ZIP</label><input id="package-file" type="file" accept=".zip">
-          <p id="import-note" class="hint">The folder name is filled in from the ZIP.</p>
+          <p id="import-note" class="hint">Choose the release ZIP you downloaded. The folder name is filled in for you.</p>
           <div id="new-folder" class="folder-options"><p class="destination">Package folder <strong id="folder-preview">Choose a ZIP first</strong></p><details id="folder-settings"><summary>Change folder name</summary><label for="package-name">Folder name</label><input id="package-name" placeholder="Filled in from the ZIP filename" maxlength="64" autocomplete="off"></details></div>
           <div class="actions"><button id="import-submit" type="submit">Add package</button><button id="cancel-import" class="quiet" type="button">Back to packages</button></div>
+          <p class="hint next-step">Next: install or update it through Package Manager in the vehicle.</p>
         </form>
       </section>
       <section id="panel-setup" class="panel" role="tabpanel" aria-labelledby="tab-setup" tabindex="0" hidden>
