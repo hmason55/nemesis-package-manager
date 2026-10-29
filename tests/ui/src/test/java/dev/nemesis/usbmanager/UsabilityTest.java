@@ -97,7 +97,7 @@ public class UsabilityTest {
         ListView list = (ListView) field(activity, "list");
         ViewGroup packageRow = (ViewGroup) ((BaseAdapter) field(activity, "adapter")).getView(0, null, list);
         assertEquals(2, packageRow.getChildCount());
-        assertEquals("v1.1", ((TextView) packageRow.getChildAt(1)).getText().toString());
+        assertEquals("1.1", ((TextView) packageRow.getChildAt(1)).getText().toString());
         android.widget.LinearLayout.LayoutParams nameLayout = (android.widget.LinearLayout.LayoutParams) packageRow.getChildAt(0).getLayoutParams();
         android.widget.LinearLayout.LayoutParams versionLayout = (android.widget.LinearLayout.LayoutParams) packageRow.getChildAt(1).getLayoutParams();
         assertTrue("Names receive more room than versions", nameLayout.weight > versionLayout.weight);
@@ -132,15 +132,38 @@ public class UsabilityTest {
         item.id = "usb.package.manager";
         list.performItemClick(list.getChildAt(0), 0, 0);
         assertFalse("Manager cannot uninstall itself", ((View) field(activity, "uninstall")).isEnabled());
-        assertTrue("Installed manager can update through NEMESIS", ((View) field(activity, "action")).isEnabled());
+        assertFalse("Manager cannot update itself", ((View) field(activity, "action")).isEnabled());
+        assertFalse("Manager cannot launch itself", ((View) field(activity, "launch")).isEnabled());
         assertTrue("Manager details stay accessible", ((View) field(activity, "details")).isEnabled());
         Field busy = MainActivity.class.getDeclaredField("busy"); busy.setAccessible(true); busy.set(activity, true);
         java.lang.reflect.Method updateMethod = MainActivity.class.getDeclaredMethod("updateButtons");
         updateMethod.setAccessible(true); updateMethod.invoke(activity);
-        assertEquals("Busy operations display progress", View.VISIBLE, ((View) field(activity, "progress")).getVisibility());
+        assertEquals("Scanning does not display an operation overlay", View.GONE, ((View) field(activity, "operationOverlay")).getVisibility());
         assertFalse(((View) field(activity, "action")).isEnabled());
         controller.stop().destroy();
         assertFalse("Destroyed activity dismisses its dialogs", details.isShowing());
+    }
+    @Test public void packageListUsesTheFreedStatusSpaceOnShortLandscapeScreens() throws Exception {
+        ActivityController<MainActivity> controller = Robolectric.buildActivity(MainActivity.class).create().start().visible();
+        MainActivity activity = controller.get();
+        ArrayList<PackageScanner.Item> items = (ArrayList<PackageScanner.Item>) field(activity, "items");
+        for (int i = 0; i < 12; i++) {
+            PackageScanner.Item item = new PackageScanner.Item();
+            item.id = "example." + i; item.title = "Example App " + i; item.kind = "installed";
+            item.installed = true; item.installedVersion = "1.0"; items.add(item);
+        }
+        ((BaseAdapter) field(activity, "adapter")).notifyDataSetChanged();
+        float density = activity.getResources().getDisplayMetrics().density;
+        int width = Math.round(853 * density), height = Math.round(400 * density);
+        View root = activity.findViewById(android.R.id.content);
+        root.measure(View.MeasureSpec.makeMeasureSpec(width, View.MeasureSpec.EXACTLY), View.MeasureSpec.makeMeasureSpec(height, View.MeasureSpec.EXACTLY));
+        root.layout(0, 0, width, height);
+        ListView list = (ListView) field(activity, "list");
+        assertTrue("List has at least 195dp of the short display", list.getHeight() >= Math.round(195 * density));
+        View actionBar = (View) ((View) field(activity, "action")).getParent();
+        assertTrue("Packages fit above the actions", list.getBottom() <= actionBar.getTop());
+        assertEquals(View.GONE, ((View) field(activity, "operationOverlay")).getVisibility());
+        controller.stop().destroy();
     }
     @Test public void readableCompletionUnderLightOemTheme() {
         ActivityController<Activity> controller = Robolectric.buildActivity(Activity.class).setup();

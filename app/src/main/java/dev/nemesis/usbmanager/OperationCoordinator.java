@@ -32,7 +32,7 @@ final class OperationCoordinator {
     synchronized String progressText() {
         long elapsed = Math.max(0, (System.nanoTime() - startedAt) / 1000000);
         return description + " | " + elapsed / 1000 + "s" +
-            (elapsed >= warningAfterMillis ? " | Taking longer than usual. Tap status for guidance." : " | Keep USB connected.");
+            (elapsed >= warningAfterMillis ? " | Taking longer than usual. Open Details for guidance." : " | Keep USB connected.");
     }
     synchronized String progressDetails() {
         return progressText() + "\n\nKeep USB connected. A slow operation may still be running; other actions remain blocked until its result is known." +

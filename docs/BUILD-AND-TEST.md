@@ -77,8 +77,8 @@ reads) time out after 30 seconds. A failed scan keeps installed state unavailabl
 check the command channel and tap Refresh to retry. Query timeouts do not apply to
 installers, scripts, launches, or uninstall operations.
 
-Package operations show elapsed time. After 60 seconds, the status explains that
-the operation is taking longer than usual; tap it for monitoring and log guidance.
+Package operations show elapsed time. After 60 seconds, the operation overlay explains that
+the operation is taking longer than usual; open its Details for monitoring and log guidance.
 Keep USB connected. Closing and reopening the activity continues monitoring in
 the same process. A missing or malformed manager-update result does not unlock
 other operations: a slow installer may still be working. Inspect the NEMESIS logs

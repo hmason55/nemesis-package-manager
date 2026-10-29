@@ -59,7 +59,7 @@ const hints = {
   "cancel-import": "Return to the package list without copying files.",
   "manager-file": "Choose usb-package-manager-ready.zip from a trusted Package Manager release.",
   setup: "Copy Package Manager and its launcher to this drive. Existing files are kept.",
-  "update-manager": "Replace the manager installer on USB. Confirm Update in the vehicle to install it."
+  "update-manager": "Copy the manager installer to USB. This does not update the installed app; follow the separate-drive NEMESIS instructions in Drive setup."
 };
 for (const [id, hint] of Object.entries(hints)) $(id).dataset.tooltip = hint;
 $("package-file").setAttribute("aria-describedby", "import-note");
@@ -237,12 +237,12 @@ function render(drive) {
     const manager = drive.manager;
     $("manager-summary").textContent = manager.error ? "Needs attention" : manager.present ? manager.version || "Version unknown" : "Setup needed";
     $("manager-version").textContent = manager.present ? `On USB: ${manager.version || "Unknown"}` : "Setup needed";
-    $("manager-detail").textContent = manager.error || (manager.present ? "Update the USB installer. Launcher settings are kept." : "Add Package Manager to this drive. Existing files are kept.");
+    $("manager-detail").textContent = manager.error || (manager.present ? "Replace the installer on USB. This does not update the installed app. Launcher settings are kept." : "Add Package Manager to this drive. Existing files are kept.");
     const repair = !manager.present && manager.repairable;
     $("setup").hidden = manager.present || repair;
     $("update-manager").hidden = !manager.present && !repair;
     $("update-manager").textContent = repair ? "Repair manager" : "Update manager";
-    if (repair) $("manager-detail").textContent = "Restore the missing manager installer. Existing launcher settings are kept.";
+    if (repair) $("manager-detail").textContent = "Restore the missing installer on USB. This does not change the installed app. Existing launcher settings are kept.";
   }
   renderTargets();
   renderPackages();
@@ -344,8 +344,11 @@ $("manager-form").addEventListener("submit", (event) => {
     if (!confirm(`${action === "setup" ? "Set up Package Manager" : "Update the Package Manager installer"} on ${selected.path}?`)) { message("Operation cancelled."); return; }
     render(await api(`/api/${action}`, file));
     $("manager-form").reset();
-    showTab("packages", true);
-    message(action === "setup" ? "Drive prepared. Add packages to get started." : "Manager installer updated on USB. Confirm Update in the vehicle to install it.");
+    const guide = $("manager-update-guide");
+    guide.open = action !== "setup";
+    showTab(action === "setup" ? "packages" : "setup", true);
+    message(action === "setup" ? "Drive prepared. Add packages, then safely eject and approve the NEMESIS prompt in the vehicle for first installation." : "Manager installer copied to USB. This does not update the installed app. Follow the separate-drive NEMESIS instructions below to install it.");
+    if (guide.open) guide.querySelector("summary").focus();
   });
 });
 if (token) operation("Checking local drives…", refresh);

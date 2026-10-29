@@ -20,7 +20,7 @@ public class PresentationEdgeCasesTest {
         item.installedVersion = "custom";
         assertTrue(PackagePresentation.confirmation(item).contains("could not be compared"));
         item.id = "usb.package.manager";
-        assertTrue(PackagePresentation.confirmation(item).contains("close and reopen"));
+        assertFalse(PackagePresentation.canInstall(item));
     }
     @Test public void namesStatesAndSelectionKeysHaveUsefulFallbacks() {
         PackageScanner.Item item = new PackageScanner.Item();
@@ -57,7 +57,7 @@ public class PresentationEdgeCasesTest {
         assertEquals("update", PackagePresentation.operation(item, null));
         assertEquals("uninstall", PackagePresentation.operation(item, "uninstall"));
         item.id = "usb.package.manager";
-        assertTrue(PackagePresentation.details(item).contains("Use Update"));
+        assertTrue(PackagePresentation.details(item).contains("NEMESIS Manager > Packages"));
         item.error = "Missing installer";
         assertTrue(PackagePresentation.details(item).contains("Problem: Missing installer"));
         assertFalse(PackagePresentation.isManager(null));

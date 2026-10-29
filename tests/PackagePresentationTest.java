@@ -7,8 +7,13 @@ public final class PackagePresentationTest {
     public static void main(String[] args) {
         PackageScanner.Item manager = new PackageScanner.Item();
         manager.id = "usb.package.manager"; manager.installed = true;
+        manager.kind = PackageScanner.INSTALL; manager.version = "2"; manager.installedVersion = "1";
         check(PackagePresentation.isManager(manager), "manager is recognized by stable ID");
         check(!PackagePresentation.canUninstall(manager), "manager cannot remove itself");
+        check(!PackagePresentation.canInstall(manager) && !PackagePresentation.canLaunch(manager), "manager cannot manage itself");
+        for (int category = 0; category < 4; category++)
+            check(!PackagePresentation.inCategory(manager, category), "manager is excluded from every tab and count");
+        check(!PackagePresentation.updateAvailable(manager), "manager does not advertise self updates");
         manager.id = "other.package";
         check(PackagePresentation.canUninstall(manager), "other installed packages remain removable");
         manager.locked = true;
@@ -32,10 +37,10 @@ public final class PackagePresentationTest {
         item.installed = true;
         check("Install version".equals(PackagePresentation.action(item)), "missing installed version does not claim update");
         item.installedVersion = "1.1";
-        check("v1.1".equals(PackagePresentation.versionColumn(item, PackagePresentation.INSTALLED)), "Installed shows only installed version");
-        check("v1.1 \u2192 v1.2".equals(PackagePresentation.versionColumn(item, PackagePresentation.UPDATES)), "Updates compares installed and USB versions in one column");
-        check("v1.2".equals(PackagePresentation.versionColumn(item, PackagePresentation.NOT_INSTALLED)), "Not Installed shows only USB version");
-        check("v1.2".equals(PackagePresentation.versionColumn(item, PackagePresentation.SCRIPTS)), "Scripts shows only USB version");
+        check("1.1".equals(PackagePresentation.versionColumn(item, PackagePresentation.INSTALLED)), "Installed shows only installed version");
+        check("1.1 \u2192 1.2".equals(PackagePresentation.versionColumn(item, PackagePresentation.UPDATES)), "Updates compares installed and USB versions in one column");
+        check("1.2".equals(PackagePresentation.versionColumn(item, PackagePresentation.NOT_INSTALLED)), "Not Installed shows only USB version");
+        check("1.2".equals(PackagePresentation.versionColumn(item, PackagePresentation.SCRIPTS)), "Scripts shows only USB version");
         check("Update".equals(PackagePresentation.action(item)), "installed package action");
         check(PackagePresentation.updateAvailable(item) && PackagePresentation.inCategory(item, PackagePresentation.UPDATES), "newer release is in Updates");
         check(PackagePresentation.inCategory(item, PackagePresentation.INSTALLED) && !PackagePresentation.inCategory(item, PackagePresentation.NOT_INSTALLED), "newer USB release appears in Installed and Updates but never Not installed");
@@ -53,6 +58,7 @@ public final class PackagePresentationTest {
         check(PackagePresentation.compareVersions("32.68-gen5w.5", "32.68-gen5w.5") == 0, "identical custom releases detected");
         check(PackagePresentation.compareVersions("1.0-beta", "1.0") == null, "custom ordering stays unknown");
         check(PackagePresentation.compareVersions("1.2.0", "1.2") == 0, "zero padding remains equal");
+        check(PackagePresentation.compareVersions("v1.3", "V1.2") > 0, "version prefixes do not hide numeric updates");
         check(!PackagePresentation.subtitle(item).contains("Â"), "status text contains no mojibake");
         check(!PackagePresentation.subtitle(item).contains("/storage") && !PackagePresentation.subtitle(item).contains("Example App"), "list does not repeat name or path");
         check(PackagePresentation.details(item).contains(item.target.getAbsolutePath()) && PackagePresentation.details(item).contains("USB version: 1.2"), "full source and version remain in Details");
@@ -74,7 +80,7 @@ public final class PackagePresentationTest {
         check(PackagePresentation.inCategory(item, PackagePresentation.SCRIPTS) && !PackagePresentation.inCategory(item, PackagePresentation.INSTALLED), "scripts have a separate category");
         check("N/A".equals(PackagePresentation.installedVersion(item)), "scripts do not claim an installed version");
         item.version = "v2.0";
-        check("v2.0".equals(PackagePresentation.versionColumn(item, PackagePresentation.SCRIPTS)), "existing version prefix is not duplicated");
+        check("2.0".equals(PackagePresentation.versionColumn(item, PackagePresentation.SCRIPTS)), "numeric version prefix is omitted");
         item.version = null;
         check("Unknown".equals(PackagePresentation.versionColumn(item, PackagePresentation.SCRIPTS)), "missing versions remain explicit");
         item.kind = "installed"; item.folder = null; item.target = null;

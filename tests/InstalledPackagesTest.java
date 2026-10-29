@@ -18,7 +18,15 @@ public final class InstalledPackagesTest {
         check("2".equals(recovered.versions.get("core")), "multiple installed versions parsed");
         recovered.readVersions(1, "[installed:demo]\n[nemesis]\nversion=wrong\n");
         check("1.2.3".equals(recovered.versions.get("demo")), "failed metadata reads do not replace versions");
-        check(recovered.versionQuery().contains("/data/nemesis/apps/demo/NEMESIS.data"), "reads NEMESIS installed metadata");
+        check(recovered.versionQuery().contains("/data/nemesis/apps/*/NEMESIS.data"), "reads NEMESIS installed metadata");
+        String query = recovered.versionQuery();
+        for (int i = 0; i < 100; i++) recovered.names.put("long.package.identifier." + i, "Package " + i);
+        check(query.equals(recovered.versionQuery()) && query.length() < 1024,
+            "version command fits the NEMESIS 1024-byte buffer regardless of registry size");
+        recovered.readVersions(0, "[installed:demo]\r\n\uFEFF[nemesis]\r\nversion = 1.4\r\n" +
+            "[installed:unregistered]\n[nemesis]\nversion=9\n");
+        check("1.4".equals(recovered.versions.get("demo")), "BOM and CRLF installed manifests are supported");
+        check(!recovered.versions.containsKey("unregistered"), "metadata outside registry is ignored");
         PackageScanner.Item item = new PackageScanner.Item();
         item.title = "Demo"; item.kind = PackageScanner.INSTALL; item.installedStateKnown = failed.available();
         check(item.label().contains("INSTALLED STATE UNAVAILABLE"), "USB entry exposes unknown state");

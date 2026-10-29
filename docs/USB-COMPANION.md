@@ -58,6 +58,9 @@ on each launch. Do not share it with another user or web page.
    replace only `manager/usb.package.manager.zip`, preserving launcher settings.
    If that installer is missing but launcher files remain, use **Repair manager**
    to restore it without reactivating a disabled launcher.
+   These actions only copy the installer to USB; they do not update the installed
+   app. After replacement or repair, Drive setup stays open and expands the
+   offline NEMESIS installation instructions described below.
 3. The **Packages** tab lists names, versions on USB, types, and validation status
    in columns. Use the filter to show installers, scripts, or packages needing
    attention. Expand **Details** for descriptions, file paths, and error messages.
@@ -96,8 +99,42 @@ when no community packages are imported, so the head-unit app can find the drive
 No release downloads, version ordering, firmware compatibility decisions, package
 execution, package removal, or vehicle connection are included in this version.
 
-NEMESIS must already work on the head unit. After copying finishes, use the drive
-in the parked vehicle and confirm installation or update in Package Manager.
+NEMESIS must already work on the head unit. After copying community packages,
+use the drive in the parked vehicle and confirm installation or update in
+Package Manager. Package Manager itself uses the separate procedure below.
+
+## Install or update Package Manager itself
+
+**Update manager** replaces the installer on USB; **Repair manager** restores a
+missing installer. Neither action changes the app installed on the head unit.
+Package Manager is hidden from its own list and cannot update itself.
+
+1. Copy `manager/usb.package.manager.zip` from your normal package drive to the
+   root of a **separate USB drive**, named `usb.package.manager.zip`. Keep it
+   compressed.
+2. On that separate drive, create a plain-text file named `NEMESIS.data` at its
+   root containing:
+
+   ```ini
+   [nemesis]
+   version=1.0
+   type=install
+   path=usb.package.manager.zip
+   ```
+
+3. With the vehicle parked and the head unit fully booted, close Package Manager,
+   safely eject the separate drive from your computer, and insert it in the
+   vehicle. Approve NEMESIS's installation or update prompt, keep the drive
+   connected, and wait for completion.
+4. Open **NEMESIS Manager > Packages > Package Manager > Launch**. Return to your
+   normal package drive afterward, keeping its disabled root descriptor disabled.
+   Do not put the install descriptor on that drive.
+
+The same instructions are embedded in **Drive setup**, so no internet connection
+is required. For first installation on a newly prepared drive, the normal
+launcher can install and open Package Manager after the NEMESIS execution prompt;
+that launcher does not update an already-installed copy. See also the
+[manager update guide](UPDATING.md#update-package-manager).
 
 ## Files and recovery
 
