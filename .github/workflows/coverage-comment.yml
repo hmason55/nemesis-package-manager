@@ -13,14 +13,14 @@ concurrency:
 jobs:
   comment:
     if: github.event.workflow_run.event == 'pull_request'
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-24.04
     steps:
       # workflow_run uses trusted default-branch code, never the PR checkout.
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v6
         with:
           ref: ${{ github.event.repository.default_branch }}
           persist-credentials: false
-      - uses: actions/github-script@v7
+      - uses: actions/github-script@v8
         with:
           script: |
             await require('./.github/scripts/coverage-comment.cjs')({github, context, core});

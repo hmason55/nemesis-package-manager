@@ -19,11 +19,11 @@ jobs:
     needs: python-quality
     outputs:
       version: ${{ steps.version.outputs.version }}
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-24.04
     permissions:
       contents: read
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v6
       - name: Select unique build version
         id: version
         env:
@@ -39,7 +39,7 @@ jobs:
           with open(os.environ['GITHUB_OUTPUT'], 'a') as output:
               output.write(f"version={version}\n")
           PY
-      - uses: actions/setup-java@v4
+      - uses: actions/setup-java@v5
         with:
           distribution: temurin
           java-version: '17'
@@ -50,7 +50,7 @@ jobs:
           packages: 'platform-tools'
       - name: Install required Android SDK components
         run: sdkmanager --install "platforms;android-35" "build-tools;35.0.0"
-      - uses: gradle/actions/setup-gradle@v4
+      - uses: gradle/actions/setup-gradle@v5
       - name: Run host tests
         run: bash tests/run_tests.sh
       - name: Test release publication without publishing
@@ -61,32 +61,32 @@ jobs:
         run: bash gradlew --no-daemon --stacktrace :app:assembleDebug
       - name: Create NEMESIS USB bundles
         run: python3 tools/build_release.py app/build/outputs/apk/debug/app-debug.apk
-      - uses: actions/upload-artifact@v4
+      - uses: actions/upload-artifact@v6
         with:
           name: nemesis-usb-package-manager
           path: dist/*
   release:
     needs: [build, companion]
     if: github.event_name == 'push' && github.ref == 'refs/heads/main'
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-24.04
     concurrency:
       group: publish-package-manager-${{ github.run_id }}
       cancel-in-progress: false
     permissions:
       contents: write
     steps:
-      - uses: actions/checkout@v4
-      - uses: actions/download-artifact@v4
+      - uses: actions/checkout@v6
+      - uses: actions/download-artifact@v7
         with:
           name: nemesis-usb-package-manager
           path: dist
-      - uses: actions/download-artifact@v4
+      - uses: actions/download-artifact@v7
         with:
           pattern: nemesis-usb-companion-*
           merge-multiple: true
           path: dist
       - name: Publish tested commit with tag, notes and checksums
-        uses: actions/github-script@v7
+        uses: actions/github-script@v8
         env:
           RELEASE_VERSION: ${{ needs.build.outputs.version }}
         with:
