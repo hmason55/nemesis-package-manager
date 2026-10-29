@@ -1,8 +1,12 @@
 "use strict";
 const $ = (id) => document.getElementById(id);
 const token = location.hash.slice(1);
+const folderPattern = /^[A-Za-z0-9][A-Za-z0-9._-]{0,63}$/;
+const tabNames = ["packages", "import", "setup"];
 let selected = null;
+let drives = [];
 let busy = false;
+
 function message(text, error = false) {
   $("status").textContent = text;
   $("status").classList.toggle("error", error);
@@ -18,9 +22,8 @@ async function api(path, body, json = false) {
 function availability() {
   $("workspace").disabled = busy || !selected;
   $("select-form").querySelectorAll("input, button").forEach((el) => { el.disabled = busy; });
+  $("drive-select").disabled = busy;
   $("refresh").disabled = busy;
-  $("setup").disabled = !!selected?.manager.present;
-  $("update-manager").disabled = !selected?.manager.present;
 }
 async function operation(label, action) {
   if (busy) return;
@@ -37,59 +40,155 @@ function textElement(tag, text, className) {
   if (className) element.className = className;
   return element;
 }
-function render(drive) {
-  selected = drive;
-  $("drive-summary").hidden = !drive;
+function showTab(name, focus = false) {
+  for (const tab of tabNames) {
+    const active = tab === name;
+    $("tab-" + tab).setAttribute("aria-selected", String(active));
+    $("tab-" + tab).tabIndex = active ? 0 : -1;
+    $("panel-" + tab).hidden = !active;
+  }
+  if (focus) $("tab-" + name).focus();
+}
+for (const name of tabNames) {
+  $("tab-" + name).addEventListener("click", () => showTab(name));
+  $("tab-" + name).addEventListener("keydown", (event) => {
+    const index = tabNames.indexOf(name);
+    let next;
+    if (event.key === "ArrowRight") next = (index + 1) % tabNames.length;
+    if (event.key === "ArrowLeft") next = (index + tabNames.length - 1) % tabNames.length;
+    if (event.key === "Home") next = 0;
+    if (event.key === "End") next = tabNames.length - 1;
+    if (next !== undefined) { event.preventDefault(); showTab(tabNames[next], true); }
+  });
+}
+function driveOptions() {
+  const paths = [...new Set([...drives, ...(selected ? [selected.path] : [])])];
+  $("drive-select").replaceChildren(new Option(paths.length ? "Select a drive…" : "No removable drives detected", ""), ...paths.map(path => new Option(path, path)));
+  $("drive-select").value = selected?.path || "";
+}
+function managedPackages() {
+  return (selected?.packages || []).filter(pkg => pkg.replaceable !== false && folderPattern.test(pkg.folder));
+}
+function syncImport() {
+  const update = $("import-mode").value === "update";
+  $("target-group").hidden = !update;
+  $("new-folder").hidden = update;
+  $("import-submit").textContent = update ? "Update package" : "Add package";
+  $("import-note").textContent = update ? "Choose the new release ZIP for this package. Existing data/ will be preserved." : "Choose a downloaded package release. Its folder name is filled in automatically.";
+  $("folder-preview").textContent = $("package-name").value ? `packages/${$("package-name").value}/` : "Choose a ZIP first";
+}
+function renderTargets() {
+  const previous = $("package-target").value;
+  const packages = managedPackages();
+  $("package-target").replaceChildren(new Option("Choose a package…", ""), ...packages.map(pkg => new Option(`${pkg.name} (${pkg.folder})`, pkg.folder)));
+  $("package-target").value = packages.some(pkg => pkg.folder === previous) ? previous : "";
+  $("update-option").disabled = !packages.length;
+  if (!packages.length) $("import-mode").value = "add";
+  syncImport();
+}
+function beginImport(folder = "") {
+  $("package-form").reset();
+  $("folder-settings").open = false;
+  $("import-mode").value = folder ? "update" : "add";
+  $("package-target").value = folder;
+  syncImport();
+  showTab("import");
+  $(folder ? "package-file" : "import-mode").focus();
+}
+function renderPackages() {
+  const all = selected?.packages || [];
+  const filter = $("package-filter").value;
+  const packages = all.filter(pkg => filter === "all" || (filter === "attention" ? !!pkg.error : pkg.kind === filter));
+  $("package-count").textContent = String(all.length);
   $("packages").replaceChildren();
-  if (!drive) return;
-  $("drive-path").value = drive.path;
-  $("selected-path").textContent = drive.path;
-  $("space").textContent = `${(drive.free / 1024 ** 3).toFixed(1)} GiB / ${(drive.total / 1024 ** 3).toFixed(1)} GiB`;
-  $("launcher").textContent = drive.launcher;
-  const manager = drive.manager;
-  $("manager-version").textContent = manager.present ? `On USB: ${manager.version || "Unknown"}` : "Setup needed";
-  $("manager-detail").textContent = manager.error || (manager.present ? "Manager installer found. Updating replaces only the installer and preserves your launcher settings." : "Prepare this drive with the Package Manager release bundle. Existing unrelated files stay in place.");
-  $("package-count").textContent = `${drive.packages.length} package${drive.packages.length === 1 ? "" : "s"}`;
-  if (!drive.packages.length) $("packages").append(textElement("p", "No packages yet. Import a release ZIP below to get started.", "empty"));
-  for (const pkg of drive.packages) {
-    const row = textElement("div", "", "package");
-    const details = document.createElement("div");
-    details.append(textElement("strong", pkg.name), textElement("code", `${pkg.path || `packages/${pkg.folder}/`} · ${pkg.kind || "Unknown layout"}`));
+  if (!packages.length) {
+    const row = document.createElement("tr");
+    const cell = textElement("td", !selected ? "Select a drive to view its packages." : all.length ? "No packages match this filter." : "No packages yet. Choose Add package to get started.", "empty");
+    cell.colSpan = 5;
+    row.append(cell);
+    $("packages").append(row);
+  }
+  for (const pkg of packages) {
+    const row = document.createElement("tr");
+    const name = document.createElement("td");
+    name.append(textElement("strong", pkg.name));
+    if (pkg.id) name.append(textElement("span", pkg.id, "package-id"));
+    const details = textElement("details", "", "package-details");
+    details.append(textElement("summary", "Details"), textElement("code", pkg.path || `packages/${pkg.folder}/`));
     if (pkg.description) details.append(textElement("p", pkg.description));
     if (pkg.error) details.append(textElement("p", pkg.error, "issue"));
-    const side = document.createElement("div");
-    side.append(textElement("div", `On USB: ${pkg.version || "Unknown"}`, "version"));
-    const update = textElement("button", "Replace installer", "quiet");
-    update.type = "button";
-    update.addEventListener("click", () => {
-      $("package-name").value = pkg.folder;
-      $("overwrite").checked = true;
-      $("package-file").focus();
-    });
-    if (pkg.replaceable !== false) side.append(update);
-    else details.append(textElement("p", "Loose ZIP installer. Import a release into a new package folder to manage updates.", "hint"));
-    row.append(details, side);
+    if (pkg.replaceable === false) details.append(textElement("p", "Loose ZIP installer. Import into a new package folder to manage updates."));
+    name.append(details);
+    const version = textElement("td", pkg.version || "Unknown", "version");
+    const type = textElement("td", ({ install: "Installer", execute: "Script", source: "Source" })[pkg.kind] || "Unknown", "type-column");
+    const status = document.createElement("td");
+    const badge = textElement("span", pkg.error ? "Needs attention" : "Ready", pkg.error ? "badge attention" : "badge");
+    if (pkg.error) badge.title = pkg.error;
+    status.append(badge);
+    const action = textElement("td", "", "row-action");
+    if (managedPackages().some(item => item.folder === pkg.folder)) {
+      const update = textElement("button", "Update", "secondary");
+      update.type = "button";
+      update.setAttribute("aria-label", `Update ${pkg.name}`);
+      update.addEventListener("click", () => beginImport(pkg.folder));
+      action.append(update);
+    } else action.append(textElement("span", "View only", "hint"));
+    row.append(name, version, type, status, action);
     $("packages").append(row);
   }
 }
+function render(drive) {
+  selected = drive;
+  driveOptions();
+  $("drive-summary").hidden = !drive;
+  if (drive) {
+    $("drive-path").value = drive.path;
+    $("space").textContent = `${(drive.free / 1024 ** 3).toFixed(1)} GiB of ${(drive.total / 1024 ** 3).toFixed(1)} GiB`;
+    $("launcher").textContent = drive.launcher;
+    const manager = drive.manager;
+    $("manager-summary").textContent = manager.error ? "Needs attention" : manager.present ? manager.version || "Version unknown" : "Setup needed";
+    $("manager-version").textContent = manager.present ? `On USB: ${manager.version || "Unknown"}` : "Setup needed";
+    $("manager-detail").textContent = manager.error || (manager.present ? "Package Manager is on this drive. Updating replaces its installer and preserves your launcher settings." : "Set up this drive with the Package Manager release bundle. Existing unrelated files stay in place.");
+    $("setup").hidden = manager.present;
+    $("update-manager").hidden = !manager.present;
+  }
+  renderTargets();
+  renderPackages();
+}
 async function refresh() {
   const state = await api("/api/state");
-  $("drives").replaceChildren(...state.drives.map((path) => { const option = document.createElement("option"); option.value = path; return option; }));
+  drives = state.drives;
   render(state.drive);
-  message(state.drive ? "Drive checked. Ready for your next action." : "Choose your USB drive to get started.");
+  message(state.drive ? "Drive checked. Ready." : "Select a USB drive to get started.");
+}
+function chooseDrive(path) {
+  if (!path) { driveOptions(); return; }
+  operation("Reading drive…", async () => {
+    let drive;
+    try { drive = await api("/api/select", { path }, true); }
+    catch (error) { driveOptions(); throw error; }
+    $("package-form").reset();
+    $("manager-form").reset();
+    $("folder-settings").open = false;
+    $("package-filter").value = "all";
+    $("manual-drive").open = false;
+    render(drive);
+    showTab(drive.manager.present ? "packages" : "setup");
+    message(`Selected ${drive.path}.`);
+  });
 }
 $("refresh").addEventListener("click", () => operation("Checking drives…", refresh));
-$("select-form").addEventListener("submit", (event) => {
-  event.preventDefault();
-  operation("Reading drive…", async () => {
-    const drive = await api("/api/select", { path: $("drive-path").value.trim() }, true);
-    render(drive);
-    $("overwrite").checked = false;
-    message(`Selected ${drive.path}. Review this path before copying files.`);
-  });
-});
+$("drive-select").addEventListener("change", () => chooseDrive($("drive-select").value));
+$("select-form").addEventListener("submit", (event) => { event.preventDefault(); chooseDrive($("drive-path").value.trim()); });
+$("package-filter").addEventListener("change", renderPackages);
+$("add-package").addEventListener("click", () => beginImport());
+$("cancel-import").addEventListener("click", () => showTab("packages", true));
+$("import-mode").addEventListener("change", () => { $("package-file").value = ""; syncImport(); });
+$("package-target").addEventListener("change", () => { $("package-file").value = ""; });
+$("package-name").addEventListener("input", syncImport);
 $("package-file").addEventListener("change", () => {
-  if (!$("overwrite").checked) $("package-name").value = ($("package-file").files[0]?.name || "").replace(/\.zip$/i, "").replace(/-usb$/i, "").replace(/[^A-Za-z0-9._-]/g, "-").replace(/^[^A-Za-z0-9]+/, "").slice(0, 64);
+  if ($("import-mode").value === "add") $("package-name").value = ($("package-file").files[0]?.name || "").replace(/\.zip$/i, "").replace(/-usb$/i, "").replace(/[^A-Za-z0-9._-]/g, "-").replace(/^[^A-Za-z0-9]+/, "").slice(0, 64);
+  syncImport();
 });
 function validFile(file) {
   if (!file || !file.name.toLowerCase().endsWith(".zip") || !file.size || file.size > 512 * 1024 ** 2) throw new Error("Choose a nonempty ZIP smaller than 512 MiB.");
@@ -97,26 +196,31 @@ function validFile(file) {
 }
 $("package-form").addEventListener("submit", (event) => {
   event.preventDefault();
-  operation("Importing package… Keep the drive connected until this finishes.", async () => {
+  operation("Copying package… Keep the drive connected.", async () => {
     const file = validFile($("package-file").files[0]);
-    const name = $("package-name").value;
-    const overwrite = $("overwrite").checked;
-    if (overwrite && !confirm(`Replace installer files in ${selected.path}/packages/${name}? Existing data/ will be preserved.`)) { message("Import cancelled."); return; }
+    const overwrite = $("import-mode").value === "update";
+    const name = overwrite ? $("package-target").value : $("package-name").value;
+    if (overwrite && !managedPackages().some(pkg => pkg.folder === name)) throw new Error("Choose the package to update.");
+    if (!folderPattern.test(name)) { $("folder-settings").open = true; $("package-name").focus(); throw new Error("Choose a folder name using 1–64 letters, numbers, dots, hyphens or underscores."); }
+    if (overwrite && !confirm(`Update ${name} on ${selected.path}? Existing data/ will be preserved.`)) { message("Update cancelled."); return; }
     const query = new URLSearchParams({ name, overwrite });
     render(await api(`/api/package?${query}`, file));
     $("package-form").reset();
-    message("Package imported. Its version on USB is shown below.");
+    syncImport();
+    showTab("packages", true);
+    message(overwrite ? "Package installer updated. User data preserved." : "Package added to the drive.");
   });
 });
 $("manager-form").addEventListener("submit", (event) => {
   event.preventDefault();
-  const action = event.submitter.value;
-  operation("Copying Package Manager… Keep the drive connected until this finishes.", async () => {
+  const action = selected.manager.present ? "update-manager" : "setup";
+  operation("Copying Package Manager… Keep the drive connected.", async () => {
     const file = validFile($("manager-file").files[0]);
-    if (!confirm(`${action === "setup" ? "Set up Package Manager" : "Replace the Package Manager installer"} on ${selected.path}?`)) { message("Operation cancelled."); return; }
+    if (!confirm(`${action === "setup" ? "Set up Package Manager" : "Update the Package Manager installer"} on ${selected.path}?`)) { message("Operation cancelled."); return; }
     render(await api(`/api/${action}`, file));
     $("manager-form").reset();
-    message(action === "setup" ? "Drive prepared. Add your packages below, then use the drive in your parked vehicle." : "Manager installer updated on USB. Confirm Update in the head-unit app to install it.");
+    showTab("packages", true);
+    message(action === "setup" ? "Drive prepared. Add packages to get started." : "Manager installer updated on USB. Confirm Update in the vehicle to install it.");
   });
 });
 if (token) operation("Checking local drives…", refresh);

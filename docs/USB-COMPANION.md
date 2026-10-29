@@ -48,22 +48,29 @@ on each launch. Do not share it with another user or web page.
 
 ## Use the UI
 
-1. Select the USB path. Removable Windows drives and common Linux mount paths
-   appear as suggestions. Enter the path manually for USB enclosures reported as
-   fixed disks or mounts outside the usual locations. Check the displayed path
-   and free space before proceeding. The app does not partition or format drives.
-2. Choose the downloaded `usb-package-manager-ready.zip` and click **Set up drive**.
-   First setup refuses to replace existing launcher files or disabled backups.
-3. Choose a trusted community ZIP, review the package folder, and click **Import
-   package**. Supported layouts use the same importer as the command-line tools.
-   The app validates referenced installer ZIPs and scripts before publishing them.
-4. To update a package, click its **Replace installer** button, choose the new ZIP,
-   and import it into the same folder. Confirm the replacement. Existing `data/`
-   directories, including case aliases, are preserved. Old installer files are
-   replaced rather than mixed with the new release.
-5. To update Package Manager, select the new manager bundle and click **Update
-   manager**. Only `manager/usb.package.manager.zip` is replaced; the root launcher
-   and its disabled backups stay as they are.
+1. Choose a drive from the **USB drive** selector. **Refresh drives** checks for
+   newly connected media. For USB enclosures reported as fixed disks or unusual
+   mounts, open **Drive not listed?** to enter the path. Check the selected path
+   and free space. The app does not partition or format drives.
+2. In **Drive setup**, choose `usb-package-manager-ready.zip` and click **Set up
+   drive**. First setup refuses existing launcher files and disabled backups.
+   On a prepared drive, this tab offers **Update manager** instead. Manager updates
+   replace only `manager/usb.package.manager.zip`, preserving launcher settings.
+3. The **Packages** tab lists names, versions on USB, types, and validation status
+   in columns. Use the filter to show installers, scripts, or packages needing
+   attention. Expand **Details** for descriptions, file paths, and error messages.
+4. Click **Add package**, choose a trusted release ZIP, and review its automatically
+   generated folder name. **Change folder name** exposes an optional override.
+   Click **Add package** to import it. Supported layouts use the shared importer,
+   which validates referenced ZIPs and scripts before publishing them.
+5. Click a package's **Update** action, or choose **Update an existing package**
+   in **Add / update** and select the package. Choose its new ZIP and confirm
+   **Update package**. Existing `data/` directories, including case aliases, are
+   preserved. Old installer files are replaced rather than mixed with the new
+   release. Changing drives clears pending file selections and update targets.
+
+The tabs support arrow keys, Home, and End. Loose ZIP installers remain view-only;
+update selectors contain only folders supported by the directory importer.
 
 Versions labeled **On USB** come from package manifests. They describe installers,
 not installed head-unit versions. The USB wrapper's protocol version is not used

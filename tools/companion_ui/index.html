@@ -3,35 +3,51 @@
 <head>
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
-  <title>NEMESIS · USB companion</title>
+  <title>USB companion</title>
   <link rel="stylesheet" href="/style.css">
   <script src="/app.js" defer></script>
 </head>
 <body>
   <main>
-    <header><div class="brand">N<span> / </span> NEMESIS</div><span class="local"><span>●</span> Running locally</span></header>
-    <section class="intro"><p class="eyebrow">USB COMPANION</p><h1>Your packages.<br>Your drive. Ready to go.</h1><p>Set up Package Manager and organize your installers in one place.</p></section>
-    <div id="status" role="status" aria-live="polite">Connecting to your local companion…</div>
-    <section class="panel">
-      <div class="section-title"><h2><span class="step">01</span> Select your drive</h2><button id="refresh" class="quiet" type="button">Refresh</button></div>
-      <form id="select-form"><label for="drive-path">USB drive or mount path</label><div class="inline"><input id="drive-path" list="drives" placeholder="E:\ or /media/you/USB" required autocomplete="off"><datalist id="drives"></datalist><button type="submit">Use this drive</button></div></form>
-      <p class="hint">Check the path before selecting. USB enclosures may need their mount path entered manually.</p>
-      <div id="drive-summary" hidden><div class="stats"><div><span>SELECTED DRIVE</span><strong id="selected-path"></strong></div><div><span>SPACE AVAILABLE</span><strong id="space"></strong></div><div><span>ROOT LAUNCHER</span><strong id="launcher"></strong></div></div></div>
+    <header class="topbar"><h1>USB companion</h1><span class="local">● Local</span></header>
+    <section class="drive-bar" aria-label="USB drive">
+      <div class="drive-selector"><label for="drive-select">USB drive</label><select id="drive-select"><option value="">Select a drive…</option></select></div>
+      <button id="refresh" class="secondary" type="button">Refresh drives</button>
+      <details id="manual-drive" class="manual-drive"><summary>Drive not listed?</summary><form id="select-form"><label for="drive-path">Drive or mount path</label><div class="inline"><input id="drive-path" placeholder="E:\ or /media/you/USB" required autocomplete="off"><button type="submit">Select drive</button></div><p class="hint">For USB enclosures or mounts that do not appear in the selector.</p></form></details>
     </section>
+    <section id="drive-summary" class="drive-summary" aria-label="Drive summary" hidden>
+      <div><span>Available space</span><strong id="space"></strong></div>
+      <div><span>Package Manager</span><strong id="manager-summary"></strong></div>
+      <div><span>Launcher</span><strong id="launcher"></strong></div>
+    </section>
+    <div id="status" role="status" aria-live="polite">Connecting…</div>
+    <nav class="tabs" role="tablist" aria-label="USB management">
+      <button id="tab-packages" type="button" role="tab" aria-controls="panel-packages" aria-selected="true" tabindex="0">Packages <span id="package-count" class="tab-count">0</span></button>
+      <button id="tab-import" type="button" role="tab" aria-controls="panel-import" aria-selected="false" tabindex="-1">Add / update</button>
+      <button id="tab-setup" type="button" role="tab" aria-controls="panel-setup" aria-selected="false" tabindex="-1">Drive setup</button>
+    </nav>
     <fieldset id="workspace" disabled>
-      <section class="panel">
-        <div class="section-title"><h2><span class="step">02</span> Package Manager</h2><span id="manager-version" class="badge">No drive selected</span></div>
-        <p id="manager-detail">Select your drive to check its setup.</p>
-        <form id="manager-form"><label for="manager-file">Manager release bundle</label><input id="manager-file" type="file" accept=".zip" required><p class="hint">Choose usb-package-manager-ready.zip from a trusted release.</p><div class="actions"><button id="setup" type="submit" value="setup">Set up drive</button><button id="update-manager" type="submit" value="update-manager" class="secondary">Update manager</button></div></form>
+      <section id="panel-packages" class="panel" role="tabpanel" aria-labelledby="tab-packages" tabindex="0">
+        <div class="section-title"><h2>Packages on USB</h2><div class="list-controls"><label class="sr-only" for="package-filter">Filter packages</label><select id="package-filter"><option value="all">All packages</option><option value="install">Installers</option><option value="execute">Scripts</option><option value="attention">Needs attention</option></select><button id="add-package" type="button">Add package</button></div></div>
+        <div class="table-wrap"><table><thead><tr><th scope="col">Package</th><th scope="col">On USB</th><th scope="col" class="type-column">Type</th><th scope="col">Status</th><th scope="col"><span class="sr-only">Actions</span></th></tr></thead><tbody id="packages"><tr><td colspan="5" class="empty">Select a drive to view its packages.</td></tr></tbody></table></div>
+        <p class="hint table-note">Versions describe installers on this drive. Install or update them through Package Manager in the vehicle.</p>
       </section>
-      <section class="panel">
-        <div class="section-title"><h2><span class="step">03</span> Packages on USB</h2><span id="package-count" class="badge">0 packages</span></div>
-        <p class="hint">Versions describe the files on this drive. Install or update them in the vehicle using Package Manager.</p>
-        <div id="packages" class="packages"><p class="empty">Your packages will appear here.</p></div>
-        <form id="package-form" class="import"><h3>Add or update a package</h3><div class="form-grid"><div><label for="package-file">Release ZIP</label><input id="package-file" type="file" accept=".zip" required></div><div><label for="package-name">Package folder</label><input id="package-name" placeholder="Example" pattern="[A-Za-z0-9][A-Za-z0-9._\-]{0,63}" maxlength="64" required><p class="hint">Use the same folder to update an existing package.</p></div></div><label class="check"><input id="overwrite" type="checkbox"> Replace existing installer files, preserving data/</label><button type="submit">Import package</button></form>
+      <section id="panel-import" class="panel" role="tabpanel" aria-labelledby="tab-import" tabindex="0" hidden>
+        <div class="section-title"><h2>Add or update a package</h2></div>
+        <form id="package-form" class="editor" novalidate>
+          <div class="form-grid"><div><label for="import-mode">Action</label><select id="import-mode"><option value="add">Add a new package</option><option value="update" id="update-option" disabled>Update an existing package</option></select></div><div id="target-group" hidden><label for="package-target">Package to update</label><select id="package-target"><option value="">Choose a package…</option></select></div></div>
+          <label for="package-file">Release ZIP</label><input id="package-file" type="file" accept=".zip">
+          <p id="import-note" class="hint">Choose a downloaded package release. Its folder name is filled in automatically.</p>
+          <div id="new-folder" class="folder-options"><p class="destination">Package folder <strong id="folder-preview">Choose a ZIP first</strong></p><details id="folder-settings"><summary>Change folder name</summary><label for="package-name">Folder name</label><input id="package-name" placeholder="Filled in from the ZIP filename" maxlength="64" autocomplete="off"></details></div>
+          <div class="actions"><button id="import-submit" type="submit">Add package</button><button id="cancel-import" class="quiet" type="button">Back to packages</button></div>
+        </form>
+      </section>
+      <section id="panel-setup" class="panel" role="tabpanel" aria-labelledby="tab-setup" tabindex="0" hidden>
+        <div class="section-title"><h2>Package Manager</h2><span id="manager-version" class="badge">No drive selected</span></div>
+        <div class="setup-grid"><div><p id="manager-detail">Select a drive to check its setup.</p><p class="hint">NEMESIS must already be installed on your head unit.</p></div><form id="manager-form"><label for="manager-file">Manager release bundle</label><input id="manager-file" type="file" accept=".zip" required><p class="hint">Choose usb-package-manager-ready.zip from a trusted release.</p><div class="actions"><button id="setup" type="submit" value="setup">Set up drive</button><button id="update-manager" type="submit" value="update-manager" hidden>Update manager</button></div></form></div>
       </section>
     </fieldset>
-    <footer>Works offline with your downloaded ZIPs. NEMESIS must already be installed on your head unit.<br>Only import trusted releases. Leave this app open until copying finishes.</footer>
+    <footer>Only import trusted releases. Keep the drive connected until copying finishes.</footer>
   </main>
 </body>
 </html>
