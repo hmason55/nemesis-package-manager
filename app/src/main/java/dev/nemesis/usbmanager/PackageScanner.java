@@ -100,7 +100,8 @@ public final class PackageScanner {
             Map<String,String> data = parse(manifest);
             String type = value(data, "type");
             i.id = value(data, "id");
-            i.version = value(data, "version");
+            // Execute descriptors carry a USB protocol version, not a script release.
+            i.version = EXECUTE.equals(type) ? "" : value(data, "version");
             i.types = value(data, "types");
             String friendly = value(data, "name");
             if (friendly.length() > 0) i.title = friendly;

@@ -17,6 +17,21 @@ import static org.junit.Assert.*;
 public class ScannerEdgeCasesTest {
     @Rule public TemporaryFolder temporary = new TemporaryFolder();
 
+    @Test public void scriptProtocolVersionIsNotPresentedAsARelease() throws Exception {
+        File script = new File(temporary.getRoot(), "packages/Script");
+        ScannerTest.write(new File(script, "NEMESIS.data"),
+            "[nemesis]\ntype=execute\nversion=1\nname=Script\npath=run.sh\n");
+        ScannerTest.write(new File(script, "run.sh"), "echo example\n");
+        PackageScanner.Item item = PackageScanner.scan(temporary.getRoot()).get(0);
+        assertEquals(PackageScanner.EXECUTE, item.kind);
+        assertEquals("Unknown", PackagePresentation.versionColumn(item, PackagePresentation.SCRIPTS));
+        ScannerTest.zip(new File(temporary.getRoot(), "packages/installer.zip"),
+            "[nemesis]\nid=demo.app\nversion=2.3\n", false);
+        for (PackageScanner.Item entry : PackageScanner.scan(temporary.getRoot())) {
+            if (PackageScanner.INSTALL.equals(entry.kind)) assertEquals("2.3", entry.version);
+        }
+    }
+
     @Test public void idsAndRelativePathsRejectUnsafeBoundaries() throws Exception {
         for (String id : new String[] {null, "", ".start", "two..dots", "slash/id", "with space", new String(new char[65]).replace('\0', 'a')}) {
             assertFalse("Rejected ID: " + id, PackageScanner.validId(id));

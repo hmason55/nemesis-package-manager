@@ -11,6 +11,7 @@ import zipfile
 from tools.companion_archives import package_layout
 from tools.companion_drives import checked_path
 from tools.release_metadata import read_config
+from tools.companion_identity import validate_package_id
 
 METADATA_ERRORS = (
     OSError,
@@ -35,6 +36,7 @@ def package_metadata(payload):
             )
         member = archive.getinfo(prefix + "NEMESIS.data")
         cfg = read_config(archive.read(member))
+        validate_package_id(cfg.get("id", ""))
         return {
             key: cfg.get(key, "") for key in ("id", "name", "version", "description")
         }

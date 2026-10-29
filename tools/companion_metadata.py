@@ -7,11 +7,16 @@ version stays separate so the UI says Unknown instead of guessing app versions.
 """
 
 import shutil
+from tools.companion_identity import validate_package_id
 from tools.release_metadata import read_config
 from tools.companion_drives import checked_path
 from tools.companion_scan import package_locations
 
-from tools.companion_installers import METADATA_ERRORS, describe_zip, package_metadata
+from tools.companion_installers import (
+    METADATA_ERRORS,
+    describe_zip,
+    package_metadata,
+)
 
 
 def describe_package(root, folder):
@@ -53,6 +58,8 @@ def describe_package(root, folder):
             metadata = dict(cfg)
         else:
             raise ValueError("Unrecognized package descriptor.")
+        if result["kind"] != "execute" or metadata.get("id"):
+            validate_package_id(metadata.get("id", ""))
         result.update(
             {key: metadata.get(key, "") for key in ("id", "version", "description")}
         )
@@ -78,6 +85,14 @@ def scan_drive(root):
     except METADATA_ERRORS as error:
         manager["error"] = str(error)
     active = checked_path(root, "NEMESIS.data").exists()
+    manager["repairable"] = (
+        active
+        or checked_path(root, "NEMESIS.sh").exists()
+        or any(
+            checked_path(root, path.name).exists()
+            for path in root.glob("NEMESIS.data.disabled*")
+        )
+    )
     return {
         "path": str(root),
         "free": usage.free,
