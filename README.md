@@ -4,60 +4,69 @@ Browse and install NEMESIS community packages from one USB drive on a compatible
 
 **Requires NEMESIS already installed.** This is an experimental, debug-signed application. Check each community package's vehicle and firmware requirements before installing it.
 
+![Illustrative Package Manager Installed screen with an example package selected](docs/images/manager-installed.svg)
+
+*Screen mockup with example packages and versions. See the [illustrated user guide](docs/USER-GUIDE.md) for the full walkthrough.*
+
+## What the two apps help you do
+
+Keep community releases together on one USB drive, prepare them on your computer, and choose what to install or run from the head unit. See what is on the drive, what is installed, and which USB releases are newer without rebuilding the drive around a single package.
+
+| App | Where you use it | What it helps with |
+| --- | --- | --- |
+| **Package Manager** | The vehicle's head unit, with NEMESIS already installed | Browse installed packages and USB releases in one place; compare versions; confirm installs, updates, and scripts; launch or uninstall supported packages; inspect results and history. |
+| **USB companion** | A local browser window on a Windows or Linux computer | Set up the package drive, import downloaded releases into package folders, inspect installer versions and layout errors, and replace installers while preserving each folder's USB `data/`. Standalone downloads include the runtime. |
+
+Copying a release onto USB is preparation; installation happens on the head unit after you confirm it. You can also prepare the drive manually or with the optional Python tools.
+
+Neither app downloads community releases automatically or decides vehicle compatibility. The companion shows versions **on USB**; Package Manager also reads installed versions from the head unit.
+
+## Firmware compatibility and tested vehicles
+
+Package Manager targets **Android-based Gen5W head units with `S5W_M` in the software version**, with **NEMESIS already installed and working**. Find the software version under **General Settings > SW Info**. Upstream NEMESIS requires OTA update capability, although an active OTA subscription is not required; `S5W_L` head units are unsupported. Follow the [NEMESIS compatibility check](https://github.com/xwtk/hmg_nemesis#compatibility-check) for its full requirements and exclusions.
+
+The following is the only vehicle and firmware combination currently reported as tested with Package Manager:
+
+| Vehicle | Model year | Firmware version |
+| --- | --- | --- |
+| Hyundai IONIQ 5 | 2023 | `260507` |
+
+No broader Package Manager firmware version range has been verified. Other vehicles, model years, regional firmware variants, and firmware builds remain unverified; a matching firmware number on another vehicle does not establish compatibility. Each community package also has its own compatibility requirements.
+
 ## Get started
 
-1. Download `usb-package-manager-ready.zip` from the [latest release](https://github.com/hmason55/nemesis-package-manager/releases/latest) and extract it to your USB root. Keep the internal `manager/usb.package.manager.zip` compressed.
-2. Add each community release under `packages/<Name>/`. Extract USB-ready bundles there; keep their inner installer ZIPs compressed. See [supported layouts](docs/RELEASE-LAYOUTS.md) for raw package ZIPs and scripts.
-3. With the vehicle parked and the head unit fully booted, insert the drive and approve the NEMESIS execution prompt. The launcher installs Package Manager if missing, then opens it. Community packages are installed only when you select and confirm an action.
-4. Select a package and choose **Install**, **Update**, **Run script**, **Launch**, or **Uninstall**. **Details** shows paths, versions, and history locations.
+1. **Download on your computer.** Get the USB companion for your computer, `usb-package-manager-ready.zip`, and the community releases you want from their release pages. The manager and companion are on the [latest release](https://github.com/hmason55/nemesis-package-manager/releases/latest).
+2. **Prepare your USB drive.** In the companion, select the drive. Use **Drive setup** to add Package Manager, then **Add package** to copy your downloaded releases.
+3. **Install in the parked vehicle.** With the head unit fully booted, insert USB and approve the NEMESIS execution prompt. Package Manager opens. Tap **Refresh**, choose **Available**, select a package, and confirm **Install**.
+4. **Wait for the result.** Keep USB connected until the result popup. Your installed package is then listed in **Installed**.
 
-For Windows preparation, importing tools, and troubleshooting, follow the [setup guide](docs/SETUP-WINDOWS.md). Python import tools require a source checkout; they are optional for manual USB setup.
-
-```text
-USB/
-  NEMESIS.data
-  NEMESIS.sh
-  manager/usb.package.manager.zip
-  packages/
-    Example/
-      NEMESIS.data
-      packages/example.zip
-      data/
-```
+After first setup, reopen through **NEMESIS Manager > Packages > Package Manager > Launch**. Follow the [illustrated user guide](docs/USER-GUIDE.md#get-started) for each screen, or [Windows setup](docs/SETUP-WINDOWS.md) to prepare files manually.
 
 ## Local USB companion
 
-Each new release includes a standalone USB companion for Windows and Linux
-(x86-64). Download `nemesis-usb-companion-windows-x86_64.zip` or
-`nemesis-usb-companion-linux-x86_64.tar.gz` from the
-[latest release](https://github.com/hmason55/nemesis-package-manager/releases/latest),
-extract it, and run the companion. No Python or Node installation is needed.
-Its local browser UI uses a blue, black, and gray theme and handles manager setup,
-package imports, installer replacement, and versions on USB.
-See [the companion guide](docs/USB-COMPANION.md) for usage, source development,
-and recovery details.
+Download the Windows or Linux x86-64 companion from the [latest release](https://github.com/hmason55/nemesis-package-manager/releases/latest), extract it, and run it. No Python or Node installation is needed. It opens a local browser UI for drive setup and package imports. See [downloads and instructions](docs/USB-COMPANION.md#run-a-release-download).
 
 ## Everyday use
 
-- Reopen the app through **NEMESIS Manager > Packages > Package Manager > Launch**.
-- Tap **Help** beside Refresh for a quick guide to the tabs, updates, and common actions.
-- Both UIs share the installed packages. Finish one operation before starting another in either UI, and refresh after changes.
-- Completion popups explain the result. Open their **Details** for diagnostic output.
-- **Installed** opens first, followed by **Updates**, **Available**, and **Scripts**. Each tab has **Name** and **Version** columns. Installed shows the installed version; Available and Scripts show the USB version. Updates compares both in one cell, such as `0.5 -> 0.6`. Tab counts include every matching installer; scripts have their own category. Installed packages with a confirmed newer USB installer appear in both Installed and Updates, and never in Available. If installed-state detection fails, tap Refresh to retry before browsing package categories.
-- An overlay shows a spinner and operation text during installs, updates, uninstalls, and script execution. Wait for the result before removing USB.
-- USB installers and `data/` remain after uninstall. Other apps retain their own recording/export locations unless configured separately.
-
-After a successful first launch, the launcher renames its root descriptor to `NEMESIS.data.disabled`. The drive no longer triggers an execution prompt on each startup. Open Package Manager from NEMESIS Manager. Existing drives need to run the new launcher once; its backup is preserved. If a backup already exists, the launcher keeps it and saves a numbered backup.
+Start in **Installed**, or choose **Updates**, **Available**, or **Scripts**. Select a row to see its actions. Keep USB connected until the result popup, and finish one operation before starting another in either manager UI. The [user guide](docs/USER-GUIDE.md#find-your-way-around) explains each screen and action.
 
 ## Updates
-
-Download releases on your PC; Package Manager does not check for or download updates automatically.
 
 - **Other packages:** replace the installer in the same `packages/<Name>/` folder, preserving `data/`. Open the app, Refresh, select the package, and confirm **Update**.
 - **Package Manager:** use NEMESIS's installer with the new `usb.package.manager.zip`; see [the manager update steps](docs/UPDATING.md#update-package-manager). Package Manager is excluded from its own lists and actions.
 - **Removal:** use NEMESIS Manager's Packages screen to uninstall Package Manager itself.
 
-The **Version** column shows the installed release in Installed, the USB release in Available and Scripts, and a comparison in Updates. Details lists installed and USB versions separately. Identical releases show a disabled **Up to date** action; older numeric releases show **Older installer**. **Updates** contains confirmed newer releases. If version metadata is unavailable or custom version strings cannot be ordered, **Install version** allows an explicit installation after confirmation without claiming an update is available. See [the update guide](docs/UPDATING.md).
+See the [illustrated update walkthrough](docs/USER-GUIDE.md#update-a-community-package) and [full update instructions](docs/UPDATING.md).
+
+## User guides
+
+| Guide | What you will find |
+| --- | --- |
+| [Illustrated user guide](docs/USER-GUIDE.md) | Getting started, tabs, actions, confirmation, progress, results, and troubleshooting |
+| [USB companion](docs/USB-COMPANION.md) | Computer downloads, drive preparation, package imports, and recovery |
+| [Windows setup](docs/SETUP-WINDOWS.md) | Manual setup and optional source-checkout tools |
+| [Updating packages](docs/UPDATING.md) | Community updates, manager updates, version rules, and failures |
+| [Release layouts](docs/RELEASE-LAYOUTS.md) | Where release files belong on USB |
 
 ## Before installing packages
 
@@ -68,6 +77,7 @@ Only install trusted releases: NEMESIS hooks and scripts run with root privilege
 Successful builds on `main` publish tagged releases with change notes and SHA-256 checksums. PR builds run checks without publishing. Artifact ZIP filenames retain their existing names for compatibility.
 
 - [Build, tests, and releases](docs/BUILD-AND-TEST.md)
+- [Detailed workflow diagrams (optional reference)](docs/WORKFLOW-REFERENCE.md)
 - [Contribution and quality standards](CONTRIBUTING.md)
 - [Code of conduct](CODE_OF_CONDUCT.md)
 - [Report a security vulnerability privately](SECURITY.md)

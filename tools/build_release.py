@@ -46,8 +46,8 @@ def build(apk: Path, dist: Path):
             "Both manager UIs share installed packages; finish one operation before starting another.\n"
             "Read docs/SETUP-WINDOWS.md for complete steps and warnings.\n",
         )
-        for path in sorted(docs_dir.glob("*.md")):
-            z.write(path, "docs/" + path.name)
+        for path in sorted(filter(Path.is_file, docs_dir.rglob("*"))):
+            z.write(path, "docs/" + path.relative_to(docs_dir).as_posix())
         z.writestr("packages/", "")
         z.writestr(
             "packages/README.txt",

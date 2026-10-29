@@ -1,5 +1,7 @@
 # Package Manager: Windows setup
 
+For a walkthrough with screen examples, start with the [illustrated user guide](USER-GUIDE.md#get-started). The standalone [Windows USB companion](USB-COMPANION.md#run-a-release-download) can prepare the drive for you; the manual and optional command-line steps are below.
+
 ## A. Download
 
 NEMESIS must already work on your head unit. Download `usb-package-manager-ready.zip` from a release. Alternatively, open **Actions â†’ Build Package Manager**, download the successful run's `nemesis-usb-package-manager` artifact, and extract that wrapper first.
@@ -29,6 +31,12 @@ With the vehicle parked and the head unit fully booted, insert the drive and app
 Existing drives need the new launcher to run once for this change. It never replaces an existing disabled-descriptor backup or disables an unrelated install descriptor. If a backup already exists, a numbered backup is created instead. Reinserting the drive does not reinstall community packages.
 
 ## D. Install and update packages
+
+See [tabs and actions](USER-GUIDE.md#find-your-way-around) for screen examples, or follow the [update walkthrough](USER-GUIDE.md#update-a-community-package) to replace a release on USB and then install it in the vehicle.
+
+![Illustrative Available tab with an example package selected and Install enabled](images/manager-available.svg)
+
+*Screen mockup with example package data. Follow the [illustrated install walkthrough](USER-GUIDE.md#install-a-package) for confirmation, progress, and result screens.*
 
 For the full update procedure, including replacing another package's installer, updating Package Manager itself, and handling failures, see [Updating packages](UPDATING.md).
 

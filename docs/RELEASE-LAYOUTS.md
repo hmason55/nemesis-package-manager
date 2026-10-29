@@ -2,6 +2,8 @@
 
 For initial setup, keep only Package Manager's `NEMESIS.data` at the USB root. After a successful launch it is backed up as `NEMESIS.data.disabled`. Other release descriptors belong under `packages/<Name>/`.
 
+The [companion](USB-COMPANION.md#use-the-ui) can arrange supported downloaded releases for you. Start with the [illustrated setup steps](USER-GUIDE.md#get-started) to use it, or use the folder examples below when copying files manually.
+
 ## USB-ready installer
 
 Outer ZIP contains `NEMESIS.data` with `type=install` and `path=packages/foo.zip`:
@@ -51,5 +53,7 @@ Folder contains `NEMESIS.data` with `id=foo` and no `type=`, plus `bin/`, `app/`
 A downloaded release may contain multiple install bundles, custom root files, firmware-specific assets, or manual steps. Do not force-import it or bypass errors. Follow its upstream instructions and inspect the descriptor first. A USB-ready ZIP may not be compatible with moving into a subfolder if its scripts use absolute `/storage/usb0/...` paths.
 
 ## Storage convention
+
+See [what is preserved](UPDATING.md#what-is-preserved) for the effect of updates and uninstall on your files.
 
 `packages/<Name>/data/` is owned by the user. The manager writes history here and never deletes it. It cannot transparently redirect third-party applications' own output files. Check each application's documented output-directory setting.

@@ -5,6 +5,8 @@ the release ZIPs on it. It works offline with downloaded releases and uses only
 Python's standard library. There is no frontend framework, Node runtime, account,
 database, background service, or cloud dependency.
 
+Start with the [illustrated setup steps](USER-GUIDE.md#get-started) to prepare a drive and install your first package in the vehicle.
+
 ## Run a release download
 
 Every new Package Manager release includes both standalone x86-64 builds:
@@ -48,6 +50,12 @@ on each launch. Do not share it with another user or web page.
 
 ## Use the UI
 
+![Illustrative USB companion Packages screen showing a selected drive and a release on USB](images/companion-packages.svg)
+
+*Screen mockup with example drive and package data. **On USB** is the installer version, not the installed head-unit version. See the [illustrated user guide](USER-GUIDE.md#get-started) for the handoff to the vehicle.*
+
+To replace a release, follow the [package update steps](USER-GUIDE.md#update-a-community-package). To update the installed Package Manager app, follow [Update Package Manager](UPDATING.md#update-package-manager).
+
 1. Choose a drive from the **USB drive** selector. **Refresh** checks for
    newly connected media. For USB enclosures reported as fixed disks or unusual
    mounts, open **Drive not listed?** to enter the path. Check the selected path
@@ -63,12 +71,13 @@ on each launch. Do not share it with another user or web page.
    offline NEMESIS installation instructions described below.
 3. The **Packages** tab lists names, versions on USB, types, and validation status
    in columns. Use the filter to show installers, scripts, or packages needing
-   attention. Expand **Details** for descriptions, file paths, and error messages.
+   attention. Expand **Details** for descriptions and file paths, or **View issue**
+   for error messages.
 4. Click **Add package**, choose a trusted release ZIP, and review its automatically
    generated folder name. **Change folder name** exposes an optional override.
    Click **Add package** to import it. Supported layouts use the shared importer,
    which validates referenced ZIPs and scripts before publishing them.
-5. Click a package's **Update** action, or choose **Update an existing package**
+5. Click a package's **Replace on USB** action, or choose **Update an existing package**
    in **Add / update** and select the package. Choose its new ZIP and confirm
    **Update package**. Existing `data/` directories, including case aliases, are
    preserved. Old installer files are replaced rather than mixed with the new
