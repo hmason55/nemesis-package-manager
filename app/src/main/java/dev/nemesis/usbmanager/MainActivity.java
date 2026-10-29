@@ -49,6 +49,7 @@ public final class MainActivity extends Activity {
     private Button launch;
     private Button refreshButton;
     private boolean busy;
+    private boolean registryUnavailable;
     private ProgressBar progress;
     private boolean destroyed;
     private static final OperationCoordinator operations = new OperationCoordinator();
@@ -63,8 +64,8 @@ public final class MainActivity extends Activity {
             if (!resumed || destroyed || isFinishing()) return;
             updateButtons();
             if (operations.isRunning()) {
-                statusDetails = null;
-                status.setText(operations.description() + "… Keep USB connected.");
+                statusDetails = operations.progressDetails();
+                status.setText(operations.progressText());
                 handler.postDelayed(this, 500);
             } else {
                 final OperationCoordinator.Completion result = operations.takeCompletion();
@@ -242,7 +243,11 @@ public final class MainActivity extends Activity {
         }
         adapter.notifyDataSetChanged();
         if (selected >= 0) list.setSelection(selected); else list.setSelection(0);
-        if (!allItems.isEmpty()) {
+        if (busy) {
+            empty.setText("Scanning for packages…");
+        } else if (registryUnavailable) {
+            empty.setText("Could not load installed packages.\nTap Refresh to retry, or tap the status for Details.");
+        } else if (!allItems.isEmpty()) {
             String[] emptyMessages = { "Nothing installed yet.\nChoose Available to install a package.",
                 "No confirmed updates.\nCopy a newer release to USB, then tap Refresh.",
                 "No new packages on USB.\nAdd a release with the USB companion, then tap Refresh.",
@@ -284,7 +289,7 @@ public final class MainActivity extends Activity {
                     NemesisCli.Result query = NemesisCli.run("pkg-list");
                     final InstalledPackages registry = InstalledPackages.parse(query.rc, query.out);
                     if (registry.available() && !registry.names.isEmpty()) {
-                        NemesisCli.Result versions = NemesisCli.run("root", "-c", registry.versionQuery());
+                        NemesisCli.Result versions = NemesisCli.query("root", "-c", registry.versionQuery());
                         registry.readVersions(versions.rc, versions.out);
                     }
                     Set<String> seen = new HashSet<String>();
@@ -315,6 +320,7 @@ public final class MainActivity extends Activity {
                         public void run() {
                             if (destroyed) return;
                             allItems.clear(); allItems.addAll(next);
+                            registryUnavailable = !registry.available();
                             statusDetails = registry.available() ? null : registry.error;
                             status.setText(!registry.available() ? "Could not read installed packages. Tap Refresh to retry." :
                                 (usb == null ? "No USB installers detected | " + next.size() + " installed packages" :
@@ -329,6 +335,7 @@ public final class MainActivity extends Activity {
                     runOnUiThread(new Runnable() {
                         public void run() {
                             if (destroyed) return;
+                            registryUnavailable = false;
                             allItems.clear(); filterItems(null);
                             statusDetails = error.toString();
                             status.setText("Could not read packages. Check USB and tap Refresh.");

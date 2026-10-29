@@ -56,6 +56,8 @@ on each launch. Do not share it with another user or web page.
    drive**. First setup refuses existing launcher files and disabled backups.
    On a prepared drive, this tab offers **Update manager** instead. Manager updates
    replace only `manager/usb.package.manager.zip`, preserving launcher settings.
+   If that installer is missing but launcher files remain, use **Repair manager**
+   to restore it without reactivating a disabled launcher.
 3. The **Packages** tab lists names, versions on USB, types, and validation status
    in columns. Use the filter to show installers, scripts, or packages needing
    attention. Expand **Details** for descriptions, file paths, and error messages.
@@ -68,6 +70,11 @@ on each launch. Do not share it with another user or web page.
    **Update package**. Existing `data/` directories, including case aliases, are
    preserved. Old installer files are replaced rather than mixed with the new
    release. Changing drives clears pending file selections and update targets.
+
+Replacement requires matching package IDs. If a release has no readable ID
+(including scripts without IDs), add it to a new folder instead; the previous
+installer and its data remain intact. A drive selection changed in another tab
+blocks copying until you refresh and select the intended drive again.
 
 The tabs support arrow keys, Home, and End. Loose ZIP installers remain view-only;
 update selectors contain only folders supported by the directory importer.

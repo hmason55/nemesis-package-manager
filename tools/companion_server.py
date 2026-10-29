@@ -38,6 +38,7 @@ class CompanionServer(HTTPServer):
         self.device = self.usb.stat().st_dev if self.usb else None
         super().__init__(("127.0.0.1", port), CompanionHandler)
         self.token = secrets.token_urlsafe(32)
+        self.selection_id = secrets.token_urlsafe(24)
         self.origin = f"http://127.0.0.1:{self.server_port}"
 
     def selected_root(self):
@@ -52,6 +53,28 @@ class CompanionServer(HTTPServer):
     @property
     def url(self):
         return self.origin + "/#" + self.token
+
+    def drive_state(self):
+        """Return a scan bound to the current selection generation.
+
+        This opaque ID is separate from session authentication. A tab retains
+        the ID for the drive it displayed until it explicitly refreshes.
+        """
+        state = scan_drive(self.selected_root())
+        state["selection_id"] = self.selection_id
+        return state
+
+    def bound_root(self, selection_id):
+        """Fail closed when a tab confirms an obsolete drive selection.
+
+        Require the binding for every upload, including older clients. The
+        filesystem identity check still runs before any files are published.
+        """
+        if not selection_id or selection_id != self.selection_id:
+            raise ValueError(
+                "Drive selection changed in another tab. Refresh and select your drive again."
+            )
+        return self.selected_root()
 
 
 class CompanionHandler(CompanionTransport):
@@ -70,9 +93,7 @@ class CompanionHandler(CompanionTransport):
                     200,
                     {
                         "drives": drive_candidates(),
-                        "drive": scan_drive(self.server.selected_root())
-                        if self.server.usb
-                        else None,
+                        "drive": self.server.drive_state() if self.server.usb else None,
                     },
                 )
                 return
@@ -110,6 +131,8 @@ class CompanionHandler(CompanionTransport):
                 state = scan_drive(root)
                 self.server.usb = root
                 self.server.device = root.stat().st_dev
+                self.server.selection_id = secrets.token_urlsafe(24)
+                state["selection_id"] = self.server.selection_id
                 self.respond(200, state)
                 return
             if route.path not in UPLOAD_ROUTES:

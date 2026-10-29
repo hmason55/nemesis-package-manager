@@ -11,6 +11,7 @@ import java.lang.reflect.Field;
 import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
 import java.util.concurrent.TimeUnit;
+import java.util.concurrent.CountDownLatch;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collections;
@@ -55,6 +56,7 @@ public class ActivityOperationsTest {
         static int registryStatus;
         static int actionStatus;
         static final List<List<String>> calls = Collections.synchronizedList(new ArrayList<List<String>>());
+        @Implementation protected static NemesisCli.Result query(String... args) { return run(args); }
         @Implementation protected static NemesisCli.Result run(String... args) {
             calls.add(Arrays.asList(args));
             if ("pkg-list".equals(args[0])) return new NemesisCli.Result(registryStatus, registry);
@@ -236,6 +238,16 @@ public class ActivityOperationsTest {
         String status = ((TextView) field("status")).getText().toString();
         assertTrue(status.contains("Tap Refresh"));
         assertFalse("Technical errors belong in Details", status.contains("daemon unavailable"));
+        android.widget.Button[] tabs = (android.widget.Button[]) field("tabs");
+        for (android.widget.Button tab : tabs) {
+            tab.performClick();
+            assertEquals("Could not load installed packages.\nTap Refresh to retry, or tap the status for Details.",
+                ((TextView) field("empty")).getText().toString());
+        }
+        tabs[PackagePresentation.INSTALLED].performClick();
+        click("refreshButton");
+        await(() -> !((Boolean) field("busy")));
+        assertTrue(((TextView) field("empty")).getText().toString().contains("Could not load installed packages"));
         click("status");
         dialogClick("Details");
         assertNotNull(findContaining(ShadowDialog.getLatestDialog().getWindow().getDecorView(), "daemon unavailable"));
@@ -245,6 +257,7 @@ public class ActivityOperationsTest {
         Commands.registry = "";
         click("refreshButton");
         await(() -> !((Boolean) field("busy")));
+        assertFalse(((TextView) field("empty")).getText().toString().contains("Could not load installed packages"));
         ((android.widget.Button[]) field("tabs"))[PackagePresentation.NOT_INSTALLED].performClick();
         select("demo.app");
         assertEquals("Install", ((TextView) field("action")).getText().toString());
@@ -256,6 +269,33 @@ public class ActivityOperationsTest {
         open();
         assertTrue(((TextView) field("empty")).getText().toString().contains("Insert a USB drive"));
         assertFalse(((View) field("details")).isEnabled());
+    }
+
+    @Test public void runningOperationOffersGuidanceWithoutEnablingCompetingActions() throws Exception {
+        open();
+        final CountDownLatch finish = new CountDownLatch(1);
+        OperationCoordinator owner = (OperationCoordinator) field("operations");
+        assertTrue(owner.start("Installing Demo", new OperationCoordinator.Task() {
+            public OperationCoordinator.Completion run() throws Exception {
+                finish.await();
+                return new OperationCoordinator.Completion(true, "Installed");
+            }
+        }));
+        try {
+            ((Runnable) field("monitorOperation")).run();
+            assertTrue(((TextView) field("status")).getText().toString().contains("Installing Demo"));
+            assertFalse(((View) field("refreshButton")).isEnabled());
+            click("status");
+            dialogClick("Details");
+            assertNotNull(findContaining(ShadowDialog.getLatestDialog().getWindow().getDecorView(), "other actions remain blocked"));
+            assertTrue(owner.isRunning());
+            dialogClick("OK");
+            dialogClick("OK");
+        } finally {
+            finish.countDown();
+        }
+        awaitCompletion();
+        dialogClick("OK");
     }
 
     @Test public void categoryTabsFilterAndSameVersionCannotStartUpdate() throws Exception {

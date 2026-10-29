@@ -206,6 +206,30 @@ class CompanionTests(CompanionFixture):
         self.assertTrue((self.usb / "packages").is_dir())
         self.assertEqual((self.usb / "recording.mp4").read_bytes(), b"recording")
 
+    def test_missing_manager_can_be_repaired_without_changing_launchers_or_data(self):
+        for disabled in (False, True):
+            with self.subTest(disabled=disabled):
+                root = self.base / ("disabled" if disabled else "active")
+                root.mkdir()
+                setup_manager(root, self.bundle)
+                launcher = root / "NEMESIS.data"
+                if disabled:
+                    launcher = launcher.rename(root / "NEMESIS.data.disabled")
+                before = {p.name: p.read_bytes() for p in root.glob("NEMESIS*")}
+                (root / "manager/usb.package.manager.zip").unlink()
+                add_package(root, self.release, "Example")
+                data = root / "packages/Example/data/export"
+                data.write_bytes(b"keep")
+                state = scan_drive(root)
+                self.assertFalse(state["manager"]["present"])
+                self.assertTrue(state["manager"]["repairable"])
+                setup_manager(root, self.bundle, update=True)
+                self.assertTrue(scan_drive(root)["manager"]["present"])
+                self.assertEqual(
+                    {p.name: p.read_bytes() for p in root.glob("NEMESIS*")}, before
+                )
+                self.assertEqual(data.read_bytes(), b"keep")
+
     def test_setup_preserves_existing_packages_directory(self):
         add_package(self.usb, self.release, "Existing")
         data = self.usb / "packages/Existing/data/export"
@@ -401,12 +425,50 @@ class CompanionHttpTests(CompanionFixture):
         connection = http.client.HTTPConnection(
             "127.0.0.1", self.server.server_port, timeout=5
         )
-        headers = {"X-Companion-Token": self.server.token, **(headers or {})}
+        headers = {
+            "X-Companion-Token": self.server.token,
+            "X-Companion-Drive": self.server.selection_id,
+            **(headers or {}),
+        }
         connection.request(method, path, body, headers)
         response = connection.getresponse()
         result = response.status, response.read()
         connection.close()
         return result
+
+    def test_stale_tab_and_missing_binding_cannot_write_either_drive(self):
+        self.request("POST", "/api/select", json.dumps({"path": str(self.usb)}))
+        stale = self.server.selection_id
+        other = self.base / "other"
+        other.mkdir()
+        self.request("POST", "/api/select", json.dumps({"path": str(other)}))
+        for binding in (stale, ""):
+            for route in (
+                "/api/package?name=Example",
+                "/api/setup",
+                "/api/update-manager",
+            ):
+                with self.subTest(binding=binding, route=route):
+                    status, body = self.request(
+                        "POST",
+                        route,
+                        self.bundle.read_bytes(),
+                        {"X-Companion-Drive": binding},
+                    )
+                    self.assertEqual(status, 400, body)
+                    self.assertIn(b"Drive selection changed", body)
+                    self.assertEqual(list(self.usb.iterdir()), [])
+                    self.assertEqual(list(other.iterdir()), [])
+        status, body = self.request("GET", "/api/state")
+        self.assertEqual(
+            json.loads(body)["drive"]["selection_id"], self.server.selection_id
+        )
+        status, body = self.request(
+            "POST", "/api/package?name=Example", self.release.read_bytes()
+        )
+        self.assertEqual(status, 200, body)
+        self.assertEqual(list(self.usb.iterdir()), [])
+        self.assertTrue((other / "packages/Example").is_dir())
 
     def test_http_select_import_and_assets(self):
         status, body = self.request("GET", "/api/state")

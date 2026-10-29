@@ -18,6 +18,7 @@ from tools.release_storage import is_data_name
 from tools.companion_drives import checked_path
 from tools.companion_metadata import describe_package
 from tools.companion_archives import package_layout
+from tools.companion_identity import check_replacement
 
 
 def _no_links(root, path):
@@ -72,6 +73,7 @@ def add_package(root, archive, name, overwrite=False):
         if info["error"]:
             raise ValueError(info["error"])
         if destination.exists():
+            check_replacement(describe_package(root, name), info)
             _publish_package(staged, destination, work / "previous")
         else:
             staged.rename(destination)

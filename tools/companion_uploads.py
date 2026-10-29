@@ -11,7 +11,6 @@ from pathlib import Path
 from urllib.parse import parse_qs
 
 from tools.companion_manager import setup_manager
-from tools.companion_metadata import scan_drive
 from tools.companion_packages import add_package
 
 MAX_UPLOAD = 512 * 1024 * 1024
@@ -30,7 +29,8 @@ def receive_file(stream, output, length):
 
 
 def handle_upload(handler, route, length):
-    handler.server.selected_root()
+    selection_id = handler.headers.get("X-Companion-Drive", "")
+    handler.server.bound_root(selection_id)
     if not 0 < length <= MAX_UPLOAD:
         raise ValueError("Select a ZIP smaller than 512 MiB.")
     options = parse_qs(route.query)
@@ -38,7 +38,7 @@ def handle_upload(handler, route, length):
         upload = Path(work) / "release.zip"
         with upload.open("wb") as output:
             receive_file(handler.rfile, output, length)
-        root = handler.server.selected_root()
+        root = handler.server.bound_root(selection_id)
         if route.path == "/api/package":
             add_package(
                 root,
@@ -48,4 +48,4 @@ def handle_upload(handler, route, length):
             )
         else:
             setup_manager(root, upload, update=route.path == "/api/update-manager")
-    return scan_drive(root)
+    return handler.server.drive_state()
