@@ -214,10 +214,10 @@ function renderPackages() {
     status.append(badge);
     const action = textElement("td", "", "row-action");
     if (managedPackages().some(item => item.folder === pkg.folder)) {
-      const update = textElement("button", "Update", "secondary");
+      const update = textElement("button", "Replace on USB", "secondary");
       update.type = "button";
-      update.setAttribute("aria-label", `Update ${pkg.name}`);
-      update.dataset.tooltip = "Replace this package's installer on USB. Its data folder is kept.";
+      update.setAttribute("aria-label", `Replace ${pkg.name} on USB`);
+      update.dataset.tooltip = "Choose a release ZIP to replace this package on USB. Its data folder is kept. This does not check for newer versions.";
       update.addEventListener("click", () => beginImport(pkg.folder));
       action.append(update);
     } else action.append(textElement("span", "View only", "hint"));
