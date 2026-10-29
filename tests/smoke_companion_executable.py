@@ -40,7 +40,7 @@ def smoke(executable):
                     )
                 url = urlsplit(match[0])
                 for path, expected in (
-                    ("/", b"USB COMPANION"),
+                    ("/", b"USB companion"),
                     ("/app.js", b"X-Companion-Token"),
                     ("/style.css", b":root"),
                     ("/api/state", b"drives"),
