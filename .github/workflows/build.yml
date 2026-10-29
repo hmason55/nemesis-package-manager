@@ -4,13 +4,18 @@ on:
   workflow_dispatch:
     inputs:
       stable_version:
-        description: 'Explicit stable version, such as 1.0.0. Leave empty to validate without publishing.'
+        description: 'Signed candidate version, such as 1.0.0. Leave empty for a development check.'
         required: false
         default: ''
       candidate_sha:
-        description: 'Exact 40-character main-branch commit for stable publication; required with stable_version.'
+        description: 'Exact 40-character main-branch commit; required with stable_version.'
         required: false
         default: ''
+      publish_stable:
+        description: 'Publish the signed candidate as stable. Requires all release blockers completed. Default only validates.'
+        type: boolean
+        required: false
+        default: false
   push:
     branches: [main]
 
@@ -42,7 +47,11 @@ jobs:
             const release = policy.selectVersion({base, runNumber: Number(process.env.GITHUB_RUN_NUMBER),
               stableVersion: context.payload.inputs?.stable_version || '',
               candidateSha: context.payload.inputs?.candidate_sha || '', context});
-            if (release.channel === 'stable') await policy.assertStableReadiness({github, repo: context.repo, sourceSha: release.sourceSha});
+            if (context.payload.inputs?.publish_stable === 'true' && release.channel !== 'stable') throw new Error('Stable publication requires a candidate version and commit');
+            if (release.channel === 'stable') {
+              await policy.assertMainCandidate({github, repo: context.repo, sourceSha: release.sourceSha});
+              if (context.payload.inputs?.publish_stable === 'true') await policy.assertStableReadiness({github, repo: context.repo, sourceSha: release.sourceSha});
+            }
             for (const [name, value] of Object.entries({source_sha: release.sourceSha, version: release.version,
               version_code: release.versionCode, channel: release.channel})) core.setOutput(name, value);
   python-quality:
@@ -135,10 +144,10 @@ jobs:
     needs: [prepare, python-quality, java-quality, build, companion]
     if: >-
       (github.event_name == 'push' && github.ref == 'refs/heads/main') ||
-      (github.event_name == 'workflow_dispatch' && github.ref == 'refs/heads/main' && inputs.stable_version != '')
+      (github.event_name == 'workflow_dispatch' && github.ref == 'refs/heads/main' && inputs.stable_version != '' && inputs.publish_stable)
     runs-on: ubuntu-24.04
     concurrency:
-      group: publish-package-manager-${{ needs.prepare.outputs.version }}
+      group: publish-package-manager-${{ needs.prepare.outputs.channel == 'stable' && 'stable' || needs.prepare.outputs.version }}
       cancel-in-progress: false
     permissions:
       contents: write

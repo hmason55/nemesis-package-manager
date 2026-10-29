@@ -58,6 +58,10 @@ The Gradle release build is non-debuggable and enables APK v1/JAR signing for
 Android 4.4, as well as v2 signing for compatible newer systems.
 
 Before closing #31, run two independent CI builds with the retained identity,
+using **Build Package Manager > Run workflow** on `main` with `stable_version`
+and `candidate_sha` set and **publish_stable unchecked**. This validates signed
+candidates and uploads workflow artifacts without creating tags/releases, even
+while the hardware/signing blockers remain open. For those builds,
 compare public fingerprints, and verify the actual NEMESIS upgrade path on a
 supported head unit. Local tests with disposable keys prove the tooling only.
 
@@ -76,7 +80,9 @@ For an exact candidate, also set `NEMESIS_RELEASE_VERSION` and
    contains this release/signing infrastructure.
 2. In **Actions > Build Package Manager > Run workflow**, select `main`, enter
    a clean numeric version such as `1.0.0` in `stable_version`, and enter the
-   selected SHA in `candidate_sha`. Leaving the version empty never publishes.
+   selected SHA in `candidate_sha`. Explicitly check **publish_stable** to
+   publish. Leaving it unchecked only validates a signed candidate; leaving the
+   version empty never publishes.
    Repository maintainers control workflow dispatch; optionally protect this
    further with repository/environment approval rules.
 3. The workflow revalidates and builds that commit with the final stable version
@@ -85,7 +91,9 @@ For an exact candidate, also set `NEMESIS_RELEASE_VERSION` and
    match. Readiness is checked again immediately before publication.
 4. Only after every gate passes does the workflow publish the exact validated
    bytes as `v<version>` and mark the release stable/latest. A new stable version
-   must be newer than existing clean stable versions.
+   must be newer than existing clean stable versions. Stable publication jobs
+   share one concurrency group so simultaneous versions cannot race the latest
+   release check.
 
 All channels use `1000 + Build Package Manager run_number` as the Android
 version code, independent of the base version. Rerunning the same workflow run

@@ -78,7 +78,7 @@ function stableFixture(t) {
   const f = fixture(t);
   f.channel = 'stable'; f.version = '1.0.0'; f.expectedFingerprint = fingerprint;
   f.context = {...f.context, sha: 'b'.repeat(40), eventName: 'workflow_dispatch',
-    payload: {inputs: {stable_version: f.version, candidate_sha: sha}}};
+    payload: {inputs: {stable_version: f.version, candidate_sha: sha, publish_stable: 'true'}}};
   f.sourceSha = sha;
   f.github.rest.repos.compareCommits = async () => ({data: {status: 'ahead'}});
   f.github.rest.issues = {get: async () => ({data: {state: 'closed', state_reason: 'completed'}})};

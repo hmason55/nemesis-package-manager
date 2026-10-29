@@ -30,15 +30,20 @@ function assertPublication({context, sourceSha, channel, version}) {
     if (context.eventName !== 'push' || context.sha !== sourceSha || !developmentVersionPattern.test(version))
       throw new Error('Development releases require a validated push to main');
   } else if (channel === 'stable') {
-    if (context.eventName !== 'workflow_dispatch' || context.payload?.inputs?.stable_version !== version ||
+    if (context.eventName !== 'workflow_dispatch' || context.payload?.inputs?.publish_stable !== 'true' ||
+        context.payload?.inputs?.stable_version !== version ||
         context.payload?.inputs?.candidate_sha !== sourceSha || !stableVersionPattern.test(version))
       throw new Error('Stable publication must match the explicitly dispatched version and commit');
   } else throw new Error('Unknown release channel');
 }
 
-async function assertStableReadiness({github, repo, sourceSha}) {
+async function assertMainCandidate({github, repo, sourceSha}) {
   const comparison = (await github.rest.repos.compareCommits({...repo, base: sourceSha, head: 'main'})).data;
   if (!['ahead', 'identical'].includes(comparison.status)) throw new Error('Stable candidate must be an ancestor of main');
+}
+
+async function assertStableReadiness({github, repo, sourceSha}) {
+  await assertMainCandidate({github, repo, sourceSha});
   for (const issue_number of stableBlockers) {
     const issue = (await github.rest.issues.get({...repo, issue_number})).data;
     if (issue.state !== 'closed' || issue.state_reason !== 'completed') throw new Error(`Stable publication is blocked by issue #${issue_number}`);
@@ -51,5 +56,5 @@ function compareStableVersions(a, b) {
   return 0;
 }
 
-module.exports = {selectVersion, assertQuality, assertPublication, assertStableReadiness,
+module.exports = {selectVersion, assertQuality, assertPublication, assertMainCandidate, assertStableReadiness,
   compareStableVersions, stableVersionPattern, requiredJobs, stableBlockers};

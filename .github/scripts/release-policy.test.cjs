@@ -48,8 +48,11 @@ test('publication context rejects PRs, manual previews, changed stable inputs, a
     assert.throws(() => policy.assertPublication({...dev, context: {...context, eventName}}), /validated push/);
   assert.throws(() => policy.assertPublication({...dev, context: {...context, ref: 'refs/heads/feature'}}), /main-branch/);
   const stable = {...dev, channel: 'stable', version: '1.0.0',
-    context: {...context, eventName: 'workflow_dispatch', payload: {inputs: {stable_version: '1.0.0', candidate_sha: sha}}}};
+    context: {...context, eventName: 'workflow_dispatch', payload: {inputs: {stable_version: '1.0.0', candidate_sha: sha, publish_stable: 'true'}}}};
   policy.assertPublication(stable);
+  for (const publish_stable of [undefined, 'false', false])
+    assert.throws(() => policy.assertPublication({...stable, context: {...stable.context,
+      payload: {inputs: {...stable.context.payload.inputs, publish_stable}}}}), /explicitly dispatched/);
   assert.throws(() => policy.assertPublication({...stable, version: '1.0.1'}), /explicitly dispatched/);
   assert.throws(() => policy.assertPublication({...stable, sourceSha: 'b'.repeat(40)}), /explicitly dispatched/);
   assert.throws(() => policy.assertPublication({...dev, channel: 'other'}), /channel/);
@@ -64,6 +67,7 @@ test('stable candidates require main ancestry and completed hardware, signing, a
   status = 'identical'; await policy.assertStableReadiness(args);
   for (status of ['behind', 'diverged', 'unknown']) await assert.rejects(policy.assertStableReadiness(args), /ancestor/);
   status = 'ahead';
+  blocked = 31; await policy.assertMainCandidate(args); // Signing candidates can build before readiness closes.
   for (blocked of policy.stableBlockers) await assert.rejects(policy.assertStableReadiness(args), new RegExp(`#${blocked}`));
   blocked = null; reason = 'not_planned'; await assert.rejects(policy.assertStableReadiness(args), /blocked/);
   github.rest.issues.get = async () => { throw new Error('unavailable'); };

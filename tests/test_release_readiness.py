@@ -289,6 +289,17 @@ class WorkflowWiringTests(unittest.TestCase):
         self.assertTrue(signing_steps)
         for step in signing_steps:
             self.assertEqual(step["if"], "needs.prepare.outputs.channel == 'stable'")
+        self.assertEqual(
+            build["release"]["concurrency"]["group"],
+            "publish-package-manager-${{ needs.prepare.outputs.channel == 'stable' && 'stable' || needs.prepare.outputs.version }}",
+        )
+        self.assertIn("inputs.publish_stable", build["release"]["if"])
+        self.assertEqual(
+            self.workflow("build.yml")["on"]["workflow_dispatch"]["inputs"][
+                "publish_stable"
+            ]["default"],
+            "false",
+        )
         publication = build["release"]["steps"][-1]
         self.assertIn("toJSON(needs)", publication["env"]["RELEASE_QUALITY"])
         self.assertIn("quality: JSON.parse", publication["with"]["script"])
