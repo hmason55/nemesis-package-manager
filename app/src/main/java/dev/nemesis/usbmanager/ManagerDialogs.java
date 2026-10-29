@@ -5,6 +5,7 @@ import android.app.Dialog;
 import android.graphics.Color;
 import android.graphics.Typeface;
 import android.graphics.drawable.ColorDrawable;
+import android.graphics.drawable.StateListDrawable;
 import android.view.View;
 import android.view.Window;
 import android.widget.Button;
@@ -64,7 +65,7 @@ final class ManagerDialogs {
             buttons.addView(cancel, new LinearLayout.LayoutParams(0, dp(activity, 52), 1));
         }
         Button ok = button(activity, positive);
-        ok.setBackgroundColor(Color.rgb(25, 99, 137));
+        ok.setBackground(buttonBackground(Color.rgb(25, 99, 137)));
         ok.setOnClickListener(new View.OnClickListener() {
             public void onClick(View view) {
                 dialog.dismiss();
@@ -89,7 +90,14 @@ final class ManagerDialogs {
     private static Button button(Activity activity, String label) {
         Button button = new Button(activity);
         button.setText(label); button.setAllCaps(false); button.setTextColor(TEXT);
-        button.setBackgroundColor(PANEL); button.setPadding(dp(activity, 16), 0, dp(activity, 16), 0);
+        button.setBackground(buttonBackground(PANEL)); button.setPadding(dp(activity, 16), 0, dp(activity, 16), 0);
         return button;
+    }
+    private static StateListDrawable buttonBackground(int color) {
+        StateListDrawable states = new StateListDrawable();
+        states.addState(new int[] { android.R.attr.state_pressed }, new ColorDrawable(Color.rgb(57, 102, 135)));
+        states.addState(new int[] { android.R.attr.state_focused }, new ColorDrawable(Color.rgb(57, 102, 135)));
+        states.addState(new int[0], new ColorDrawable(color));
+        return states;
     }
 }

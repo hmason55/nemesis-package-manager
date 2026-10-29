@@ -163,4 +163,23 @@ public class UsabilityTest {
         assertTrue(find(dialog, "OK").getMeasuredHeight() > 0);
         dialog.dismiss(); controller.pause().stop().destroy();
     }
+    @Test public void dialogControlsShowWhichButtonHasKeyboardFocus() {
+        ActivityController<Activity> controller = Robolectric.buildActivity(Activity.class).setup();
+        Activity activity = controller.get();
+        Dialog dialog = ManagerDialogs.show(activity, "Uninstall Example App?", "USB data will be kept.",
+            "Uninstall", new Runnable() { public void run() { } }, null, null);
+        TextView cancel = find(dialog, "Cancel");
+        TextView uninstall = find(dialog, "Uninstall");
+        assertTrue(cancel.requestFocus());
+        assertTrue(cancel.isFocused());
+        int focused = ((ColorDrawable) cancel.getBackground().getCurrent()).getColor();
+        assertNotEquals("Keyboard focus must be visible", ManagerDialogs.PANEL, focused);
+        assertTrue(uninstall.requestFocus());
+        assertFalse(cancel.isFocused());
+        assertEquals("Previous control returns to its normal color", ManagerDialogs.PANEL,
+            ((ColorDrawable) cancel.getBackground().getCurrent()).getColor());
+        assertEquals("Primary action also shows keyboard focus", focused,
+            ((ColorDrawable) uninstall.getBackground().getCurrent()).getColor());
+        dialog.dismiss(); controller.pause().stop().destroy();
+    }
 }

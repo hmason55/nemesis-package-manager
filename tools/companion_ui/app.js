@@ -28,13 +28,19 @@ function availability() {
 }
 async function operation(label, action) {
   if (busy) return;
+  const previousFocus = document.activeElement;
   let errorTarget;
   busy = true;
   availability();
   message(label);
   try { await action(); }
   catch (error) { message(error.message || "Connection lost. Check the companion's terminal window.", true); errorTarget = error.focusTarget; }
-  finally { busy = false; availability(); if (errorTarget) errorTarget.focus(); }
+  finally {
+    busy = false;
+    availability();
+    if (errorTarget) errorTarget.focus();
+    else if (document.activeElement === document.body && previousFocus?.isConnected && !previousFocus.closest("[hidden]")) previousFocus.focus();
+  }
 }
 function textElement(tag, text, className) {
   const element = document.createElement(tag);
@@ -160,7 +166,15 @@ function render(drive) {
   renderPackages();
 }
 async function refresh() {
-  const state = await api("/api/state");
+  let state;
+  try { state = await api("/api/state"); }
+  catch (error) {
+    $("package-form").reset();
+    $("manager-form").reset();
+    render(null);
+    error.focusTarget = $("drive-select");
+    throw error;
+  }
   drives = state.drives;
   render(state.drive);
   message(state.drive ? "Drive checked. Ready." : "Select a USB drive to get started.");
@@ -177,7 +191,7 @@ function chooseDrive(path) {
     $("package-filter").value = "all";
     $("manual-drive").open = false;
     render(drive);
-    showTab(drive.manager.present ? "packages" : "setup");
+    showTab(drive.manager.present ? "packages" : "setup", true);
     message(`Selected ${drive.path}.`);
   });
 }
@@ -194,17 +208,26 @@ $("package-file").addEventListener("change", () => {
   if ($("import-mode").value === "add") $("package-name").value = ($("package-file").files[0]?.name || "").replace(/\.zip$/i, "").replace(/-usb$/i, "").replace(/[^A-Za-z0-9._-]/g, "-").replace(/^[^A-Za-z0-9]+/, "").slice(0, 64);
   syncImport();
 });
-function validFile(file) {
-  if (!file || !file.name.toLowerCase().endsWith(".zip") || !file.size || file.size > 512 * 1024 ** 2) throw new Error("Choose a nonempty ZIP smaller than 512 MiB.");
+function validFile(input) {
+  const file = input.files[0];
+  if (!file || !file.name.toLowerCase().endsWith(".zip") || !file.size || file.size > 512 * 1024 ** 2) {
+    const error = new Error("Choose a nonempty ZIP no larger than 512 MiB.");
+    error.focusTarget = input;
+    throw error;
+  }
   return file;
 }
 $("package-form").addEventListener("submit", (event) => {
   event.preventDefault();
   operation("Copying package… Keep the drive connected.", async () => {
-    const file = validFile($("package-file").files[0]);
+    const file = validFile($("package-file"));
     const overwrite = $("import-mode").value === "update";
     const name = overwrite ? $("package-target").value : $("package-name").value;
-    if (overwrite && !managedPackages().some(pkg => pkg.folder === name)) throw new Error("Choose the package to update.");
+    if (overwrite && !managedPackages().some(pkg => pkg.folder === name)) {
+      const error = new Error("Choose the package to update.");
+      error.focusTarget = $("package-target");
+      throw error;
+    }
     if (!folderPattern.test(name)) {
       $("folder-settings").open = true;
       const error = new Error("Choose a folder name using 1–64 letters, numbers, dots, hyphens or underscores.");
@@ -213,7 +236,9 @@ $("package-form").addEventListener("submit", (event) => {
     }
     if (overwrite && !confirm(`Update ${name} on ${selected.path}? Existing data/ will be preserved.`)) { message("Update cancelled."); return; }
     const query = new URLSearchParams({ name, overwrite });
-    render(await api(`/api/package?${query}`, file));
+    const drive = await api(`/api/package?${query}`, file);
+    $("package-filter").value = "all";
+    render(drive);
     $("package-form").reset();
     syncImport();
     showTab("packages", true);
@@ -224,7 +249,7 @@ $("manager-form").addEventListener("submit", (event) => {
   event.preventDefault();
   const action = selected.manager.present ? "update-manager" : "setup";
   operation("Copying Package Manager… Keep the drive connected.", async () => {
-    const file = validFile($("manager-file").files[0]);
+    const file = validFile($("manager-file"));
     if (!confirm(`${action === "setup" ? "Set up Package Manager" : "Update the Package Manager installer"} on ${selected.path}?`)) { message("Operation cancelled."); return; }
     render(await api(`/api/${action}`, file));
     $("manager-form").reset();
