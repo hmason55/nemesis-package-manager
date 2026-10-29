@@ -69,6 +69,15 @@ class BuildReleaseTests(unittest.TestCase):
             self.assertIn(b"id=usb.package.manager", archive.read("NEMESIS.data"))
         with zipfile.ZipFile(output / "usb-package-manager-ready.zip") as archive:
             self.assertIn("docs/SETUP-WINDOWS.md", archive.namelist())
+            self.assertIn("docs/USER-GUIDE.md", archive.namelist())
+            image = (
+                Path(__file__).resolve().parent.parent
+                / "docs/images/manager-installed.svg"
+            )
+            self.assertEqual(
+                archive.read("docs/images/manager-installed.svg"),
+                image.read_bytes(),
+            )
             self.assertIn(b"type=execute", archive.read("NEMESIS.data"))
             self.assertEqual(
                 archive.read("manager/usb.package.manager.zip"),

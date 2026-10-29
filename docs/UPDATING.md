@@ -2,12 +2,18 @@
 
 Package Manager installs the files you put on the drive. It does not check online for new releases, download updates, or resolve dependencies and conflicts. Download the release you want on your PC first and check its compatibility and update instructions.
 
-The Version column shows the installed release in Installed, the USB release in Available and Scripts, and both versions in Updates. Numeric versions display without a leading `v`. Installed versions are read from `/data/nemesis/apps/<id>/NEMESIS.data` through NEMESIS using a fixed-length command that fits its command buffer regardless of package count. Identical versions disable installation and show **Up to date**. Numeric dotted releases and numeric `-build.N` suffixes are compared numerically; older installers are disabled. The **Updates** tab includes confirmed newer releases. Missing metadata and custom version formats with unknown ordering use **Install version** instead; check Details and the release instructions before confirming. Equal custom version strings are still recognized as identical.
+For a walkthrough with screen examples, follow [Update a community package](USER-GUIDE.md#update-a-community-package). To update Package Manager itself, use [the separate instructions below](#update-package-manager).
+
+The Version column shows the installed release in Installed, the USB release in Available and Scripts, and both versions in Updates. The [action label table](USER-GUIDE.md#update-a-community-package) explains **Update**, **Up to date**, **Older installer**, and **Install version**. If versions cannot be compared, check Details and the release instructions before confirming.
 
 ## Update another package
 
+![Illustrative Updates screen showing installed 1.4 and USB 1.5 for an example package](images/manager-updates.svg)
+
+*Screen mockup with fictional package data. The comparison is installed version to USB version; it does not check online. See [confirmation, progress, and result examples](USER-GUIDE.md#confirm-and-wait-for-the-result).*
+
 1. Download the package's new release and read its update instructions. Back up any settings or data its author says an update may replace.
-2. On your PC, import the release into the **same folder** used for that package. From a source checkout, for example:
+2. On your PC, import the release into the **same folder** used for that package. In the [USB companion](USB-COMPANION.md#use-the-ui), select the drive, click the package's **Replace on USB** action, choose the new release ZIP, and confirm **Update package**. From a source checkout, the equivalent command is:
 
    ```powershell
    python tools/import_release.py .\downloads\example-new-release.zip --usb E:\ --name Example --overwrite
@@ -24,6 +30,8 @@ If the action says **Install**, NEMESIS did not report that installer's package 
 ## Update Package Manager
 
 Package Manager is excluded from its own package list and cannot install, update, launch, or uninstall itself. Use NEMESIS's normal installer to update it. To remove it, use **NEMESIS Manager > Packages > Package Manager > Uninstall**. Its package ID remains `usb.package.manager` across releases.
+
+The companion's **Drive setup > Update manager** only replaces `manager/usb.package.manager.zip` on your normal package drive. It preserves launcher settings and does not update the app installed on the head unit. Follow the steps below to update the installed app.
 
 Download `usb.package.manager.zip` from the new release and keep it compressed. If you downloaded `usb-package-manager-ready.zip` instead, extract it on your PC and take the ZIP from its `manager/` directory. Prepare a separate update drive with these files at its root:
 
