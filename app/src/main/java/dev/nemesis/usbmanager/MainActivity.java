@@ -34,7 +34,7 @@ public final class MainActivity extends Activity {
     private final ArrayList<PackageScanner.Item> items = new ArrayList<PackageScanner.Item>();
     private final ArrayList<PackageScanner.Item> allItems = new ArrayList<PackageScanner.Item>();
     private final Button[] tabs = new Button[4];
-    private final String[] categoryNames = { "Installed", "Updates", "Not Installed", "Scripts" };
+    private final String[] categoryNames = { "Installed", "Updates", "Available", "Scripts" };
     private int category;
     private final ArrayList<Dialog> dialogs = new ArrayList<Dialog>();
     private TextView status;
@@ -109,6 +109,7 @@ public final class MainActivity extends Activity {
     private android.graphics.drawable.Drawable buttonBackground(int color) {
         StateListDrawable states = new StateListDrawable();
         states.addState(new int[] { android.R.attr.state_pressed }, rounded(Color.rgb(57, 102, 135)));
+        states.addState(new int[] { android.R.attr.state_focused }, rounded(Color.rgb(57, 102, 135)));
         states.addState(new int[0], rounded(color));
         return states;
     }
@@ -140,19 +141,20 @@ public final class MainActivity extends Activity {
         LinearLayout header = new LinearLayout(this);
         header.setGravity(Gravity.CENTER_VERTICAL);
         TextView title = text("Package Manager", 24, TEXT);
+        title.setMaxLines(1); title.setEllipsize(TextUtils.TruncateAt.END);
         title.setTypeface(Typeface.DEFAULT, Typeface.BOLD);
         header.addView(title, new LinearLayout.LayoutParams(0, -2, 1));
         refreshButton = button("Refresh");
         Button close = button("Close");
-        header.addView(refreshButton, spaced(dp(112), 52, 0, 12));
-        header.addView(close, spaced(dp(96), 52, 0, 20));
+        header.addView(refreshButton, spaced(dp(100), 48, 0, 12));
+        header.addView(close, spaced(dp(88), 48, 0, 20));
         root.addView(header);
         LinearLayout categories = new LinearLayout(this);
         categories.setPadding(0, dp(10), 0, dp(4));
         for (int i = 0; i < tabs.length; i++) {
             final int index = i;
             tabs[i] = button(categoryNames[i]); tabs[i].setTextSize(14);
-            categories.addView(tabs[i], spaced(0, 52, 1, i == 0 ? 0 : 6));
+            categories.addView(tabs[i], spaced(0, 48, 1, i == 0 ? 0 : 6));
             tabs[i].setOnClickListener(new View.OnClickListener() {
                 public void onClick(View view) {
                     if (category == index) return;
@@ -171,19 +173,20 @@ public final class MainActivity extends Activity {
         spinnerSize.rightMargin = dp(12);
         feedback.addView(progress, spinnerSize);
         status = text("Loading packages…", 14, MUTED);
-        status.setMaxLines(3); status.setEllipsize(TextUtils.TruncateAt.END);
+        status.setMaxLines(2); status.setEllipsize(TextUtils.TruncateAt.END);
+        status.setFocusable(true);
         status.setOnClickListener(new View.OnClickListener() {
             public void onClick(View view) { message("Status", status.getText().toString()); }
         });
         status.setPadding(0, dp(6), 0, dp(8));
         feedback.addView(status, new LinearLayout.LayoutParams(0, -2, 1));
-        root.addView(feedback, new LinearLayout.LayoutParams(-1, dp(48)));
+        root.addView(feedback, new LinearLayout.LayoutParams(-1, dp(40)));
         LinearLayout columns = new LinearLayout(this);
         columns.setPadding(dp(16), 0, dp(16), 0);
         columns.setGravity(Gravity.CENTER_VERTICAL);
         TextView nameHeading = column("Name", 14, MUTED); nameHeading.setPadding(0, 0, 0, 0);
-        columns.addView(nameHeading, new LinearLayout.LayoutParams(0, -1, 2));
-        columns.addView(column("Version", 14, MUTED), new LinearLayout.LayoutParams(0, -1, 2));
+        columns.addView(nameHeading, new LinearLayout.LayoutParams(0, -1, 3));
+        columns.addView(column("Version", 14, MUTED), new LinearLayout.LayoutParams(0, -1, 1.5f));
         root.addView(columns, new LinearLayout.LayoutParams(-1, dp(36)));
         empty = text("", 18, MUTED); empty.setGravity(Gravity.CENTER);
         root.addView(empty, new LinearLayout.LayoutParams(-1, 0, 1));
@@ -199,7 +202,7 @@ public final class MainActivity extends Activity {
         bar.setPadding(0, dp(8), 0, 0);
         action = button("Install"); launch = button("Launch"); uninstall = button("Uninstall"); details = button("Details");
         action.setBackground(buttonBackground(Color.rgb(25, 99, 137)));
-        bar.addView(action, spaced(0, 56, 1, 0));
+        bar.addView(action, spaced(0, 56, 1.4f, 0));
         bar.addView(launch, spaced(0, 56, 1, 8));
         bar.addView(uninstall, spaced(0, 56, 1, 8));
         bar.addView(details, spaced(0, 56, 1, 8));
@@ -228,7 +231,7 @@ public final class MainActivity extends Activity {
         }
         adapter.notifyDataSetChanged();
         if (selected >= 0) list.setSelection(selected); else list.setSelection(0);
-        if (!allItems.isEmpty()) empty.setText(category == PackagePresentation.UPDATES ? "No confirmed updates.\nCheck installed and USB versions in Details." : "No packages in this category.");
+        if (!allItems.isEmpty()) empty.setText(category == PackagePresentation.UPDATES ? "No confirmed updates." : "No packages in this category.");
         updateButtons();
     }
     private PackageScanner.Item selection() {
@@ -296,7 +299,7 @@ public final class MainActivity extends Activity {
                             allItems.clear(); allItems.addAll(next);
                             status.setText(!registry.available() ? registry.error :
                                 (usb == null ? "No USB installers detected | " + next.size() + " installed packages" :
-                                next.size() + " packages | Select a package to see actions"));
+                                next.size() + " packages · Select a package"));
                             empty.setText(!registry.available() ? "Installed packages could not be loaded.\nCheck the error above, then tap Refresh." :
                                 (usb == null ? "No packages found.\nInsert a USB drive with a packages/ folder, then tap Refresh." :
                                 "No packages found.\nAdd a release under packages/ on your USB, then tap Refresh."));
@@ -327,25 +330,30 @@ public final class MainActivity extends Activity {
             else {
                 row = new LinearLayout(MainActivity.this); row.setOrientation(LinearLayout.HORIZONTAL);
                 row.setGravity(Gravity.CENTER_VERTICAL);
-                row.setPadding(dp(16), dp(12), dp(16), dp(12)); row.setMinimumHeight(dp(78));
+                row.setPadding(dp(16), dp(10), dp(16), dp(10)); row.setMinimumHeight(dp(72));
                 LinearLayout nameColumn = new LinearLayout(MainActivity.this);
                 nameColumn.setOrientation(LinearLayout.VERTICAL);
                 TextView title = text("", 20, TEXT); title.setTypeface(Typeface.DEFAULT, Typeface.BOLD);
-                title.setSingleLine(true); title.setEllipsize(TextUtils.TruncateAt.END);
+                title.setMaxLines(2); title.setEllipsize(TextUtils.TruncateAt.END);
                 nameColumn.addView(title, new LinearLayout.LayoutParams(-1, -2));
                 TextView subtitle = text("", 15, MUTED);
                 subtitle.setSingleLine(true); subtitle.setEllipsize(TextUtils.TruncateAt.END);
                 nameColumn.addView(subtitle, new LinearLayout.LayoutParams(-1, -2));
-                row.addView(nameColumn, new LinearLayout.LayoutParams(0, -2, 2));
-                row.addView(column("", 16, TEXT), new LinearLayout.LayoutParams(0, -2, 2));
+                row.addView(nameColumn, new LinearLayout.LayoutParams(0, -2, 3));
+                row.addView(column("", 16, TEXT), new LinearLayout.LayoutParams(0, -2, 1.5f));
             }
             PackageScanner.Item item = items.get(position);
             LinearLayout nameColumn = (LinearLayout) row.getChildAt(0);
             ((TextView) nameColumn.getChildAt(0)).setText(PackagePresentation.name(item));
-            ((TextView) nameColumn.getChildAt(1)).setText(PackageScanner.BROKEN.equals(item.kind) ? "Invalid installer" : PackagePresentation.state(item));
+            TextView subtitle = (TextView) nameColumn.getChildAt(1);
+            String state = PackageScanner.BROKEN.equals(item.kind) ? "Invalid installer" : PackagePresentation.state(item);
+            subtitle.setText(state);
+            // The active tab already supplies routine state; retain exceptions in the row.
+            subtitle.setVisibility("Installed".equals(state) || "Not installed".equals(state) || "Script".equals(state) ? View.GONE : View.VISIBLE);
             ((TextView) row.getChildAt(1)).setText(PackagePresentation.versionColumn(item, category));
             StateListDrawable background = new StateListDrawable();
             background.addState(new int[] { android.R.attr.state_pressed }, new ColorDrawable(Color.rgb(62, 82, 108)));
+            background.addState(new int[] { android.R.attr.state_focused }, new ColorDrawable(Color.rgb(62, 82, 108)));
             background.addState(new int[0], new ColorDrawable(position == selected ? Color.rgb(45, 65, 90) : PANEL));
             row.setBackground(background);
             row.setActivated(position == selected);
@@ -357,7 +365,7 @@ public final class MainActivity extends Activity {
         if (unavailable() || !PackagePresentation.canInstall(item)) return;
         String action = PackagePresentation.action(item);
         confirm(action + " " + PackagePresentation.name(item) + "?",
-            "NEMESIS runs installation hooks and USB scripts with root privileges. Only continue if you trust this package and have checked its compatibility.\n\n" +
+            "Only continue with a trusted, compatible package. NEMESIS runs its installer or script as root.\n\n" +
             (PackagePresentation.isManager(item) ? "Package Manager will close and reopen while NEMESIS installs the update." : "Your installer and data folder will be kept."), action, new Runnable() {
                 public void run() { startOperation(item, null); }
             });
@@ -366,7 +374,7 @@ public final class MainActivity extends Activity {
         final PackageScanner.Item item = selection();
         if (unavailable() || !PackagePresentation.canUninstall(item)) return;
         confirm("Uninstall " + PackagePresentation.name(item) + "?",
-            "This removes the installed package from the head unit and runs its uninstall hooks as root. Follow the package's removal instructions.\n\n" +
+            "Remove this package from the head unit? Its uninstall hooks run as root. Follow its removal instructions.\n\n" +
             "The installer and data on your USB will be kept.", "Uninstall", new Runnable() {
                 public void run() { startOperation(item, "uninstall"); }
             });

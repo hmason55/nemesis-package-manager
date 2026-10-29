@@ -260,7 +260,7 @@ public class ActivityOperationsTest {
         assertFalse(((View) field("action")).isEnabled());
         android.widget.Button[] tabs = (android.widget.Button[]) field("tabs");
         assertEquals(4, tabs.length);
-        String[] expectedTabs = { "Installed", "Updates", "Not Installed", "Scripts" };
+        String[] expectedTabs = { "Installed", "Updates", "Available", "Scripts" };
         for (int i = 0; i < tabs.length; i++) assertTrue(tabs[i].getText().toString().startsWith(expectedTabs[i] + " ("));
         tabs[PackagePresentation.UPDATES].performClick();
         assertEquals(0, ((BaseAdapter) field("adapter")).getCount());
