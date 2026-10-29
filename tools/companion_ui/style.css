@@ -14,6 +14,9 @@ p { color: var(--muted); margin: 0 0 14px; }
 .quick-guide ol { padding-left: 22px; max-width: 760px; color: #c2cfe0; }
 .quick-guide li + li { margin-top: 6px; }
 .quick-guide p { max-width: 760px; margin-bottom: 0; }
+.manager-update-guide { margin: 20px 0 0; overflow-wrap: anywhere; }
+.manager-update-guide summary { min-height: 44px; padding: 12px 0; }
+.manager-update-guide pre { max-width: 100%; padding: 12px; border: 1px solid var(--border); border-radius: 6px; background: #121821; white-space: pre-wrap; overflow-wrap: anywhere; }
 .control-tooltip { position: fixed; z-index: 10; max-width: min(300px, calc(100vw - 16px)); padding: 9px 12px; border: 1px solid #5b789b; border-radius: 6px; background: #223148; color: #edf1f7; font-size: 12px; line-height: 1.5; box-shadow: 0 4px 16px #0008; overflow-wrap: anywhere; }
 .next-step { margin: 14px 0 0; }
 .drive-bar { display: grid; grid-template-columns: minmax(180px, 1fr) auto auto; gap: 16px; align-items: end; padding: 16px; border: 1px solid var(--border); border-radius: 10px; background: #141a23; }

@@ -10,7 +10,7 @@
 <body>
   <main>
     <header class="topbar"><h1>USB companion</h1><span class="local">● Local</span></header>
-    <details class="quick-guide"><summary>Quick guide</summary><ol><li>Select your USB drive.</li><li>Use <strong>Drive setup</strong> to add Package Manager, then <strong>Add / update</strong> to copy package releases.</li><li>Safely eject the drive. In the vehicle, open Package Manager, tap <strong>Refresh</strong>, and choose <strong>Install</strong> or <strong>Update</strong>.</li></ol><p>Copying a release to USB does not install it on the head unit. Your existing data folder is kept when updating.</p></details>
+    <details class="quick-guide"><summary>Quick guide</summary><ol><li>Select your USB drive.</li><li>Use <strong>Drive setup</strong> for Package Manager's first installation, then <strong>Add / update</strong> to copy community package releases.</li><li>Safely eject the drive. For community packages, open Package Manager in the vehicle, tap <strong>Refresh</strong>, and choose <strong>Install</strong> or <strong>Update</strong>.</li></ol><p>Copying a release to USB does not install it on the head unit. Package Manager cannot update itself: use the separate-drive NEMESIS instructions in <strong>Drive setup</strong>. Your existing data folder is kept when replacing an installer.</p></details>
     <section class="drive-bar" aria-label="USB drive">
       <div class="drive-selector"><label for="drive-select">USB drive</label><select id="drive-select"><option value="">Select a drive…</option></select></div>
       <button id="refresh" class="secondary" type="button">Refresh</button>
@@ -47,6 +47,21 @@
       <section id="panel-setup" class="panel" role="tabpanel" aria-labelledby="tab-setup" tabindex="0" hidden>
         <div class="section-title"><h2>Package Manager</h2><span id="manager-version" class="badge">No drive selected</span></div>
         <div class="setup-grid"><div><p id="manager-detail">Select a drive to check its setup.</p><p class="hint">NEMESIS must already be installed on your head unit.</p></div><form id="manager-form"><label for="manager-file">Manager release bundle</label><input id="manager-file" type="file" accept=".zip" required><p class="hint">Choose usb-package-manager-ready.zip from a trusted release.</p><div class="actions"><button id="setup" type="submit" value="setup">Set up drive</button><button id="update-manager" type="submit" value="update-manager" hidden>Update manager</button></div></form></div>
+        <details id="manager-update-guide" class="quick-guide manager-update-guide">
+          <summary>Install or update Package Manager through NEMESIS</summary>
+          <p>Updating or repairing the installer on this drive does not update the installed app. Package Manager cannot install or update itself. These instructions are available offline.</p>
+          <ol>
+            <li>Copy <code>manager/usb.package.manager.zip</code> from your normal package drive to a <strong>separate USB drive's root</strong>, named <code>usb.package.manager.zip</code>. Keep it compressed.</li>
+            <li>On that separate drive, create a plain-text file named <code>NEMESIS.data</code> at its root with exactly this content:
+              <pre><code>[nemesis]
+version=1.0
+type=install
+path=usb.package.manager.zip</code></pre>
+            </li>
+            <li>With the vehicle parked and the head unit fully booted, close Package Manager, safely eject the separate drive from your computer, and insert it in the vehicle. Approve NEMESIS's installation or update prompt. Keep the drive connected and wait for completion.</li>
+            <li>Open <strong>NEMESIS Manager &gt; Packages &gt; Package Manager &gt; Launch</strong>, then return to your normal package drive. Keep its disabled root descriptor disabled; do not put this install descriptor on that drive.</li>
+          </ol>
+        </details>
       </section>
     </fieldset>
     <footer>Only import trusted releases. Keep the drive connected until copying finishes.</footer>
