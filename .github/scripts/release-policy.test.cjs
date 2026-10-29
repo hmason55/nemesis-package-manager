@@ -58,7 +58,7 @@ test('publication context rejects PRs, manual previews, changed stable inputs, a
   assert.throws(() => policy.assertPublication({...dev, channel: 'other'}), /channel/);
 });
 
-test('stable candidates require main ancestry and completed hardware, signing, and gating blockers', async () => {
+test('stable candidates require main ancestry and completed quality-gate implementation', async () => {
   let status = 'ahead', blocked = null, reason = 'completed';
   const github = {rest: {repos: {compareCommits: async () => ({data: {status}})},
     issues: {get: async ({issue_number}) => ({data: {state: blocked === issue_number ? 'open' : 'closed', state_reason: reason}})}}};
@@ -67,7 +67,7 @@ test('stable candidates require main ancestry and completed hardware, signing, a
   status = 'identical'; await policy.assertStableReadiness(args);
   for (status of ['behind', 'diverged', 'unknown']) await assert.rejects(policy.assertStableReadiness(args), /ancestor/);
   status = 'ahead';
-  blocked = 31; await policy.assertMainCandidate(args); // Signing candidates can build before readiness closes.
+  for (blocked of [30, 31]) await policy.assertStableReadiness(args); // These issues no longer gate publication.
   for (blocked of policy.stableBlockers) await assert.rejects(policy.assertStableReadiness(args), new RegExp(`#${blocked}`));
   blocked = null; reason = 'not_planned'; await assert.rejects(policy.assertStableReadiness(args), /blocked/);
   github.rest.issues.get = async () => { throw new Error('unavailable'); };

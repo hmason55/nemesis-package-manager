@@ -1,4 +1,4 @@
-# Release channels, signing, and stable publication
+# Release channels and stable publication
 
 Pushes to `main` produce **development prereleases**, named
 `<base>-build.<workflow-run-number>`. They are experimental debug-signed builds,
@@ -17,24 +17,12 @@ before creating a tag. It never substitutes a previous run's successful check.
 
 ## Stable release prerequisites
 
-Stable publication is deliberately unavailable until issues
-[#30](https://github.com/hmason55/nemesis-package-manager/issues/30),
-[#31](https://github.com/hmason55/nemesis-package-manager/issues/31), and
-[#32](https://github.com/hmason55/nemesis-package-manager/issues/32) are closed as
-**completed**. Closing an issue as not planned does not satisfy the gate. These
-cover hardware qualification, persistent signing/upgrade evidence, and release
-quality gates. Do not close them merely to bypass publication checks.
+Stable publication requires issue
+[#32](https://github.com/hmason55/nemesis-package-manager/issues/32), which tracks
+implementation of the quality gates, to be closed as **completed**. Every
+selected commit must also pass the live quality and artifact checks.
 
-The signing infrastructure is implemented, but no production keystore has been
-selected or installed by this change. Hardware validation is still required.
-Use [the qualification record](HARDWARE-VALIDATION.md) to collect actual results.
-
-## Configure persistent signing
-
-Keep the release keystore under maintainer control, outside this repository,
-with an independent encrypted backup and a documented recovery/custody process.
-Do not reuse a disposable CI debug key as an unexamined production identity.
-Never put keystore bytes, passwords, or private keys in issues, logs, or downloads.
+## Release build configuration
 
 Configure these **repository Actions secrets** through GitHub Settings:
 
@@ -57,13 +45,10 @@ partial settings stop release assembly; there is no unsigned/debug fallback.
 The Gradle release build is non-debuggable and enables APK v1/JAR signing for
 Android 4.4, as well as v2 signing for compatible newer systems.
 
-Before closing #31, run two independent CI builds with the retained identity,
-using **Build Package Manager > Run workflow** on `main` with `stable_version`
-and `candidate_sha` set and **publish_stable unchecked**. This validates signed
-candidates and uploads workflow artifacts without creating tags/releases, even
-while the hardware/signing blockers remain open. For those builds,
-compare public fingerprints, and verify the actual NEMESIS upgrade path on a
-supported head unit. Local tests with disposable keys prove the tooling only.
+To validate a signed candidate without publishing, run **Build Package Manager**
+on `main` with `stable_version` and `candidate_sha` set and **publish_stable
+unchecked**. Results are uploaded as workflow artifacts without creating tags or
+releases.
 
 ### Local signed candidate
 
@@ -75,9 +60,8 @@ For an exact candidate, also set `NEMESIS_RELEASE_VERSION` and
 
 ## Publish a stable candidate
 
-1. Finish the qualification and signing prerequisites and merge the release
-   changes. Select a full 40-character commit SHA that belongs to `main` and
-   contains this release/signing infrastructure.
+1. Merge the release changes. Select a full 40-character commit SHA that
+   belongs to `main` and contains this release infrastructure.
 2. In **Actions > Build Package Manager > Run workflow**, select `main`, enter
    a clean numeric version such as `1.0.0` in `stable_version`, and enter the
    selected SHA in `candidate_sha`. Explicitly check **publish_stable** to
@@ -88,7 +72,7 @@ For an exact candidate, also set `NEMESIS_RELEASE_VERSION` and
 3. The workflow revalidates and builds that commit with the final stable version
    before publication. Python, Java, APK, and Windows/Linux jobs use that same
    SHA. The production certificate fingerprint and APK/NEMESIS versions must
-   match. Readiness is checked again immediately before publication.
+   match. The quality-gate prerequisite is checked again before publication.
 4. Only after every gate passes does the workflow publish the exact validated
    bytes as `v<version>` and mark the release stable/latest. A new stable version
    must be newer than existing clean stable versions. Stable publication jobs
@@ -112,21 +96,8 @@ signing/API 19 compatibility, and compares both nested bundles to those bytes.
 Uploads stay in a draft until complete. Retries verify existing tag/asset identity
 and never silently alter a published release or add a missing published asset.
 
-## Upgrade and signing migration
+## Update the installed app
 
 Use [NEMESIS's external installer procedure](UPDATING.md#update-package-manager)
 to update Package Manager. It cannot update itself. Copying files in the
 companion only replaces the USB installer.
-
-Development/debug and production signing identities are different. Android
-normally rejects an in-place APK update signed by another identity. Compare the
-installed build's public fingerprint with the candidate before planning an
-upgrade; a version increase alone does not establish compatibility. Existing
-debug-signed releases cannot be assumed to share one persistent key.
-
-If the old signing key is unavailable, document and validate a one-time migration:
-back up required app settings and exports, keep independent copies of the USB
-packages/data, remove the old manager through NEMESIS Manager, and install the
-new signed manager through NEMESIS. Uninstalling may remove Android-private app
-data. Do not promise automatic preservation of those settings. Subsequent stable
-upgrades must retain the production key and use increasing version codes.

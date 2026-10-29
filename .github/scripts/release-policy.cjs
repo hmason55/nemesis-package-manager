@@ -2,7 +2,7 @@ const stableVersionPattern = /^(0|[1-9]\d*)\.(0|[1-9]\d*)\.(0|[1-9]\d*)$/;
 const developmentVersionPattern = /^(0|[1-9]\d*)\.(0|[1-9]\d*)\.(0|[1-9]\d*)-build\.[1-9]\d*$/;
 const shaPattern = /^[a-f0-9]{40}$/;
 const requiredJobs = ['python-quality', 'java-quality', 'build', 'companion'];
-const stableBlockers = [30, 31, 32];
+const stableBlockers = [32];
 
 function selectVersion({base, runNumber, stableVersion = '', candidateSha = '', context}) {
   if (!Number.isSafeInteger(runNumber) || runNumber < 1 || runNumber > 2100000000 - 1000) throw new Error('Invalid workflow run number');

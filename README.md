@@ -2,7 +2,7 @@
 
 Browse and install NEMESIS community packages from one USB drive on a compatible Gen5W head unit. Package Manager uses NEMESIS to install, update, launch, and uninstall packages; it does not replace NEMESIS Manager.
 
-**Requires NEMESIS already installed.** Development prereleases are experimental and debug signed; no hardware-qualified 1.0 release is claimed. Check each community package's vehicle and firmware requirements before installing it.
+**Requires NEMESIS already installed.** Development prereleases are experimental and debug signed. Check each community package's vehicle and firmware requirements before installing it.
 
 ![Illustrative Package Manager Installed screen with an example package selected](docs/images/manager-installed.svg)
 
@@ -74,7 +74,7 @@ Only install trusted releases: NEMESIS hooks and scripts run with root privilege
 
 ## Development
 
-Successful builds on `main` publish development prereleases with change notes, provenance, and SHA-256 checksums. Stable publication requires an explicit version/commit selection, persistent signing, completed release blockers, and all quality gates. PR builds and ordinary manual checks do not publish. See [release/signing procedures](docs/RELEASING.md) and the [hardware qualification record](docs/HARDWARE-VALIDATION.md). Artifact filenames retain their existing names for compatibility.
+Successful builds on `main` publish development prereleases with change notes, provenance, and SHA-256 checksums. Stable publication requires an explicit version/commit selection and all quality and artifact checks. PR builds and ordinary manual checks do not publish. See [release procedures](docs/RELEASING.md). Artifact filenames retain their existing names for compatibility.
 
 - [Build, tests, and releases](docs/BUILD-AND-TEST.md)
 - [Detailed workflow diagrams (optional reference)](docs/WORKFLOW-REFERENCE.md)

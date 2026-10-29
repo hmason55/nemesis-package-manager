@@ -26,7 +26,7 @@ these artifacts. Check downloads against the release's `SHA256SUMS` file.
 The app opens a local URL automatically and uses a blue, black, and gray dark
 theme. Both executables are built and smoke-tested from the same commit as the
 head-unit packages. Publication waits for both builds, and checksums cover all
-the four application downloads plus public release evidence. Development downloads are prereleases; stable downloads require explicit qualification and signing. See [release procedures](RELEASING.md). Existing releases are not modified retroactively.
+the four application downloads plus public release evidence. Development downloads are prereleases; stable downloads require explicit publication after quality and artifact checks. See [release procedures](RELEASING.md). Existing releases are not modified retroactively.
 
 ## Run from this repository
 

@@ -12,7 +12,7 @@ on:
         required: false
         default: ''
       publish_stable:
-        description: 'Publish the signed candidate as stable. Requires all release blockers completed. Default only validates.'
+        description: 'Publish the signed candidate as stable. Requires quality and artifact checks. Default only validates.'
         type: boolean
         required: false
         default: false

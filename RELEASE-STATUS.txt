@@ -1,9 +1,7 @@
-NEMESIS Package Manager release readiness
+NEMESIS Package Manager release status
 
 Source checkout: local defaults remain 0.2.0; CI assigns each candidate its selected version.
 Successful main-branch builds publish experimental development prereleases.
 Stable publication requires an explicit version and exact commit, all quality gates,
-persistent signing, and completed hardware/upgrade qualification.
-Production signing credentials and actual hardware evidence are still outstanding.
-See docs/RELEASING.md and docs/HARDWARE-VALIDATION.md.
+and complete verified artifacts. See docs/RELEASING.md.
 Copying a new USB installer alone does not update the installed manager APK.

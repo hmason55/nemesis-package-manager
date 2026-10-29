@@ -10,11 +10,11 @@ Extract the downloaded artifact wrapper on your PC, then extract its `usb-packag
 
 ## Automatic releases
 
-Every successful push to `main` publishes a **development prerelease** after all quality and artifact gates pass. PRs and ordinary manual validation runs do not publish. Stable publication is an explicit dispatch using a clean version and an exact main-branch candidate SHA; it also requires persistent signing credentials and completed hardware/signing/publication blockers.
+Every successful push to `main` publishes a **development prerelease** after all quality and artifact gates pass. PRs and ordinary manual validation runs do not publish. Stable publication is an explicit dispatch using a clean version and an exact main-branch candidate SHA and successful quality and artifact checks.
 
 Development versions use the Android base version plus the workflow run number, for example `0.2.0-build.42`. All channels use `1000 + Build Package Manager run_number` for the Android version code. The APK, NEMESIS manifest, tag, notes, and public provenance identify the same selected version/commit.
 
-Downloads include the two installer ZIPs, Windows and Linux companion archives, `release-evidence.json`, and `SHA256SUMS`. Uploads stay in a draft until complete; retries verify immutable tag and asset identity. Development prereleases cannot replace the latest stable release. See [release and signing procedures](RELEASING.md) for stable prerequisites, credentials, promotion, and migration from debug-signed builds.
+Downloads include the two installer ZIPs, Windows and Linux companion archives, `release-evidence.json`, and `SHA256SUMS`. Uploads stay in a draft until complete; retries verify immutable tag and asset identity. Development prereleases cannot replace the latest stable release. See [release procedures](RELEASING.md) for candidate builds, promotion, and artifact verification.
 
 ## Local build commands
 
@@ -68,7 +68,7 @@ In PowerShell, replace `bash gradlew` with `.\gradlew.bat`. See the [local valid
 - The Android UI and USB read permissions are not hardware-tested.
 - Version ordering supports numeric dotted releases and numeric `-build.N` suffixes. Other differing version formats remain unknown; unavailable installed manifests cannot establish update availability. Dependencies, conflict resolution, and automated batch installations are not implemented.
 - Android framework availability and permissions vary by Gen5W firmware; the first unit test is required to establish compatibility.
-- Debug APKs are for development and do not establish persistent signing continuity. Stable signing support requires maintainer credentials and actual upgrade verification; see [signing migration](RELEASING.md#upgrade-and-signing-migration).
+- Debug APKs are for development. See [release build configuration](RELEASING.md#release-build-configuration) for signed candidate builds.
 
 ## Slow or stalled command recovery
 

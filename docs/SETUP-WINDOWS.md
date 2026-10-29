@@ -4,7 +4,7 @@ For a walkthrough with screen examples, start with the [illustrated user guide](
 
 ## A. Download
 
-NEMESIS must already work on your head unit. Download `usb-package-manager-ready.zip` from a release. Alternatively, open **Actions Ã¢â€ â€™ Build Package Manager**, download the successful run's `nemesis-usb-package-manager` artifact, and extract that wrapper first.
+NEMESIS must already work on your head unit. Download `usb-package-manager-ready.zip` from a release. Alternatively, open **Actions > Build Package Manager**, download the successful run's `nemesis-usb-package-manager` artifact, and extract that wrapper first.
 
 ## B. Prepare the drive
 
@@ -26,7 +26,7 @@ The importer preserves existing data folders. Use `--overwrite` only to replace 
 
 ## C. First launch
 
-With the vehicle parked and the head unit fully booted, insert the drive and approve the execution prompt. NEMESIS installs Package Manager if missing and opens it. The launcher then backs up its own root descriptor as `NEMESIS.data.disabled`, so future startups do not prompt to execute the drive. Open **NEMESIS Manager Ã¢â€ â€™ Packages Ã¢â€ â€™ Package Manager Ã¢â€ â€™ Launch** afterward.
+With the vehicle parked and the head unit fully booted, insert the drive and approve the execution prompt. NEMESIS installs Package Manager if missing and opens it. The launcher then backs up its own root descriptor as `NEMESIS.data.disabled`, so future startups do not prompt to execute the drive. Open **NEMESIS Manager > Packages > Package Manager > Launch** afterward.
 
 Existing drives need the new launcher to run once for this change. It never replaces an existing disabled-descriptor backup or disables an unrelated install descriptor. If a backup already exists, a numbered backup is created instead. Reinserting the drive does not reinstall community packages.
 
@@ -50,7 +50,7 @@ Both manager UIs share installed packages. Wait for one operation to finish befo
 
 Package Manager is hidden from its own list and cannot manage itself. Follow [the manager update steps](UPDATING.md#update-package-manager) to prepare a separate drive with an install descriptor pointing to the new `usb.package.manager.zip`. Close Package Manager, confirm the update through NEMESIS, and wait for completion before reopening it through NEMESIS Manager.
 
-You can still install or update directly through NEMESIS using a separate drive with an install descriptor pointing to `usb.package.manager.zip`. Remove Package Manager only through **NEMESIS Manager Ã¢â€ â€™ Packages Ã¢â€ â€™ Package Manager Ã¢â€ â€™ Uninstall**. Its technical package ID remains `usb.package.manager`.
+You can still install or update directly through NEMESIS using a separate drive with an install descriptor pointing to `usb.package.manager.zip`. Remove Package Manager only through **NEMESIS Manager > Packages > Package Manager > Uninstall**. Its technical package ID remains `usb.package.manager`.
 
 ## Data and troubleshooting
 
@@ -62,6 +62,6 @@ You can still install or update directly through NEMESIS using a separate drive 
 
 Only run trusted packages. Hooks and scripts run as root. This manager does not resolve package conflicts or establish firmware compatibility. New update and launcher behavior still requires head-unit validation.
 
-## Release channels and signing
+## Release channels
 
-Automatic main-branch builds are experimental, debug-signed prereleases. Stable releases require completed qualification, persistent signing, and an explicit maintainer publication. Compare the public certificate fingerprint before upgrading from an older debug build: a different signing identity may require a one-time reinstall and backup of Android-private settings. See [release and migration procedures](RELEASING.md).
+Automatic main-branch builds are experimental prereleases. Stable releases use an explicit maintainer publication after quality and artifact checks pass. See [release procedures](RELEASING.md).

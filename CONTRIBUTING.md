@@ -127,7 +127,7 @@ Continue to delegate package operations to NEMESIS. Require explicit confirmatio
 
 ## Release requirements
 
-The pipeline publishes development prereleases after pushes to `main` only after Python and Java quality gates, APK/bundle verification, and both companion builds pass for the selected commit. Java coverage is now a required publication dependency. Stable releases require an explicit manual version/commit selection, persistent signing, and completed qualification blockers. PR and ordinary manual runs do not publish. See [release/signing procedures](docs/RELEASING.md).
+The pipeline publishes development prereleases after pushes to `main` only after Python and Java quality gates, APK/bundle verification, and both companion builds pass for the selected commit. Java coverage is now a required publication dependency. Stable releases require an explicit manual version/commit selection and successful quality and artifact checks. PR and ordinary manual runs do not publish. See [release procedures](docs/RELEASING.md).
 
 A release implementation must:
 
