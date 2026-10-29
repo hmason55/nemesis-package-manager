@@ -93,7 +93,10 @@ For an exact candidate, also set `NEMESIS_RELEASE_VERSION` and
    bytes as `v<version>` and mark the release stable/latest. A new stable version
    must be newer than existing clean stable versions. Stable publication jobs
    share one concurrency group so simultaneous versions cannot race the latest
-   release check.
+   release check. Publication also compares prior stable evidence: the retained
+   certificate must match and the Android version code must increase. A delayed
+   older candidate must be rebuilt in a new workflow run rather than retried
+   after a newer-code stable release.
 
 All channels use `1000 + Build Package Manager run_number` as the Android
 version code, independent of the base version. Rerunning the same workflow run

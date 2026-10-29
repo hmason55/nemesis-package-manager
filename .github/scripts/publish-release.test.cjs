@@ -28,14 +28,14 @@ function fixture(t) {
     createRelease: async args => { state.created++; state.release = {...args, id: 1}; return {data: state.release}; },
     listReleaseAssets: async () => {},
     uploadReleaseAsset: async args => { state.assets.push({...args, id: state.assets.length + 1}); },
-    getReleaseAsset: async args => ({data: state.assets.find(a => a.id === args.asset_id).data}),
+    getReleaseAsset: async args => ({data: [...state.assets, ...(state.previousAssets || [])].find(a => a.id === args.asset_id).data}),
     updateRelease: async args => { Object.assign(state.release, args); state.published++; }
-  }}, paginate: async endpoint => {
+  }}, paginate: async (endpoint, args) => {
     if (endpoint === github.rest.repos.listReleases) {
       return [{tag_name: 'unrelated', draft: true, id: 999}, ...(state.previousReleases || []), ...(state.release ? [state.release] : [])];
     }
     assert.equal(endpoint, github.rest.repos.listReleaseAssets);
-    return state.assets;
+    return args.release_id === 2 ? (state.previousAssets || []) : state.assets;
   }};
   const context = {eventName: 'push', ref: 'refs/heads/main', sha, repo: {owner: 'example', repo: 'manager'}};
   const version = '0.2.0-build.42';
@@ -232,4 +232,22 @@ test('published releases reject newly missing companion assets on retry', async 
   f.state.assets = f.state.assets.filter(a => !a.name.endsWith('linux-x86_64.tar.gz'));
   await assert.rejects(publish(f), /cannot receive new assets/);
   assert.equal(f.state.published, 1);
+});
+
+
+test('delayed stable candidates cannot lower version codes or change the retained signing identity', async t => {
+  for (const mode of ['valid', 'older-code', 'equal-code', 'wrong-key', 'missing', 'invalid']) {
+    const f = stableFixture(t);
+    f.state.previousReleases = [{id: 2, tag_name: 'v0.9.0', draft: false, prerelease: false}];
+    const prior = {schema: 1, version: '0.9.0', channel: 'stable', signing: 'release',
+      version_code: mode === 'older-code' ? 1043 : mode === 'equal-code' ? 1042 : 1041,
+      certificate_sha256: mode === 'wrong-key' ? 'e'.repeat(64) : fingerprint};
+    f.state.previousAssets = mode === 'missing' ? [] : [{id: 99, name: 'release-evidence.json',
+      data: Buffer.from(mode === 'invalid' ? '{}' : JSON.stringify(prior))}];
+    if (mode === 'valid') { await publish(f); assert.equal(f.state.published, 1); }
+    else {
+      await assert.rejects(publish(f), /version.code|signing/);
+      assert.equal(f.state.ref, null); assert.equal(f.state.published, 0);
+    }
+  }
 });

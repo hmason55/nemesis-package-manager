@@ -39,8 +39,17 @@ module.exports = async function publish({github, context, version, sourceSha = c
   if (channel === 'stable') {
     for (const release of releases) {
       const older = release.tag_name?.replace(/^v/, '');
-      if (release.tag_name !== tag && !release.draft && !release.prerelease && stableVersionPattern.test(older || '') && compareStableVersions(version, older) <= 0)
-        throw new Error('A new stable release must be newer than existing stable releases');
+      if (release.tag_name === tag || release.draft || release.prerelease || !stableVersionPattern.test(older || '')) continue;
+      if (compareStableVersions(version, older) <= 0) throw new Error('A new stable release must be newer than existing stable releases');
+      const priorAssets = await github.paginate(github.rest.repos.listReleaseAssets, {...repo, release_id: release.id});
+      const priorReceipt = priorAssets.find(asset => asset.name === 'release-evidence.json');
+      if (!priorReceipt) throw new Error('Previous stable release has no signing/version-code evidence');
+      const response = await github.rest.repos.getReleaseAsset({...repo, asset_id: priorReceipt.id, headers: {accept: 'application/octet-stream'}});
+      const prior = JSON.parse(Buffer.from(response.data).toString('utf8'));
+      if (prior.schema !== 1 || prior.version !== older || prior.channel !== 'stable' || prior.signing !== 'release' ||
+          !Number.isSafeInteger(prior.version_code) || prior.version_code < 1 || prior.certificate_sha256 !== evidence.certificate_sha256)
+        throw new Error('Previous stable signing/version-code evidence is inconsistent');
+      if (evidence.version_code <= prior.version_code) throw new Error('Stable Android version code must increase; start a new workflow run rather than retry an older candidate');
     }
   }
   let release = await optional(() => github.rest.repos.getReleaseByTag({...repo, tag}));
