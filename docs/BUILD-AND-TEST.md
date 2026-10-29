@@ -4,17 +4,17 @@ This project targets Android API 19 (Android 4.4). The Android app has no depend
 
 ## Automated GitHub Actions build
 
-The workflow `.github/workflows/build.yml` uses Java 17, Gradle 8.10.2, and AGP 8.7.3. Pull requests and pushes to `main` trigger it automatically; maintainers can also launch it manually. A merge into `main` therefore starts a new build. It runs host tests, builds `app-debug.apk`, checks its expected structure and JAR signature, creates the NEMESIS ZIP, and uploads `dist/` as the `nemesis-usb-package-manager` artifact.
+The workflow `.github/workflows/build.yml` uses Java 17, Gradle 8.10.2, and AGP 8.7.3. Pull requests and pushes to `main` trigger it automatically; maintainers can also launch it manually. A merge into `main` therefore starts a new build. It runs the Python and Java quality gates, host tests, SDK signature/metadata validation, and both companion builds. Development runs build `app-debug.apk`; explicitly selected stable candidates build a signed, non-debuggable release APK. Verified bundles and provenance are uploaded as the `nemesis-usb-package-manager` artifact.
 
 Extract the downloaded artifact wrapper on your PC, then extract its `usb-package-manager-ready.zip` onto the normal USB. Installing a new build over an existing manager requires the explicit update procedure in [SETUP-WINDOWS.md](SETUP-WINDOWS.md#e-update-package-manager-itself); copying files alone does not update the installed APK.
 
 ## Automatic releases
 
-After this workflow change is merged, every successful push to `main` publishes a GitHub Release. Python quality gates, host tests, Android view tests, APK compilation, and bundle validation must pass first. PR and manually dispatched runs build artifacts but never publish releases.
+Every successful push to `main` publishes a **development prerelease** after all quality and artifact gates pass. PRs and ordinary manual validation runs do not publish. Stable publication is an explicit dispatch using a clean version and an exact main-branch candidate SHA and successful quality and artifact checks.
 
-Versions use the Android base version plus the workflow run number, for example `0.2.0-build.42`, tagged as `v0.2.0-build.42` at the tested commit. CI writes the same version into the APK and NEMESIS manifest and assigns an increasing Android version code. Local builds retain the checked-in version defaults.
+Development versions use the Android base version plus the workflow run number, for example `0.2.0-build.42`. All channels use `1000 + Build Package Manager run_number` for the Android version code. The APK, NEMESIS manifest, tag, notes, and public provenance identify the same selected version/commit.
 
-Each release contains the two installer ZIPs and `SHA256SUMS`, generated change notes since the previous release, and links to update instructions. These remain experimental debug-signed builds. Uploads are staged in an unpublished release until complete; retries verify tag identity and existing asset contents instead of overwriting published files. A failed publishing run can be rerun after resolving the error.
+Downloads include the two installer ZIPs, Windows and Linux companion archives, `release-evidence.json`, and `SHA256SUMS`. Uploads stay in a draft until complete; retries verify immutable tag and asset identity. Development prereleases cannot replace the latest stable release. See [release procedures](RELEASING.md) for candidate builds, promotion, and artifact verification.
 
 ## Local build commands
 
@@ -68,7 +68,7 @@ In PowerShell, replace `bash gradlew` with `.\gradlew.bat`. See the [local valid
 - The Android UI and USB read permissions are not hardware-tested.
 - Version ordering supports numeric dotted releases and numeric `-build.N` suffixes. Other differing version formats remain unknown; unavailable installed manifests cannot establish update availability. Dependencies, conflict resolution, and automated batch installations are not implemented.
 - Android framework availability and permissions vary by Gen5W firmware; the first unit test is required to establish compatibility.
-- A v1-signed debug APK is for development. Keep the signing key stable for future updates or you may need to uninstall before installing a differently signed APK.
+- Debug APKs are for development. See [release build configuration](RELEASING.md#release-build-configuration) for signed candidate builds.
 
 ## Slow or stalled command recovery
 

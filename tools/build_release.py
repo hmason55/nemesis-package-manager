@@ -2,9 +2,19 @@
 """Build a NEMESIS install ZIP and one-root-descriptor USB launcher bundle."""
 
 try:
-    from tools.bundle_templates import PACKAGE_MANIFEST, USB_MANIFEST, LAUNCHER
+    from tools.bundle_templates import (
+        PACKAGE_MANIFEST,
+        USB_MANIFEST,
+        LAUNCHER,
+        GETTING_STARTED,
+    )
 except ModuleNotFoundError:
-    from bundle_templates import PACKAGE_MANIFEST, USB_MANIFEST, LAUNCHER
+    from bundle_templates import (
+        PACKAGE_MANIFEST,
+        USB_MANIFEST,
+        LAUNCHER,
+        GETTING_STARTED,
+    )
 
 import argparse
 import zipfile
@@ -30,22 +40,7 @@ def build(apk: Path, dist: Path):
         z.writestr("NEMESIS.data", USB_MANIFEST)
         z.writestr("NEMESIS.sh", LAUNCHER)
         z.write(package, "manager/usb.package.manager.zip")
-        z.writestr(
-            "GETTING_STARTED.txt",
-            "NEMESIS PACKAGE MANAGER - EXPERIMENTAL\n"
-            "Requires NEMESIS already installed.\n"
-            "Copy these extracted files to the USB ROOT, not a nested directory.\n"
-            "On insert, confirm NEMESIS execute to install/launch the manager.\n"
-            "Add each USB-ready release under packages/<Name>/ with its own NEMESIS.data.\n"
-            "First launch disables the root descriptor to prevent repeated prompts.\n"
-            "Use NEMESIS Manager -> Packages -> Package Manager -> Launch after first install.\n"
-            "Open Package Manager through NEMESIS Manager after setup.\n"
-            "Copying a new bundle does not update an already-installed manager.\n"
-            "Update Package Manager through NEMESIS's installer; see docs/UPDATING.md.\n"
-            "Package Manager is hidden from its own package list.\n"
-            "Both manager UIs share installed packages; finish one operation before starting another.\n"
-            "Read docs/SETUP-WINDOWS.md for complete steps and warnings.\n",
-        )
+        z.writestr("GETTING_STARTED.txt", GETTING_STARTED)
         for path in sorted(filter(Path.is_file, docs_dir.rglob("*"))):
             z.write(path, "docs/" + path.relative_to(docs_dir).as_posix())
         z.writestr("packages/", "")

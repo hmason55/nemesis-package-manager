@@ -296,7 +296,7 @@ public final class MainActivity extends Activity {
         final String previousKey = previous == null ? null : PackagePresentation.key(previous);
         busy = true; updateButtons();
         scanError = null;
-        empty.setText("Scanning for packagesâ€¦");
+        empty.setText("Scanning for packages...");
         new Thread(new Runnable() {
             public void run() {
                 try {

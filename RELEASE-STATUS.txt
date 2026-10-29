@@ -1,7 +1,7 @@
-NEMESIS Package Manager prototype v0.2.0
-SOURCE/BUILD KIT ONLY. This archive does not include a compiled Android APK.
-See docs/SETUP-WINDOWS.md for the GitHub Actions build workflow.
-After the workflow completes, use its usb-package-manager-ready.zip on USB.
-Host tests and Android API 19 source compilation passed.
-Version 0.2.0 improves dialogs, package rows, and action feedback.
-Verify the new UI on your head unit after installing this update.
+NEMESIS Package Manager release status
+
+Source checkout: local defaults remain 0.2.0; CI assigns each candidate its selected version.
+Successful main-branch builds publish experimental development prereleases.
+Stable publication requires an explicit version and exact commit, all quality gates,
+and complete verified artifacts. See docs/RELEASING.md.
+Copying a new USB installer alone does not update the installed manager APK.

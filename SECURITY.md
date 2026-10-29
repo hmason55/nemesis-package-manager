@@ -18,7 +18,7 @@ Remove credentials, VINs, personal paths, recordings, and other private data fro
 
 ## Supported versions and scope
 
-This project is experimental. Security fixes are targeted at `main` and the next release; older releases have no guaranteed backports. Report suspected issues in any version and identify the version you tested. No response-time or fix-time guarantee is offered.
+Development prereleases are experimental. Security fixes are targeted at `main` and the next release; older prereleases have no guaranteed backports. Any stable support window will be documented with that release. Report suspected issues in any version and identify the version you tested. No response-time or fix-time guarantee is offered.
 
 Reports concerning archive extraction, path validation, unintended command execution, confirmation bypasses, data loss, and release tooling are relevant. NEMESIS and third-party packages have their own maintainers; report issues originating there to those projects privately and explain any impact on Package Manager.
 
