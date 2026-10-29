@@ -41,7 +41,8 @@ def build(apk: Path, dist: Path):
             "Use NEMESIS Manager -> Packages -> Package Manager -> Launch after first install.\n"
             "Open Package Manager through NEMESIS Manager after setup.\n"
             "Copying a new bundle does not update an already-installed manager.\n"
-            "Replace manager/usb.package.manager.zip, then select Package Manager and Update.\n"
+            "Update Package Manager through NEMESIS's installer; see docs/UPDATING.md.\n"
+            "Package Manager is hidden from its own package list.\n"
             "Both manager UIs share installed packages; finish one operation before starting another.\n"
             "Read docs/SETUP-WINDOWS.md for complete steps and warnings.\n",
         )

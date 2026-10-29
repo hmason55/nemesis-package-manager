@@ -11,6 +11,7 @@ import java.lang.reflect.Field;
 import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
 import java.util.concurrent.TimeUnit;
+import java.util.concurrent.CountDownLatch;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collections;
@@ -59,7 +60,11 @@ public class ActivityOperationsTest {
             calls.add(Arrays.asList(args));
             if ("pkg-list".equals(args[0])) return new NemesisCli.Result(registryStatus, registry);
             if ("pkg-info".equals(args[0])) return new NemesisCli.Result(0, "id=demo.app\ninstalled=1\nlocked=0\n");
-            if ("root".equals(args[0])) return new NemesisCli.Result(0, "[installed:demo.app]\n[nemesis]\nversion=1.0\n");
+            if ("root".equals(args[0])) {
+                // Match the actual NEMESIS root command buffer, including its NUL terminator.
+                if (args[2].length() >= 1024) return new NemesisCli.Result(2, "truncated shell command");
+                return new NemesisCli.Result(0, "[installed:demo.app]\n\uFEFF[nemesis]\r\nversion=1.0\r\n");
+            }
             return new NemesisCli.Result(actionStatus, actionStatus == 0 ? "done" : "permission denied");
         }
     }
@@ -153,7 +158,7 @@ public class ActivityOperationsTest {
 
     @Test public void installedOnlyRowsRespectServiceAndLockStateAndCanClose() {
         open();
-        assertTrue(((TextView) field("status")).getText().toString().contains("3 installed packages"));
+        assertEquals(3, ((BaseAdapter) field("adapter")).getCount());
         select("service.app");
         assertFalse(((View) field("action")).isEnabled());
         assertFalse(((View) field("launch")).isEnabled());
@@ -162,8 +167,6 @@ public class ActivityOperationsTest {
         assertFalse(((View) field("uninstall")).isEnabled());
         select("demo.app");
         click("details");
-        dialogClick("OK");
-        click("status");
         dialogClick("OK");
         TextView close = find(activity.findViewById(android.R.id.content), "Close");
         assertNotNull(close);
@@ -233,18 +236,28 @@ public class ActivityOperationsTest {
         assertFalse(((View) field("action")).isEnabled());
         assertFalse(((View) field("uninstall")).isEnabled());
         assertFalse(((View) field("details")).isEnabled());
-        String status = ((TextView) field("status")).getText().toString();
+        String status = ((TextView) field("empty")).getText().toString();
         assertTrue(status.contains("Tap Refresh"));
         assertFalse("Technical errors belong in Details", status.contains("daemon unavailable"));
-        click("status");
-        dialogClick("Details");
+        android.widget.Button[] tabs = (android.widget.Button[]) field("tabs");
+        for (android.widget.Button tab : tabs) {
+            tab.performClick();
+            String guidance = ((TextView) field("empty")).getText().toString();
+            assertTrue(guidance.contains("Could not load installed packages"));
+            assertTrue(guidance.contains("Tap Refresh"));
+        }
+        tabs[PackagePresentation.INSTALLED].performClick();
+        click("refreshButton");
+        await(() -> !((Boolean) field("busy")));
+        assertTrue(((TextView) field("empty")).getText().toString().contains("Could not load installed packages"));
+        click("empty");
         assertNotNull(findContaining(ShadowDialog.getLatestDialog().getWindow().getDecorView(), "daemon unavailable"));
-        dialogClick("OK");
         dialogClick("OK");
         Commands.registryStatus = 0;
         Commands.registry = "";
         click("refreshButton");
         await(() -> !((Boolean) field("busy")));
+        assertFalse(((TextView) field("empty")).getText().toString().contains("Could not load installed packages"));
         ((android.widget.Button[]) field("tabs"))[PackagePresentation.NOT_INSTALLED].performClick();
         select("demo.app");
         assertEquals("Install", ((TextView) field("action")).getText().toString());
@@ -300,17 +313,70 @@ public class ActivityOperationsTest {
         assertEquals("demo.app", ((PackageScanner.Item) adapter.getItem(0)).id);
         ViewGroup updateRow = (ViewGroup) adapter.getView(0, null, (ListView) field("list"));
         assertEquals(2, updateRow.getChildCount());
-        assertEquals("v1.0 \u2192 v1.1", ((TextView) updateRow.getChildAt(1)).getText().toString());
+        assertEquals("1.0 \u2192 1.1", ((TextView) updateRow.getChildAt(1)).getText().toString());
         tabs[PackagePresentation.NOT_INSTALLED].performClick();
         assertEquals(1, adapter.getCount());
         assertEquals("new.app", ((PackageScanner.Item) adapter.getItem(0)).id);
         ViewGroup newRow = (ViewGroup) adapter.getView(0, updateRow, (ListView) field("list"));
-        assertEquals("v2.0", ((TextView) newRow.getChildAt(1)).getText().toString());
+        assertEquals("2.0", ((TextView) newRow.getChildAt(1)).getText().toString());
         select("new.app");
         assertEquals("Install", ((TextView) field("action")).getText().toString());
         tabs[PackagePresentation.INSTALLED].performClick();
         assertEquals(3, adapter.getCount());
         for (int i = 0; i < adapter.getCount(); i++) assertTrue(((PackageScanner.Item) adapter.getItem(i)).installed);
+    }
+
+    @Test public void largeRegistryStillDetectsVersionsAndManagerIsAbsentFromEveryTab() throws Exception {
+        File root = usbInstaller();
+        String metadata = "[nemesis]\nid=usb.package.manager\nname=Package Manager\nversion=2.0\n";
+        ScannerTest.zip(new File(root, "manager/usb.package.manager.zip"), metadata, false);
+        ScannerTest.zip(new File(root, "packages/Manager/manager.zip"), metadata, false);
+        Commands.registry += "usb.package.manager|Package Manager|0|application\n";
+        for (int i = 0; i < 20; i++) Commands.registry += "long.installed.package." + i + "|App " + i + "|0|application\n";
+        open();
+        BaseAdapter adapter = (BaseAdapter) field("adapter");
+        assertEquals(23, adapter.getCount());
+        select("demo.app");
+        assertEquals("Update", ((TextView) field("action")).getText().toString());
+        for (android.widget.Button tab : (android.widget.Button[]) field("tabs")) {
+            tab.performClick();
+            for (int i = 0; i < adapter.getCount(); i++)
+                assertFalse(PackagePresentation.isManager((PackageScanner.Item) adapter.getItem(i)));
+        }
+        android.widget.Button[] tabs = (android.widget.Button[]) field("tabs");
+        assertEquals("Installed (23)", tabs[0].getText().toString());
+        assertEquals("Updates (1)", tabs[1].getText().toString());
+        assertEquals("Available (0)", tabs[2].getText().toString());
+        assertEquals("Scripts (0)", tabs[3].getText().toString());
+        assertEquals(23, ((ArrayList<?>) field("allItems")).size());
+    }
+
+    @Test public void operationOverlayCoversEachActionAndSurvivesReopeningUntilCompletion() throws Exception {
+        open();
+        Field owner = MainActivity.class.getDeclaredField("operations"); owner.setAccessible(true);
+        OperationCoordinator operations = (OperationCoordinator) owner.get(null);
+        for (String description : new String[] {"Installing | Demo", "Uninstalling | Demo", "Updating | Demo", "Running script | Demo"}) {
+            final CountDownLatch finish = new CountDownLatch(1);
+            try {
+                assertTrue(operations.start(description, () -> {
+                    finish.await();
+                    return new OperationCoordinator.Completion(!description.startsWith("Uninstalling"), "Finished", "Done", "Details");
+                }));
+                controller.pause().stop().destroy();
+                controller = Robolectric.buildActivity(MainActivity.class).create().start().resume().visible();
+                activity = controller.get();
+                assertEquals(View.VISIBLE, ((View) field("operationOverlay")).getVisibility());
+                assertEquals(View.VISIBLE, ((View) field("progress")).getVisibility());
+                assertTrue(((TextView) field("operationStatus")).getText().toString().startsWith(description));
+                assertTrue(((View) field("operationOverlay")).isClickable());
+                for (android.widget.Button tab : (android.widget.Button[]) field("tabs")) assertFalse(tab.isEnabled());
+                assertFalse(((View) field("refreshButton")).isEnabled());
+            } finally { finish.countDown(); }
+            awaitCompletion();
+            assertEquals(View.GONE, ((View) field("operationOverlay")).getVisibility());
+            assertTrue(((View) field("refreshButton")).isEnabled());
+            dialogClick("OK");
+        }
     }
 
     @Test public void dialogsExplainBlankOutputAndOptionalSecondaryActionIsSafe() {

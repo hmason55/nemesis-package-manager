@@ -13,7 +13,7 @@ final class PackagePresentation {
     // Authors use arbitrary version strings; unknown ordering must stay explicit.
     static Integer compareVersions(String candidate, String installed) {
         if (candidate == null || installed == null || candidate.trim().length() == 0 || installed.trim().length() == 0) return null;
-        candidate = candidate.trim(); installed = installed.trim();
+        candidate = formattedVersion(candidate); installed = formattedVersion(installed);
         if (candidate.equals(installed)) return 0;
         if (!candidate.matches("[0-9]+(\\.[0-9]+)*(-build\\.[0-9]+)?") ||
             !installed.matches("[0-9]+(\\.[0-9]+)*(-build\\.[0-9]+)?")) return null;
@@ -29,18 +29,19 @@ final class PackagePresentation {
     }
     static boolean updateAvailable(PackageScanner.Item item) {
         Integer comparison = compareVersions(item.version, item.installedVersion);
-        return item.installedStateKnown && item.installed && !item.locked &&
+        return !isManager(item) && item.installedStateKnown && item.installed && !item.locked &&
             !PackageScanner.EXECUTE.equals(item.kind) && !PackageScanner.BROKEN.equals(item.kind) &&
             !"installed".equals(item.kind) && comparison != null && comparison > 0;
     }
     static boolean canInstall(PackageScanner.Item item) {
-        if (item == null || item.locked || PackageScanner.BROKEN.equals(item.kind) || "installed".equals(item.kind)) return false;
+        if (item == null || isManager(item) || item.locked || PackageScanner.BROKEN.equals(item.kind) || "installed".equals(item.kind)) return false;
         if (PackageScanner.EXECUTE.equals(item.kind)) return true;
-        if (!item.installedStateKnown || (isManager(item) && !item.installed)) return false;
+        if (!item.installedStateKnown) return false;
         Integer comparison = compareVersions(item.version, item.installedVersion);
         return !item.installed || comparison == null || comparison > 0;
     }
     static boolean inCategory(PackageScanner.Item item, int category) {
+        if (isManager(item)) return false;
         if (category == SCRIPTS) return PackageScanner.EXECUTE.equals(item.kind);
         if (PackageScanner.EXECUTE.equals(item.kind)) return false;
         if (category == NOT_INSTALLED) return item.installedStateKnown && !item.installed;
@@ -65,8 +66,7 @@ final class PackagePresentation {
     }
     private static String formattedVersion(String version) {
         String value = versionText(version);
-        if ("Unknown".equals(value) || value.startsWith("v") || value.startsWith("V")) return value;
-        return "v" + value;
+        return value.replaceFirst("^[vV](?=[0-9])", "");
     }
     private static String versionText(String version) {
         return version == null || version.trim().length() == 0 ? "Unknown" : version.trim();
@@ -108,7 +108,7 @@ final class PackagePresentation {
         return comparison == 0 ? "Up to date" : comparison > 0 ? "Update" : "Older installer";
     }
     static boolean canLaunch(PackageScanner.Item item) {
-        if (!item.installedStateKnown || !item.installed || !PackageScanner.validId(item.id)) return false;
+        if (isManager(item) || !item.installedStateKnown || !item.installed || !PackageScanner.validId(item.id)) return false;
         // Missing metadata remains launchable; an explicit service-only package does not.
         if (item.types == null || item.types.trim().length() == 0) return true;
         for (String type : item.types.split(",")) if (!"service".equalsIgnoreCase(type.trim())) return true;
@@ -128,8 +128,7 @@ final class PackagePresentation {
             if (compareVersions(item.version, item.installedVersion) == null)
                 text += "\nThese versions could not be compared. Check that this is the release you want.";
         }
-        return text + (isManager(item) ? "\n\nPackage Manager will close and reopen during the update." :
-            "\n\nKeep USB connected until it finishes.");
+        return text + "\n\nKeep USB connected until it finishes.";
     }
     static String key(PackageScanner.Item item) {
         // Keep separate release installers selectable even when they share an ID.
@@ -138,7 +137,7 @@ final class PackagePresentation {
     }
     static String details(PackageScanner.Item item) {
         StringBuilder text = new StringBuilder(state(item));
-        if (isManager(item)) text.append("\n\nUse Update to install the version on USB. To remove Package Manager, use NEMESIS Manager > Packages.");
+        if (isManager(item)) text.append("\n\nManage Package Manager itself through NEMESIS Manager > Packages.");
         if (item.id != null && item.id.length() > 0) text.append("\nPackage ID: ").append(item.id);
         if (item.version != null && item.version.length() > 0) text.append("\nUSB version: ").append(item.version);
         if (item.installed) text.append("\nInstalled version: ").append(item.installedVersion == null ? "Unknown" : item.installedVersion);

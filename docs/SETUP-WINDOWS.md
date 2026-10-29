@@ -40,12 +40,7 @@ Both manager UIs share installed packages. Wait for one operation to finish befo
 
 ## E. Update Package Manager itself
 
-See [the detailed manager update steps](UPDATING.md#update-package-manager), including the fallback for older versions without the Update action.
-
-1. Download a new release and replace `manager/usb.package.manager.zip` on your existing drive with its internal installer ZIP. Keep existing package folders and data. Do not copy a new active root descriptor merely to update the app.
-2. Open Package Manager, tap **Refresh**, select **Package Manager**, and choose **Update**.
-3. Confirm. The installer is copied to head-unit temporary storage before a detached NEMESIS process updates it. The app closes and should reopen; do not start another operation or remove power while it updates.
-4. If it does not reopen, launch it through NEMESIS Manager. Check `/data/nemesis/logs/package-manager-update.log` for the installer result. The app stays busy until the installer finishes or Android replaces its process.
+Package Manager is hidden from its own list and cannot manage itself. Follow [the manager update steps](UPDATING.md#update-package-manager) to prepare a separate drive with an install descriptor pointing to the new `usb.package.manager.zip`. Close Package Manager, confirm the update through NEMESIS, and wait for completion before reopening it through NEMESIS Manager.
 
 You can still install or update directly through NEMESIS using a separate drive with an install descriptor pointing to `usb.package.manager.zip`. Remove Package Manager only through **NEMESIS Manager â†’ Packages â†’ Package Manager â†’ Uninstall**. Its technical package ID remains `usb.package.manager`.
 

@@ -43,8 +43,8 @@ and recovery details.
 - Tap **Help** beside Refresh for a quick guide to the tabs, updates, and common actions.
 - Both UIs share the installed packages. Finish one operation before starting another in either UI, and refresh after changes.
 - Completion popups explain the result. Open their **Details** for diagnostic output.
-- **Installed** opens first, followed by **Updates**, **Available**, and **Scripts**. Each tab has **Name** and **Version** columns. Installed shows the installed version; Available and Scripts show the USB version. Updates compares both in one cell, such as `v0.5 -> v0.6`. Tab counts include every matching installer; scripts have their own category. Installed packages with a confirmed newer USB installer appear in both Installed and Updates, and never in Available. If installed-state detection fails, tap Refresh to retry before browsing package categories.
-- A spinner and operation text remain visible during scanning, installing, updating, and uninstalling. Wait for the result before removing USB.
+- **Installed** opens first, followed by **Updates**, **Available**, and **Scripts**. Each tab has **Name** and **Version** columns. Installed shows the installed version; Available and Scripts show the USB version. Updates compares both in one cell, such as `0.5 -> 0.6`. Tab counts include every matching installer; scripts have their own category. Installed packages with a confirmed newer USB installer appear in both Installed and Updates, and never in Available. If installed-state detection fails, tap Refresh to retry before browsing package categories.
+- An overlay shows a spinner and operation text during installs, updates, uninstalls, and script execution. Wait for the result before removing USB.
 - USB installers and `data/` remain after uninstall. Other apps retain their own recording/export locations unless configured separately.
 
 After a successful first launch, the launcher renames its root descriptor to `NEMESIS.data.disabled`. The drive no longer triggers an execution prompt on each startup. Open Package Manager from NEMESIS Manager. Existing drives need to run the new launcher once; its backup is preserved. If a backup already exists, the launcher keeps it and saves a numbered backup.
@@ -54,7 +54,7 @@ After a successful first launch, the launcher renames its root descriptor to `NE
 Download releases on your PC; Package Manager does not check for or download updates automatically.
 
 - **Other packages:** replace the installer in the same `packages/<Name>/` folder, preserving `data/`. Open the app, Refresh, select the package, and confirm **Update**.
-- **Package Manager:** replace `manager/usb.package.manager.zip` with the new internal installer. Refresh, select **Package Manager**, and confirm **Update**. NEMESIS replaces the app, which closes and should reopen. The progress indicator remains active until the installer finishes or Android replaces the app process.
+- **Package Manager:** use NEMESIS's installer with the new `usb.package.manager.zip`; see [the manager update steps](docs/UPDATING.md#update-package-manager). Package Manager is excluded from its own lists and actions.
 - **Removal:** use NEMESIS Manager's Packages screen to uninstall Package Manager itself.
 
 The **Version** column shows the installed release in Installed, the USB release in Available and Scripts, and a comparison in Updates. Details lists installed and USB versions separately. Identical releases show a disabled **Up to date** action; older numeric releases show **Older installer**. **Updates** contains confirmed newer releases. If version metadata is unavailable or custom version strings cannot be ordered, **Install version** allows an explicit installation after confirmation without claiming an update is available. See [the update guide](docs/UPDATING.md).

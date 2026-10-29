@@ -16,13 +16,11 @@ final class InstalledPackages {
     boolean available() { return error == null; }
 
     String versionQuery() {
-        StringBuilder command = new StringBuilder();
-        for (String id : new java.util.TreeSet<String>(names.keySet())) {
-            if (!PackageScanner.validId(id)) continue;
-            command.append("printf '\\n[installed:").append(id).append("]\\n'; cat '/data/nemesis/apps/")
-                .append(id).append("/NEMESIS.data' 2>/dev/null; ");
-        }
-        return command.append("true").toString();
+        // NEMESIS root -c truncates commands at 1024 bytes. Keep this independent
+        // of the number of installed packages; readVersions trusts registry IDs only.
+        return "for meta in /data/nemesis/apps/*/NEMESIS.data; do " +
+            "[ -r \"$meta\" ] || continue; id=${meta%/NEMESIS.data}; id=${id##*/}; " +
+            "printf '\\n[installed:%s]\\n' \"$id\"; cat \"$meta\"; done; true";
     }
 
     void readVersions(int rc, String output) {
@@ -30,7 +28,7 @@ final class InstalledPackages {
         String id = null;
         boolean metadata = false;
         for (String raw : output.split("\n")) {
-            String line = raw.trim();
+            String line = raw.replace("\uFEFF", "").trim();
             if (line.startsWith("[installed:") && line.endsWith("]")) {
                 id = line.substring(11, line.length() - 1); metadata = false;
             } else if (line.startsWith("[")) {
