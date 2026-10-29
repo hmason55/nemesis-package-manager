@@ -8,6 +8,10 @@ import xml.etree.ElementTree as ET
 
 
 def percentage(covered, total):
+    """Reject unavailable or inconsistent counters rather than reporting a pass.
+
+    Line and branch totals remain separate; the combined headline is not a gate.
+    """
     if (
         not isinstance(covered, int)
         or not isinstance(total, int)
@@ -19,6 +23,11 @@ def percentage(covered, total):
 
 
 def read_report(data, language):
+    """Read an untrusted workflow artifact without extracting or executing it.
+
+    Bound both compressed input and selected report size. Ambiguous ZIP members,
+    XML entities, and missing counters fail instead of fabricating coverage data.
+    """
     if len(data) > 20 * 1024 * 1024:
         raise ValueError("Artifact too large")
     suffix = "coverage.json" if language == "Python" else "jacocoTestReport.xml"

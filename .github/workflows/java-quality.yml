@@ -1,5 +1,14 @@
 name: Java tests and coverage
 on:
+  workflow_call:
+    inputs:
+      source_sha:
+        type: string
+        required: false
+        default: ''
+    outputs:
+      tested_sha:
+        value: ${{ jobs.java-quality.outputs.tested_sha }}
   pull_request:
   push:
     branches: [main]
@@ -8,9 +17,14 @@ permissions:
   contents: read
 jobs:
   java-quality:
+    outputs:
+      tested_sha: ${{ inputs.source_sha || github.sha }}
     runs-on: ubuntu-24.04
     steps:
       - uses: actions/checkout@v6
+        with:
+          ref: ${{ inputs.source_sha || github.sha }}
+          persist-credentials: false
       - uses: actions/setup-java@v5
         with:
           distribution: temurin

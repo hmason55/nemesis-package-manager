@@ -1,5 +1,11 @@
 plugins { id 'com.android.application' }
 
+def signingEnvironment = ['NEMESIS_KEYSTORE_PATH', 'NEMESIS_STORE_PASSWORD', 'NEMESIS_KEY_ALIAS', 'NEMESIS_KEY_PASSWORD']
+def signingConfigured = signingEnvironment.every { System.getenv(it) }
+if (signingEnvironment.any { System.getenv(it) } && !signingConfigured) {
+    throw new GradleException('Release signing requires all four NEMESIS signing settings; secret values are never printed.')
+}
+
 android {
     namespace 'dev.nemesis.usbmanager'
     compileSdk 35
@@ -14,8 +20,33 @@ android {
         sourceCompatibility JavaVersion.VERSION_1_7
         targetCompatibility JavaVersion.VERSION_1_7
     }
+    // This API 19 head-unit app is distributed through NEMESIS, not Google Play.
+    // Retain all other release lint checks; only the Play target-API policy is inapplicable.
+    lint { disable 'ExpiredTargetSdkVersion' }
+    signingConfigs {
+        if (signingConfigured) {
+            release {
+                storeFile file(System.getenv('NEMESIS_KEYSTORE_PATH'))
+                storePassword System.getenv('NEMESIS_STORE_PASSWORD')
+                keyAlias System.getenv('NEMESIS_KEY_ALIAS')
+                keyPassword System.getenv('NEMESIS_KEY_PASSWORD')
+                v1SigningEnabled true
+                v2SigningEnabled true
+            }
+        }
+    }
     buildTypes {
-        release { minifyEnabled false }
+        release {
+            minifyEnabled false
+            debuggable false
+            if (signingConfigured) signingConfig signingConfigs.release
+        }
         debug { minifyEnabled false }
+    }
+}
+
+gradle.taskGraph.whenReady { graph ->
+    if (graph.allTasks.any { it.project == project && it.name.toLowerCase().endsWith('release') } && !signingConfigured) {
+        throw new GradleException('Release builds require a persistent signing keystore. Configure the NEMESIS signing settings; debug builds remain available for development.')
     }
 }

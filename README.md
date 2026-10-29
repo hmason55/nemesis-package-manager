@@ -2,7 +2,7 @@
 
 Browse and install NEMESIS community packages from one USB drive on a compatible Gen5W head unit. Package Manager uses NEMESIS to install, update, launch, and uninstall packages; it does not replace NEMESIS Manager.
 
-**Requires NEMESIS already installed.** This is an experimental, debug-signed application. Check each community package's vehicle and firmware requirements before installing it.
+**Requires NEMESIS already installed.** Development prereleases are experimental and debug signed; no hardware-qualified 1.0 release is claimed. Check each community package's vehicle and firmware requirements before installing it.
 
 ![Illustrative Package Manager Installed screen with an example package selected](docs/images/manager-installed.svg)
 
@@ -35,7 +35,7 @@ No broader Package Manager firmware version range has been verified. Other vehic
 
 ## Get started
 
-1. **Download on your computer.** Get the USB companion for your computer, `usb-package-manager-ready.zip`, and the community releases you want from their release pages. The manager and companion are on the [latest release](https://github.com/hmason55/nemesis-package-manager/releases/latest).
+1. **Download on your computer.** Get the USB companion for your computer, `usb-package-manager-ready.zip`, and the community releases you want from their release pages. The manager and companion are on the [releases page](https://github.com/hmason55/nemesis-package-manager/releases).
 2. **Prepare your USB drive.** In the companion, select the drive. Use **Drive setup** to add Package Manager, then **Add package** to copy your downloaded releases.
 3. **Install in the parked vehicle.** With the head unit fully booted, insert USB and approve the NEMESIS execution prompt. Package Manager opens. Tap **Refresh**, choose **Available**, select a package, and confirm **Install**.
 4. **Wait for the result.** Keep USB connected until the result popup. Your installed package is then listed in **Installed**.
@@ -44,7 +44,7 @@ After first setup, reopen through **NEMESIS Manager > Packages > Package Manager
 
 ## Local USB companion
 
-Download the Windows or Linux x86-64 companion from the [latest release](https://github.com/hmason55/nemesis-package-manager/releases/latest), extract it, and run it. No Python or Node installation is needed. It opens a local browser UI for drive setup and package imports. See [downloads and instructions](docs/USB-COMPANION.md#run-a-release-download).
+Download the Windows or Linux x86-64 companion from the [releases page](https://github.com/hmason55/nemesis-package-manager/releases), extract it, and run it. No Python or Node installation is needed. It opens a local browser UI for drive setup and package imports. See [downloads and instructions](docs/USB-COMPANION.md#run-a-release-download).
 
 ## Everyday use
 
@@ -74,7 +74,7 @@ Only install trusted releases: NEMESIS hooks and scripts run with root privilege
 
 ## Development
 
-Successful builds on `main` publish tagged releases with change notes and SHA-256 checksums. PR builds run checks without publishing. Artifact ZIP filenames retain their existing names for compatibility.
+Successful builds on `main` publish development prereleases with change notes, provenance, and SHA-256 checksums. Stable publication requires an explicit version/commit selection, persistent signing, completed release blockers, and all quality gates. PR builds and ordinary manual checks do not publish. See [release/signing procedures](docs/RELEASING.md) and the [hardware qualification record](docs/HARDWARE-VALIDATION.md). Artifact filenames retain their existing names for compatibility.
 
 - [Build, tests, and releases](docs/BUILD-AND-TEST.md)
 - [Detailed workflow diagrams (optional reference)](docs/WORKFLOW-REFERENCE.md)

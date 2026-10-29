@@ -63,3 +63,11 @@ if grep -q '^type=execute$' "$ROOT/NEMESIS.data" && grep -q '^path=NEMESIS.sh$' 
     echo "Package Manager: automatic USB launch disabled. Open from NEMESIS Manager."
 fi
 """
+
+
+GETTING_STARTED = (
+    "NEMESIS PACKAGE MANAGER - "
+    + ("STABLE" if os.environ.get("RELEASE_CHANNEL") == "stable" else "EXPERIMENTAL")
+    + "\n"
+    + "Requires NEMESIS already installed.\nCopy these extracted files to the USB ROOT, not a nested directory.\nOn insert, confirm NEMESIS execute to install/launch the manager.\nAdd each USB-ready release under packages/<Name>/ with its own NEMESIS.data.\nFirst launch disables the root descriptor to prevent repeated prompts.\nUse NEMESIS Manager -> Packages -> Package Manager -> Launch after first install.\nOpen Package Manager through NEMESIS Manager after setup.\nCopying a new bundle does not update an already-installed manager.\nUpdate Package Manager through NEMESIS's installer; see docs/UPDATING.md.\nPackage Manager is hidden from its own package list.\nBoth manager UIs share installed packages; finish one operation before starting another.\nRead docs/SETUP-WINDOWS.md for complete steps and warnings.\n"
+)

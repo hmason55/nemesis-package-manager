@@ -75,7 +75,7 @@ bash gradlew -p tests/ui --no-daemon jacocoTestReport jacocoTestCoverageVerifica
 bash gradlew --no-daemon :app:assembleDebug
 python3 tools/build_release.py app/build/outputs/apk/debug/app-debug.apk
 node --test .github/scripts/*.test.cjs
-python -m ruff format --check tools tests
+python -m ruff format --check tools tests .github/scripts/*.py
 ```
 
 The shell test runner needs Bash, Python 3, `javac`, and `java` on PATH. On Windows, use Git Bash for the shell command, or run its component checks explicitly. For Gradle commands in PowerShell, replace `bash gradlew` with `.\gradlew.bat`. Never substitute a fixture APK for the real Android build when validating an installable release.
@@ -84,10 +84,10 @@ Python metrics can be inspected in a development virtual environment with pinned
 
 ```sh
 python3 -m pip install -r requirements-dev.txt
-python3 -m coverage run --branch --source=tools -m unittest discover -s tests -p 'test_*.py'
+python3 -m coverage run --branch --source=tools,.github/scripts -m unittest discover -s tests -p 'test_*.py'
 python3 -m coverage json -o coverage.json
 python3 -m coverage report -m
-python3 -m radon mi tools -s
+python3 -m radon mi tools .github/scripts -s
 ```
 
 Coverage.py's headline percentage combines statements and branches. Use its JSON report to calculate line coverage from covered/executable statements and branch coverage from covered/total branches separately. Count unimported production modules through an explicit source scope. Radon's letter grade alone is not sufficient: compare the numeric index against greater than 60 for each production Python module.
@@ -127,7 +127,7 @@ Continue to delegate package operations to NEMESIS. Require explicit confirmatio
 
 ## Release requirements
 
-The pipeline publishes a tagged release after a push to `main` only after Python quality gates, host and Android view tests, APK compilation, and bundle validation succeed. Java coverage is enforced separately by the Java quality workflow; the release job does not depend on that separate workflow. PR and manual runs do not publish. See [release details](docs/BUILD-AND-TEST.md#automatic-releases).
+The pipeline publishes development prereleases after pushes to `main` only after Python and Java quality gates, APK/bundle verification, and both companion builds pass for the selected commit. Java coverage is now a required publication dependency. Stable releases require an explicit manual version/commit selection, persistent signing, and completed qualification blockers. PR and ordinary manual runs do not publish. See [release/signing procedures](docs/RELEASING.md).
 
 A release implementation must:
 

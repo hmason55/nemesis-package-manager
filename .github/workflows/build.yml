@@ -2,80 +2,152 @@ name: Build Package Manager
 on:
   pull_request:
   workflow_dispatch:
+    inputs:
+      stable_version:
+        description: 'Explicit stable version, such as 1.0.0. Leave empty to validate without publishing.'
+        required: false
+        default: ''
+      candidate_sha:
+        description: 'Exact 40-character main-branch commit for stable publication; required with stable_version.'
+        required: false
+        default: ''
   push:
-    branches: [ main ]
+    branches: [main]
+
+permissions:
+  contents: read
 
 jobs:
-  python-quality:
-    uses: ./.github/workflows/python-quality.yml
-    permissions:
-      contents: read
-  companion:
-    needs: python-quality
-    uses: ./.github/workflows/usb-companion.yml
-    permissions:
-      contents: read
-  build:
-    needs: python-quality
-    outputs:
-      version: ${{ steps.version.outputs.version }}
+  prepare:
     runs-on: ubuntu-24.04
     permissions:
       contents: read
+      issues: read
+    outputs:
+      source_sha: ${{ steps.policy.outputs.source_sha }}
+      version: ${{ steps.policy.outputs.version }}
+      version_code: ${{ steps.policy.outputs.version_code }}
+      channel: ${{ steps.policy.outputs.channel }}
     steps:
       - uses: actions/checkout@v6
-      - name: Select unique build version
-        id: version
-        env:
-          BUILD_NUMBER: ${{ github.run_number }}
-        run: |
-          python3 - <<'PY'
-          import os, re
-          from pathlib import Path
-          base = re.search(r"versionName .*'(\d+\.\d+\.\d+)'", Path('app/build.gradle').read_text()).group(1)
-          version = f"{base}-build.{os.environ['BUILD_NUMBER']}"
-          with open(os.environ['GITHUB_ENV'], 'a') as output:
-              output.write(f"NEMESIS_RELEASE_VERSION={version}\nNEMESIS_VERSION_CODE={1000 + int(os.environ['BUILD_NUMBER'])}\n")
-          with open(os.environ['GITHUB_OUTPUT'], 'a') as output:
-              output.write(f"version={version}\n")
-          PY
+        with:
+          persist-credentials: false
+      - uses: actions/github-script@v8
+        id: policy
+        with:
+          script: |
+            const fs = require('node:fs');
+            const policy = require('./.github/scripts/release-policy.cjs');
+            const base = fs.readFileSync('app/build.gradle', 'utf8').match(/versionName .*'(\d+\.\d+\.\d+)'/)[1];
+            const release = policy.selectVersion({base, runNumber: Number(process.env.GITHUB_RUN_NUMBER),
+              stableVersion: context.payload.inputs?.stable_version || '',
+              candidateSha: context.payload.inputs?.candidate_sha || '', context});
+            if (release.channel === 'stable') await policy.assertStableReadiness({github, repo: context.repo, sourceSha: release.sourceSha});
+            for (const [name, value] of Object.entries({source_sha: release.sourceSha, version: release.version,
+              version_code: release.versionCode, channel: release.channel})) core.setOutput(name, value);
+  python-quality:
+    needs: prepare
+    uses: ./.github/workflows/python-quality.yml
+    with:
+      source_sha: ${{ needs.prepare.outputs.source_sha }}
+    permissions:
+      contents: read
+  java-quality:
+    needs: prepare
+    uses: ./.github/workflows/java-quality.yml
+    with:
+      source_sha: ${{ needs.prepare.outputs.source_sha }}
+    permissions:
+      contents: read
+  companion:
+    needs: [prepare, python-quality]
+    uses: ./.github/workflows/usb-companion.yml
+    with:
+      source_sha: ${{ needs.prepare.outputs.source_sha }}
+    permissions:
+      contents: read
+  build:
+    needs: [prepare, python-quality, java-quality]
+    runs-on: ubuntu-24.04
+    outputs:
+      tested_sha: ${{ needs.prepare.outputs.source_sha }}
+    env:
+      NEMESIS_RELEASE_VERSION: ${{ needs.prepare.outputs.version }}
+      NEMESIS_VERSION_CODE: ${{ needs.prepare.outputs.version_code }}
+      RELEASE_CHANNEL: ${{ needs.prepare.outputs.channel }}
+    steps:
+      - uses: actions/checkout@v6
+        with:
+          ref: ${{ needs.prepare.outputs.source_sha }}
+          persist-credentials: false
       - uses: actions/setup-java@v5
         with:
           distribution: temurin
           java-version: '17'
-      # setup-android@v3 attempts to install the removed SDK 'tools' package.
-      - name: Setup Android SDK
-        uses: android-actions/setup-android@v4
+      - uses: android-actions/setup-android@v4
         with:
           packages: 'platform-tools'
       - name: Install required Android SDK components
         run: sdkmanager --install "platforms;android-35" "build-tools;35.0.0"
       - uses: gradle/actions/setup-gradle@v5
       - name: Run host tests
-        run: bash tests/run_tests.sh
-      - name: Test release publication without publishing
+        run: |
+          python3 -m pip install -r requirements-dev.txt
+          bash tests/run_tests.sh
+      - name: Test release policy and publication without publishing
         run: node --test .github/scripts/*.test.cjs
-      - name: Run Android API 19 UI smoke tests
-        run: bash gradlew -p tests/ui --no-daemon test
-      - name: Build Android 4.4-compatible APK
+      - name: Stage stable release signing key
+        if: needs.prepare.outputs.channel == 'stable'
+        env:
+          NEMESIS_KEYSTORE_BASE64: ${{ secrets.NEMESIS_KEYSTORE_BASE64 }}
+          NEMESIS_STORE_PASSWORD: ${{ secrets.NEMESIS_STORE_PASSWORD }}
+          NEMESIS_KEY_ALIAS: ${{ secrets.NEMESIS_KEY_ALIAS }}
+          NEMESIS_KEY_PASSWORD: ${{ secrets.NEMESIS_KEY_PASSWORD }}
+          NEMESIS_SIGNING_CERT_SHA256: ${{ vars.NEMESIS_SIGNING_CERT_SHA256 }}
+        run: python3 .github/scripts/signing-material.py
+      - name: Build development APK
+        if: needs.prepare.outputs.channel != 'stable'
         run: bash gradlew --no-daemon --stacktrace :app:assembleDebug
-      - name: Create NEMESIS USB bundles
-        run: python3 tools/build_release.py app/build/outputs/apk/debug/app-debug.apk
+      - name: Build signed stable APK
+        if: needs.prepare.outputs.channel == 'stable'
+        env:
+          NEMESIS_STORE_PASSWORD: ${{ secrets.NEMESIS_STORE_PASSWORD }}
+          NEMESIS_KEY_ALIAS: ${{ secrets.NEMESIS_KEY_ALIAS }}
+          NEMESIS_KEY_PASSWORD: ${{ secrets.NEMESIS_KEY_PASSWORD }}
+        run: bash gradlew --no-daemon --stacktrace :app:assembleRelease
+      - name: Create and verify NEMESIS USB bundles
+        env:
+          SOURCE_SHA: ${{ needs.prepare.outputs.source_sha }}
+          NEMESIS_SIGNING_CERT_SHA256: ${{ vars.NEMESIS_SIGNING_CERT_SHA256 }}
+        run: |
+          if [ "$RELEASE_CHANNEL" = stable ]; then APK=app/build/outputs/apk/release/app-release.apk; else APK=app/build/outputs/apk/debug/app-debug.apk; fi
+          python3 tools/build_release.py "$APK"
+          python3 .github/scripts/release-artifact.py --apk "$APK" --directory dist --sdk "$ANDROID_HOME" --source-sha "$SOURCE_SHA" --version "$NEMESIS_RELEASE_VERSION" --version-code "$NEMESIS_VERSION_CODE" --channel "$RELEASE_CHANNEL" --expected-fingerprint "$NEMESIS_SIGNING_CERT_SHA256"
+      - name: Remove temporary signing material
+        if: always() && needs.prepare.outputs.channel == 'stable'
+        run: python3 .github/scripts/signing-material.py --clean
       - uses: actions/upload-artifact@v6
         with:
           name: nemesis-usb-package-manager
+          if-no-files-found: error
           path: dist/*
   release:
-    needs: [build, companion]
-    if: github.event_name == 'push' && github.ref == 'refs/heads/main'
+    needs: [prepare, python-quality, java-quality, build, companion]
+    if: >-
+      (github.event_name == 'push' && github.ref == 'refs/heads/main') ||
+      (github.event_name == 'workflow_dispatch' && github.ref == 'refs/heads/main' && inputs.stable_version != '')
     runs-on: ubuntu-24.04
     concurrency:
-      group: publish-package-manager-${{ github.run_id }}
+      group: publish-package-manager-${{ needs.prepare.outputs.version }}
       cancel-in-progress: false
     permissions:
       contents: write
+      issues: read
     steps:
+      # Use the workflow's policy, not an older candidate's publication script.
       - uses: actions/checkout@v6
+        with:
+          persist-credentials: false
       - uses: actions/download-artifact@v7
         with:
           name: nemesis-usb-package-manager
@@ -85,11 +157,19 @@ jobs:
           pattern: nemesis-usb-companion-*
           merge-multiple: true
           path: dist
-      - name: Publish tested commit with tag, notes and checksums
+      - name: Publish only the validated commit and complete artifacts
         uses: actions/github-script@v8
         env:
-          RELEASE_VERSION: ${{ needs.build.outputs.version }}
+          RELEASE_VERSION: ${{ needs.prepare.outputs.version }}
+          RELEASE_SOURCE_SHA: ${{ needs.prepare.outputs.source_sha }}
+          RELEASE_CHANNEL: ${{ needs.prepare.outputs.channel }}
+          RELEASE_VERSION_CODE: ${{ needs.prepare.outputs.version_code }}
+          RELEASE_QUALITY: ${{ toJSON(needs) }}
+          NEMESIS_SIGNING_CERT_SHA256: ${{ vars.NEMESIS_SIGNING_CERT_SHA256 }}
         with:
           script: |
-            const publish = require('./.github/scripts/publish-release.cjs');
-            await publish({github, context, version: process.env.RELEASE_VERSION});
+            await require('./.github/scripts/publish-release.cjs')({github, context,
+              version: process.env.RELEASE_VERSION, sourceSha: process.env.RELEASE_SOURCE_SHA,
+              channel: process.env.RELEASE_CHANNEL, quality: JSON.parse(process.env.RELEASE_QUALITY),
+              versionCode: Number(process.env.RELEASE_VERSION_CODE),
+              expectedFingerprint: process.env.NEMESIS_SIGNING_CERT_SHA256});

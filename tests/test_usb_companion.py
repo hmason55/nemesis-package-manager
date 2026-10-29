@@ -421,7 +421,7 @@ class CompanionHttpTests(CompanionFixture):
         self.addCleanup(worker.join, 2)
         self.addCleanup(self.server.shutdown)
 
-    def request(self, method, path, body=None, headers=None):
+    def request(self, method, path, body=None, headers=None, *, headers_only=False):
         connection = http.client.HTTPConnection(
             "127.0.0.1", self.server.server_port, timeout=5
         )
@@ -430,6 +430,11 @@ class CompanionHttpTests(CompanionFixture):
             "X-Companion-Drive": self.server.selection_id,
             **(headers or {}),
         }
+        if headers_only:
+            # Verify rejection before upload without racing an HTTP/1.0 close
+            # against unread body bytes (Windows may reset that connection).
+            headers["Content-Length"] = str(len(body or b""))
+            body = None
         connection.request(method, path, body, headers)
         response = connection.getresponse()
         result = response.status, response.read()
@@ -454,6 +459,7 @@ class CompanionHttpTests(CompanionFixture):
                         route,
                         self.bundle.read_bytes(),
                         {"X-Companion-Drive": binding},
+                        headers_only=True,
                     )
                     self.assertEqual(status, 400, body)
                     self.assertIn(b"Drive selection changed", body)
@@ -496,7 +502,11 @@ class CompanionHttpTests(CompanionFixture):
         ):
             self.assertEqual(
                 self.request(
-                    "POST", "/api/select", json.dumps({"path": str(self.usb)}), headers
+                    "POST",
+                    "/api/select",
+                    json.dumps({"path": str(self.usb)}),
+                    headers,
+                    headers_only=True,
                 )[0],
                 403,
             )
@@ -505,7 +515,10 @@ class CompanionHttpTests(CompanionFixture):
 
     def test_http_invalid_selection_upload_and_missing_drive(self):
         self.assertEqual(
-            self.request("POST", "/api/package?name=Example", b"zip")[0], 400
+            self.request(
+                "POST", "/api/package?name=Example", b"zip", headers_only=True
+            )[0],
+            400,
         )
         self.assertEqual(self.request("POST", "/api/select", "[]")[0], 400)
         self.assertEqual(self.request("POST", "/api/select", "bad JSON")[0], 400)
@@ -551,7 +564,10 @@ class CompanionHttpTests(CompanionFixture):
         self.server.device = -1
         self.assertEqual(
             self.request(
-                "POST", "/api/package?name=Example", self.release.read_bytes()
+                "POST",
+                "/api/package?name=Example",
+                self.release.read_bytes(),
+                headers_only=True,
             )[0],
             400,
         )
@@ -562,12 +578,21 @@ class CompanionHttpTests(CompanionFixture):
         self.assertEqual(
             self.request("GET", "/api/state", headers={"X-Companion-Token": ""})[0], 403
         )
-        self.assertEqual(self.request("POST", "/api/unknown", b"x")[0], 404)
-        self.assertEqual(self.request("POST", "/api/select", b"x" * 8193)[0], 400)
+        self.assertEqual(
+            self.request("POST", "/api/unknown", b"x", headers_only=True)[0], 404
+        )
+        self.assertEqual(
+            self.request("POST", "/api/select", b"x" * 8193, headers_only=True)[0], 400
+        )
         self.assertEqual(self.request("POST", "/api/select", b"")[0], 400)
         self.request("POST", "/api/select", json.dumps({"path": str(self.usb)}))
         with patch("tools.companion_uploads.MAX_UPLOAD", 1):
-            self.assertEqual(self.request("POST", "/api/package", b"too large")[0], 400)
+            self.assertEqual(
+                self.request("POST", "/api/package", b"too large", headers_only=True)[
+                    0
+                ],
+                400,
+            )
 
 
 class CompanionLaunchTests(unittest.TestCase):
