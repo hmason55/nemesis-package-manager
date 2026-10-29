@@ -15,8 +15,8 @@ jobs:
         os: [windows-latest, ubuntu-22.04]
     runs-on: ${{ matrix.os }}
     steps:
-      - uses: actions/checkout@v4
-      - uses: actions/setup-python@v5
+      - uses: actions/checkout@v6
+      - uses: actions/setup-python@v6
         with:
           python-version: '3.12'
       - name: Test USB operations and local HTTP API
@@ -36,7 +36,7 @@ jobs:
         run: |
           python tests/smoke_companion_executable.py dist/nemesis-usb-companion
           tar -czf dist/nemesis-usb-companion-linux-x86_64.tar.gz -C dist nemesis-usb-companion -C .. LICENSE docs/USB-COMPANION.md
-      - uses: actions/upload-artifact@v4
+      - uses: actions/upload-artifact@v6
         with:
           name: nemesis-usb-companion-${{ runner.os }}
           if-no-files-found: error
