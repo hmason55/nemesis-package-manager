@@ -69,3 +69,19 @@ In PowerShell, replace `bash gradlew` with `.\gradlew.bat`. See the [local valid
 - Version ordering supports numeric dotted releases and numeric `-build.N` suffixes. Other differing version formats remain unknown; unavailable installed manifests cannot establish update availability. Dependencies, conflict resolution, and automated batch installations are not implemented.
 - Android framework availability and permissions vary by Gen5W firmware; the first unit test is required to establish compatibility.
 - A v1-signed debug APK is for development. Keep the signing key stable for future updates or you may need to uninstall before installing a differently signed APK.
+
+## Slow or stalled command recovery
+
+Read-only NEMESIS queries (package lists, package metadata, and installed-version
+reads) time out after 30 seconds. A failed scan keeps installed state unavailable;
+check the command channel and tap Refresh to retry. Query timeouts do not apply to
+installers, scripts, launches, or uninstall operations.
+
+Package operations show elapsed time. After 60 seconds, the operation overlay explains that
+the operation is taking longer than usual; open its Details for monitoring and log guidance.
+Keep USB connected. Closing and reopening the activity continues monitoring in
+the same process. A missing or malformed manager-update result does not unlock
+other operations: a slow installer may still be working. Inspect the NEMESIS logs
+(and /data/nemesis/logs/package-manager-update.log for manager updates), and get
+help before retrying if progress has stopped. Do not start a competing action in
+NEMESIS Manager or interrupt power to force recovery during installation.

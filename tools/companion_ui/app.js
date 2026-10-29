@@ -89,6 +89,7 @@ function message(text, error = false) {
 }
 async function api(path, body, json = false) {
   const headers = { "X-Companion-Token": token };
+  if (body !== undefined && !json) headers["X-Companion-Drive"] = selected?.selection_id || "";
   if (json) headers["Content-Type"] = "application/json";
   const response = await fetch(path, { method: body === undefined ? "GET" : "POST", headers, body: json ? JSON.stringify(body) : body });
   const result = await response.json();
@@ -237,8 +238,11 @@ function render(drive) {
     $("manager-summary").textContent = manager.error ? "Needs attention" : manager.present ? manager.version || "Version unknown" : "Setup needed";
     $("manager-version").textContent = manager.present ? `On USB: ${manager.version || "Unknown"}` : "Setup needed";
     $("manager-detail").textContent = manager.error || (manager.present ? "Update the USB installer. Launcher settings are kept." : "Add Package Manager to this drive. Existing files are kept.");
-    $("setup").hidden = manager.present;
-    $("update-manager").hidden = !manager.present;
+    const repair = !manager.present && manager.repairable;
+    $("setup").hidden = manager.present || repair;
+    $("update-manager").hidden = !manager.present && !repair;
+    $("update-manager").textContent = repair ? "Repair manager" : "Update manager";
+    if (repair) $("manager-detail").textContent = "Restore the missing manager installer. Existing launcher settings are kept.";
   }
   renderTargets();
   renderPackages();
@@ -253,6 +257,11 @@ async function refresh() {
     render(null);
     error.focusTarget = $("drive-select");
     throw error;
+  }
+  if (selected && state.drive?.selection_id !== selected.selection_id) {
+    $("package-form").reset();
+    $("manager-form").reset();
+    $("folder-settings").open = false;
   }
   drives = state.drives;
   render(state.drive);
@@ -329,7 +338,7 @@ $("package-form").addEventListener("submit", (event) => {
 });
 $("manager-form").addEventListener("submit", (event) => {
   event.preventDefault();
-  const action = selected.manager.present ? "update-manager" : "setup";
+  const action = selected.manager.present || selected.manager.repairable ? "update-manager" : "setup";
   operation("Copying Package Manager… Keep the drive connected.", async () => {
     const file = validFile($("manager-file"));
     if (!confirm(`${action === "setup" ? "Set up Package Manager" : "Update the Package Manager installer"} on ${selected.path}?`)) { message("Operation cancelled."); return; }

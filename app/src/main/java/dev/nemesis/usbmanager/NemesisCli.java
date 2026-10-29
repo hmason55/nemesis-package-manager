@@ -8,6 +8,11 @@ import java.io.FileOutputStream;
 import java.io.InputStream;
 import java.io.IOException;
 import java.util.ArrayList;
+import java.util.concurrent.Callable;
+import java.util.concurrent.FutureTask;
+import java.util.concurrent.TimeUnit;
+import java.util.concurrent.TimeoutException;
+import java.util.concurrent.atomic.AtomicReference;
 import java.util.zip.ZipEntry;
 import java.util.zip.ZipOutputStream;
 
@@ -28,16 +33,55 @@ final class NemesisCli {
         public Result run(String... args) { return NemesisCli.run(args); }
     };
     private NemesisCli() { }
-    static Result run(String... args) {
-        return run(new ProcessStarter() {
-            public Process start(ArrayList<String> command) throws IOException {
-                ProcessBuilder builder = new ProcessBuilder(command);
-                builder.redirectErrorStream(true);
-                return builder.start();
-            }
-        }, args);
-    }
+    private static final long QUERY_TIMEOUT_MS = 30000;
+    private static final ProcessStarter PROCESSES = new ProcessStarter() {
+        public Process start(ArrayList<String> command) throws IOException {
+            ProcessBuilder builder = new ProcessBuilder(command);
+            builder.redirectErrorStream(true);
+            return builder.start();
+        }
+    };
+    static Result run(String... args) { return run(PROCESSES, args); }
+    /** Only use for read-only commands: a timed-out query may be terminated. */
+    static Result query(String... args) { return query(PROCESSES, QUERY_TIMEOUT_MS, args); }
     static Result run(ProcessStarter starter, String... args) {
+        if (args.length > 0 && ("pkg-list".equals(args[0]) || "pkg-info".equals(args[0])))
+            return query(starter, QUERY_TIMEOUT_MS, args);
+        return runBlocking(starter, args);
+    }
+    static Result query(final ProcessStarter starter, long timeoutMillis, final String... args) {
+        final AtomicReference<Process> process = new AtomicReference<Process>();
+        FutureTask<Result> query = new FutureTask<Result>(new Callable<Result>() {
+            public Result call() {
+                return runBlocking(new ProcessStarter() {
+                    public Process start(ArrayList<String> command) throws IOException {
+                        Process started = starter.start(command);
+                        process.set(started);
+                        if (Thread.currentThread().isInterrupted()) started.destroy();
+                        return started;
+                    }
+                }, args);
+            }
+        });
+        Thread worker = new Thread(query, "nemesis-read-only-query");
+        worker.setDaemon(true);
+        worker.start();
+        try { return query.get(timeoutMillis, TimeUnit.MILLISECONDS); }
+        catch (TimeoutException error) {
+            return new Result(1, "NEMESIS query timed out. Check the command channel, then tap Refresh to retry.");
+        } catch (InterruptedException error) {
+            Thread.currentThread().interrupt();
+            return new Result(1, "NEMESIS query interrupted. Tap Refresh to retry.");
+        } catch (Exception error) { return new Result(1, error.toString()); }
+        finally {
+            if (!query.isDone()) {
+                query.cancel(true);
+                Process started = process.get();
+                if (started != null) started.destroy();
+            }
+        }
+    }
+    private static Result runBlocking(ProcessStarter starter, String... args) {
         try {
             ArrayList<String> command = new ArrayList<String>();
             command.add("/system/xbin/nemesis");

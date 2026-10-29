@@ -228,6 +228,11 @@ public final class MainActivity extends Activity {
         TextView instruction = text("Keep USB connected until the action finishes.", 16, MUTED);
         instruction.setGravity(Gravity.CENTER); instruction.setPadding(0, dp(8), 0, 0);
         panel.addView(instruction, new LinearLayout.LayoutParams(-1, -2));
+        Button operationDetails = button("Details");
+        operationDetails.setOnClickListener(new View.OnClickListener() {
+            public void onClick(View view) { message("Operation details", operations.progressDetails()); }
+        });
+        panel.addView(operationDetails, new LinearLayout.LayoutParams(-1, dp(48)));
         FrameLayout.LayoutParams size = new FrameLayout.LayoutParams(-1, -2, Gravity.CENTER);
         size.leftMargin = dp(40); size.rightMargin = dp(40);
         overlay.addView(panel, size);
@@ -250,7 +255,9 @@ public final class MainActivity extends Activity {
         }
         adapter.notifyDataSetChanged();
         if (selected >= 0) list.setSelection(selected); else list.setSelection(0);
-        if (scanError != null) {
+        if (busy) {
+            empty.setText("Scanning for packages\u2026");
+        } else if (scanError != null) {
             empty.setText("Could not load installed packages.\nTap Refresh to retry, or tap here for Details.");
         } else if (!allItems.isEmpty()) {
             String[] emptyMessages = { "Nothing installed yet.\nChoose Available to install a package.",
@@ -267,7 +274,7 @@ public final class MainActivity extends Activity {
     private boolean unavailable() { return busy || operations.isRunning(); }
     private void updateButtons() {
         boolean running = operations.isRunning();
-        operationStatus.setText(running ? operations.description() : "");
+        operationStatus.setText(running ? operations.progressText() : "");
         operationOverlay.setVisibility(running ? View.VISIBLE : View.GONE);
         progress.setVisibility(running ? View.VISIBLE : View.GONE);
         for (Button tab : tabs) tab.setEnabled(!running);
@@ -289,7 +296,7 @@ public final class MainActivity extends Activity {
         final String previousKey = previous == null ? null : PackagePresentation.key(previous);
         busy = true; updateButtons();
         scanError = null;
-        empty.setText("Scanning for packages…");
+        empty.setText("Scanning for packagesâ€¦");
         new Thread(new Runnable() {
             public void run() {
                 try {
@@ -298,7 +305,7 @@ public final class MainActivity extends Activity {
                     NemesisCli.Result query = NemesisCli.run("pkg-list");
                     final InstalledPackages registry = InstalledPackages.parse(query.rc, query.out);
                     if (registry.available() && !registry.names.isEmpty()) {
-                        NemesisCli.Result versions = NemesisCli.run("root", "-c", registry.versionQuery());
+                        NemesisCli.Result versions = NemesisCli.query("root", "-c", registry.versionQuery());
                         registry.readVersions(versions.rc, versions.out);
                     }
                     Set<String> seen = new HashSet<String>();

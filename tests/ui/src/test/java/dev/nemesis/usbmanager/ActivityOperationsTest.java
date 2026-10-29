@@ -56,6 +56,7 @@ public class ActivityOperationsTest {
         static int registryStatus;
         static int actionStatus;
         static final List<List<String>> calls = Collections.synchronizedList(new ArrayList<List<String>>());
+        @Implementation protected static NemesisCli.Result query(String... args) { return run(args); }
         @Implementation protected static NemesisCli.Result run(String... args) {
             calls.add(Arrays.asList(args));
             if ("pkg-list".equals(args[0])) return new NemesisCli.Result(registryStatus, registry);
@@ -269,6 +270,29 @@ public class ActivityOperationsTest {
         open();
         assertTrue(((TextView) field("empty")).getText().toString().contains("Insert a USB drive"));
         assertFalse(((View) field("details")).isEnabled());
+    }
+
+    @Test public void runningOperationOffersGuidanceWithoutEnablingCompetingActions() throws Exception {
+        open();
+        final CountDownLatch finish = new CountDownLatch(1);
+        OperationCoordinator owner = (OperationCoordinator) field("operations");
+        assertTrue(owner.start("Installing Demo", new OperationCoordinator.Task() {
+            public OperationCoordinator.Completion run() throws Exception {
+                finish.await();
+                return new OperationCoordinator.Completion(true, "Installed");
+            }
+        }));
+        try {
+            ((Runnable) field("monitorOperation")).run();
+            assertTrue(((TextView) field("operationStatus")).getText().toString().contains("Installing Demo"));
+            assertFalse(((View) field("refreshButton")).isEnabled());
+            assertTrue(find((View) field("operationOverlay"), "Details").performClick());
+            assertNotNull(findContaining(ShadowDialog.getLatestDialog().getWindow().getDecorView(), "other actions remain blocked"));
+            assertTrue(owner.isRunning());
+            dialogClick("OK");
+        } finally { finish.countDown(); }
+        awaitCompletion();
+        dialogClick("OK");
     }
 
     @Test public void categoryTabsFilterAndSameVersionCannotStartUpdate() throws Exception {
