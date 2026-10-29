@@ -42,6 +42,33 @@ public class UsabilityTest {
     private Object field(MainActivity activity, String name) throws Exception {
         Field field = MainActivity.class.getDeclaredField(name); field.setAccessible(true); return field.get(activity);
     }
+    @Test public void helpIsAvailableWithoutPackagesAndStaysScrollableInLandscape() throws Exception {
+        ActivityController<MainActivity> controller = Robolectric.buildActivity(MainActivity.class).create().start().visible();
+        MainActivity activity = controller.get();
+        Field resumed = MainActivity.class.getDeclaredField("resumed"); resumed.setAccessible(true); resumed.set(activity, true);
+        View root = activity.findViewById(android.R.id.content);
+        root.measure(View.MeasureSpec.makeMeasureSpec(1200, View.MeasureSpec.EXACTLY), View.MeasureSpec.makeMeasureSpec(640, View.MeasureSpec.EXACTLY));
+        root.layout(0, 0, 1200, 640);
+        TextView help = null;
+        for (TextView view : texts(root)) if ("Help".equals(view.getText().toString())) help = view;
+        assertNotNull("Help is visible before choosing a package", help);
+        assertTrue(help.isEnabled());
+        assertTrue(help.getHeight() >= 48);
+        assertTrue("Help fits beside Refresh and Close", help.getRight() <= ((View) help.getParent()).getWidth());
+        help.performClick();
+        Dialog dialog = ShadowDialog.getLatestDialog();
+        find(dialog, "Help");
+        TextView body = null;
+        for (TextView view : texts(dialog.getWindow().getDecorView()))
+            if (view.getText().toString().startsWith("Getting started")) body = view;
+        assertNotNull(body);
+        assertTrue(body.getParent() instanceof ScrollView);
+        for (String instruction : new String[] { "Installed:", "Updates:", "Available:", "Scripts:", "USB companion", "Install version", "Uninstall", "Keep USB connected" })
+            assertTrue("Help explains " + instruction, body.getText().toString().contains(instruction));
+        find(dialog, "OK").performClick();
+        assertFalse(dialog.isShowing());
+        controller.stop().destroy();
+    }
     @Test public void packageRowsShowOneNameAndSelectionChangesAction() throws Exception {
         ActivityController<MainActivity> controller = Robolectric.buildActivity(MainActivity.class).create().start().visible();
         MainActivity activity = controller.get();
@@ -161,6 +188,25 @@ public class UsabilityTest {
         assertTrue(((ScrollView) body.getParent()).getMeasuredHeight() < body.getMeasuredHeight());
         assertTrue(root.getMeasuredHeight() <= height);
         assertTrue(find(dialog, "OK").getMeasuredHeight() > 0);
+        dialog.dismiss(); controller.pause().stop().destroy();
+    }
+    @Test public void dialogControlsShowWhichButtonHasKeyboardFocus() {
+        ActivityController<Activity> controller = Robolectric.buildActivity(Activity.class).setup();
+        Activity activity = controller.get();
+        Dialog dialog = ManagerDialogs.show(activity, "Uninstall Example App?", "USB data will be kept.",
+            "Uninstall", new Runnable() { public void run() { } }, null, null);
+        TextView cancel = find(dialog, "Cancel");
+        TextView uninstall = find(dialog, "Uninstall");
+        assertTrue(cancel.requestFocus());
+        assertTrue(cancel.isFocused());
+        int focused = ((ColorDrawable) cancel.getBackground().getCurrent()).getColor();
+        assertNotEquals("Keyboard focus must be visible", ManagerDialogs.PANEL, focused);
+        assertTrue(uninstall.requestFocus());
+        assertFalse(cancel.isFocused());
+        assertEquals("Previous control returns to its normal color", ManagerDialogs.PANEL,
+            ((ColorDrawable) cancel.getBackground().getCurrent()).getColor());
+        assertEquals("Primary action also shows keyboard focus", focused,
+            ((ColorDrawable) uninstall.getBackground().getCurrent()).getColor());
         dialog.dismiss(); controller.pause().stop().destroy();
     }
 }

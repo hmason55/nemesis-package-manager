@@ -5,6 +5,23 @@ import org.junit.Test;
 import static org.junit.Assert.*;
 
 public class PresentationEdgeCasesTest {
+    @Test public void confirmationsExplainTheSelectedActionAndUncertainVersions() {
+        PackageScanner.Item item = new PackageScanner.Item();
+        item.kind = PackageScanner.EXECUTE;
+        String script = PackagePresentation.confirmation(item);
+        assertTrue(script.contains("Run this script"));
+        assertFalse("Running a script makes no data preservation promise", script.contains("kept"));
+        item.kind = PackageScanner.INSTALL;
+        assertTrue(PackagePresentation.confirmation(item).contains("Keep USB connected"));
+        item.installed = true; item.version = "1.2"; item.installedVersion = "1.1";
+        String update = PackagePresentation.confirmation(item);
+        assertTrue(update.contains("Installed: 1.1\nOn USB: 1.2"));
+        assertFalse(update.contains("could not be compared"));
+        item.installedVersion = "custom";
+        assertTrue(PackagePresentation.confirmation(item).contains("could not be compared"));
+        item.id = "usb.package.manager";
+        assertTrue(PackagePresentation.confirmation(item).contains("close and reopen"));
+    }
     @Test public void namesStatesAndSelectionKeysHaveUsefulFallbacks() {
         PackageScanner.Item item = new PackageScanner.Item();
         assertEquals("Unnamed package", PackagePresentation.name(item));

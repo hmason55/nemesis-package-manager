@@ -119,6 +119,18 @@ final class PackagePresentation {
         if (PackageScanner.EXECUTE.equals(item.kind)) return "execute";
         return item.installed ? "update" : "install";
     }
+    static String confirmation(PackageScanner.Item item) {
+        if (PackageScanner.EXECUTE.equals(item.kind))
+            return "Run this script on the head unit. Only use scripts you trust; they can change the system.";
+        String text = "Only install releases you trust that support your vehicle.";
+        if (item.installed) {
+            text += "\n\nInstalled: " + versionText(item.installedVersion) + "\nOn USB: " + versionText(item.version);
+            if (compareVersions(item.version, item.installedVersion) == null)
+                text += "\nThese versions could not be compared. Check that this is the release you want.";
+        }
+        return text + (isManager(item) ? "\n\nPackage Manager will close and reopen during the update." :
+            "\n\nKeep USB connected until it finishes.");
+    }
     static String key(PackageScanner.Item item) {
         // Keep separate release installers selectable even when they share an ID.
         return item.target != null ? item.target.getAbsolutePath() :
@@ -126,20 +138,19 @@ final class PackagePresentation {
     }
     static String details(PackageScanner.Item item) {
         StringBuilder text = new StringBuilder(state(item));
-        if (isManager(item)) text.append("\n\nUse Update to install the manager bundle on this drive through NEMESIS. Remove Package Manager from NEMESIS Manager's Packages screen.");
+        if (isManager(item)) text.append("\n\nUse Update to install the version on USB. To remove Package Manager, use NEMESIS Manager > Packages.");
         if (item.id != null && item.id.length() > 0) text.append("\nPackage ID: ").append(item.id);
         if (item.version != null && item.version.length() > 0) text.append("\nUSB version: ").append(item.version);
         if (item.installed) text.append("\nInstalled version: ").append(item.installedVersion == null ? "Unknown" : item.installedVersion);
         if (item.installed && compareVersions(item.version, item.installedVersion) == null)
-            text.append("\nVersion ordering is unavailable. Install version uses the selected USB installer; check its release instructions first.");
+            text.append("\nVersions could not be compared. Install version uses the release on USB; check its instructions first.");
         if (item.error != null) text.append("\n\nProblem: ").append(item.error);
         if (item.target != null) text.append("\n\nUSB source:\n").append(item.target.getAbsolutePath());
         else if (item.folder != null) text.append("\n\nUSB folder:\n").append(item.folder.getAbsolutePath());
         else text.append("\n\nInstalled on the head unit. Add a compatible USB installer to update it.");
         File data = item.dataDir();
         if (data != null) text.append("\n\nData and history:\n").append(data.getAbsolutePath())
-            .append("\nHistory file: package-manager-history.log (when writing succeeds).")
-            .append("\n\nOther apps keep their own output locations unless configured separately.");
+            .append("\nHistory file: package-manager-history.log");
         return text.toString();
     }
     static OperationCoordinator.Completion completion(PackageScanner.Item item, String operation, int rc, String output) {
@@ -151,11 +162,11 @@ final class PackagePresentation {
         else if ("execute".equals(operation)) { verb = "run"; title = "Script"; }
         else if ("update".equals(operation)) { verb = "updated"; title = "Update"; }
         else { verb = "installed"; title = "Installation"; }
-        String summary = success ? name(item) + " was " + verb + " successfully." :
-            title + " failed for " + name(item) + ".\n\nOpen Details for the error, then check the package's instructions before retrying.";
+        String summary = success ? name(item) + " was " + verb + "." :
+            title + " failed for " + name(item) + ".\n\nOpen Details for the error. Check the package instructions before trying again.";
         if (success && "uninstall".equals(operation)) summary += "\n\nIts USB installer and data folder were kept.";
         else if (success && ("install".equals(operation) || "update".equals(operation)))
-            summary += "\n\nIt is now available in NEMESIS Manager's Packages list.";
+            summary += "\n\nFind it in Installed.";
         String raw = output == null || output.trim().length() == 0 ? "NEMESIS returned no additional output." : output.trim();
         String details = "Package: " + name(item) + "\nOperation: " + operation + "\nExit code: " + rc + "\n\n" + raw;
         return new OperationCoordinator.Completion(success, title + (success ? " complete" : " failed"), summary, details);

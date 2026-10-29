@@ -48,7 +48,7 @@ on each launch. Do not share it with another user or web page.
 
 ## Use the UI
 
-1. Choose a drive from the **USB drive** selector. **Refresh drives** checks for
+1. Choose a drive from the **USB drive** selector. **Refresh** checks for
    newly connected media. For USB enclosures reported as fixed disks or unusual
    mounts, open **Drive not listed?** to enter the path. Check the selected path
    and free space. The app does not partition or format drives.
@@ -71,6 +71,9 @@ on each launch. Do not share it with another user or web page.
 
 The tabs support arrow keys, Home, and End. Loose ZIP installers remain view-only;
 update selectors contain only folders supported by the directory importer.
+Hover over a control or focus it with Tab for a short tooltip; Escape dismisses it.
+**Quick guide** explains the steps on touchscreens too. After copying, the status
+shows what to do next in the vehicle.
 
 Versions labeled **On USB** come from package manifests. They describe installers,
 not installed head-unit versions. The USB wrapper's protocol version is not used

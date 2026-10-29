@@ -38,6 +38,7 @@ public final class MainActivity extends Activity {
     private int category;
     private final ArrayList<Dialog> dialogs = new ArrayList<Dialog>();
     private TextView status;
+    private String statusDetails;
     private TextView empty;
     private ListView list;
     private PackageAdapter adapter;
@@ -62,7 +63,8 @@ public final class MainActivity extends Activity {
             if (!resumed || destroyed || isFinishing()) return;
             updateButtons();
             if (operations.isRunning()) {
-                status.setText(operations.description() + " in progress. Do not remove USB.");
+                statusDetails = null;
+                status.setText(operations.description() + "… Keep USB connected.");
                 handler.postDelayed(this, 500);
             } else {
                 final OperationCoordinator.Completion result = operations.takeCompletion();
@@ -145,8 +147,10 @@ public final class MainActivity extends Activity {
         title.setTypeface(Typeface.DEFAULT, Typeface.BOLD);
         header.addView(title, new LinearLayout.LayoutParams(0, -2, 1));
         refreshButton = button("Refresh");
+        Button help = button("Help");
         Button close = button("Close");
         header.addView(refreshButton, spaced(dp(100), 48, 0, 12));
+        header.addView(help, spaced(dp(76), 48, 0, 12));
         header.addView(close, spaced(dp(88), 48, 0, 20));
         root.addView(header);
         LinearLayout categories = new LinearLayout(this);
@@ -176,7 +180,13 @@ public final class MainActivity extends Activity {
         status.setMaxLines(2); status.setEllipsize(TextUtils.TruncateAt.END);
         status.setFocusable(true);
         status.setOnClickListener(new View.OnClickListener() {
-            public void onClick(View view) { message("Status", status.getText().toString()); }
+            public void onClick(View view) {
+                final String detail = statusDetails;
+                showDialog("Package status", status.getText().toString(), "OK", null,
+                    detail == null ? null : "Details", new Runnable() {
+                        public void run() { message("Scan details", detail); }
+                    });
+            }
         });
         status.setPadding(0, dp(6), 0, dp(8));
         feedback.addView(status, new LinearLayout.LayoutParams(0, -2, 1));
@@ -212,6 +222,7 @@ public final class MainActivity extends Activity {
         uninstall.setOnClickListener(new View.OnClickListener() { public void onClick(View view) { confirmUninstall(); } });
         launch.setOnClickListener(new View.OnClickListener() { public void onClick(View view) { confirmLaunch(); } });
         refreshButton.setOnClickListener(new View.OnClickListener() { public void onClick(View view) { refresh(); } });
+        help.setOnClickListener(new View.OnClickListener() { public void onClick(View view) { showHelp(); } });
         close.setOnClickListener(new View.OnClickListener() { public void onClick(View view) { finish(); } });
         updateButtons();
     }
@@ -231,7 +242,13 @@ public final class MainActivity extends Activity {
         }
         adapter.notifyDataSetChanged();
         if (selected >= 0) list.setSelection(selected); else list.setSelection(0);
-        if (!allItems.isEmpty()) empty.setText(category == PackagePresentation.UPDATES ? "No confirmed updates." : "No packages in this category.");
+        if (!allItems.isEmpty()) {
+            String[] emptyMessages = { "Nothing installed yet.\nChoose Available to install a package.",
+                "No confirmed updates.\nCopy a newer release to USB, then tap Refresh.",
+                "No new packages on USB.\nAdd a release with the USB companion, then tap Refresh.",
+                "No scripts on USB." };
+            empty.setText(emptyMessages[category]);
+        }
         updateButtons();
     }
     private PackageScanner.Item selection() {
@@ -256,6 +273,7 @@ public final class MainActivity extends Activity {
         final PackageScanner.Item previous = selection();
         final String previousKey = previous == null ? null : PackagePresentation.key(previous);
         busy = true; updateButtons();
+        statusDetails = null;
         status.setText("Scanning USB and installed packages…");
         empty.setText("Scanning for packages…");
         new Thread(new Runnable() {
@@ -297,10 +315,11 @@ public final class MainActivity extends Activity {
                         public void run() {
                             if (destroyed) return;
                             allItems.clear(); allItems.addAll(next);
-                            status.setText(!registry.available() ? registry.error :
+                            statusDetails = registry.available() ? null : registry.error;
+                            status.setText(!registry.available() ? "Could not read installed packages. Tap Refresh to retry." :
                                 (usb == null ? "No USB installers detected | " + next.size() + " installed packages" :
                                 next.size() + " packages · Select a package"));
-                            empty.setText(!registry.available() ? "Installed packages could not be loaded.\nCheck the error above, then tap Refresh." :
+                            empty.setText(!registry.available() ? "Could not load installed packages.\nTap Refresh to retry, or tap the status for Details." :
                                 (usb == null ? "No packages found.\nInsert a USB drive with a packages/ folder, then tap Refresh." :
                                 "No packages found.\nAdd a release under packages/ on your USB, then tap Refresh."));
                             busy = false; filterItems(previousKey);
@@ -311,7 +330,8 @@ public final class MainActivity extends Activity {
                         public void run() {
                             if (destroyed) return;
                             allItems.clear(); filterItems(null);
-                            status.setText("Could not scan packages: " + error.toString());
+                            statusDetails = error.toString();
+                            status.setText("Could not read packages. Check USB and tap Refresh.");
                             empty.setText("Check the USB drive, then tap Refresh to retry.");
                             busy = false; updateButtons();
                         }
@@ -365,8 +385,7 @@ public final class MainActivity extends Activity {
         if (unavailable() || !PackagePresentation.canInstall(item)) return;
         String action = PackagePresentation.action(item);
         confirm(action + " " + PackagePresentation.name(item) + "?",
-            "Only continue with a trusted, compatible package. NEMESIS runs its installer or script as root.\n\n" +
-            (PackagePresentation.isManager(item) ? "Package Manager will close and reopen while NEMESIS installs the update." : "Your installer and data folder will be kept."), action, new Runnable() {
+            PackagePresentation.confirmation(item), action, new Runnable() {
                 public void run() { startOperation(item, null); }
             });
     }
@@ -374,8 +393,7 @@ public final class MainActivity extends Activity {
         final PackageScanner.Item item = selection();
         if (unavailable() || !PackagePresentation.canUninstall(item)) return;
         confirm("Uninstall " + PackagePresentation.name(item) + "?",
-            "Remove this package from the head unit? Its uninstall hooks run as root. Follow its removal instructions.\n\n" +
-            "The installer and data on your USB will be kept.", "Uninstall", new Runnable() {
+            "Remove it from the head unit. The installer and data on USB will be kept.", "Uninstall", new Runnable() {
                 public void run() { startOperation(item, "uninstall"); }
             });
     }
@@ -388,14 +406,14 @@ public final class MainActivity extends Activity {
     }
     private void startOperation(PackageScanner.Item item, String command) {
         if (PackagePresentation.isManager(item) && !("pkg-launch".equals(command) || (command == null && item.installed))) {
-            message("Use NEMESIS", "Install, update, or uninstall Package Manager using NEMESIS's package installer and Packages screen.");
+            message("Open NEMESIS Manager", "Use Packages in NEMESIS Manager to install or remove Package Manager.");
             return;
         }
         if (command == null && !PackagePresentation.canInstall(item)) return;
         String description = (command == null ? (PackageScanner.EXECUTE.equals(item.kind) ? "Running script" : item.installed ? "Updating" : "Installing") :
             ("uninstall".equals(command) ? "Uninstalling" : "Launching")) + " | " + PackagePresentation.name(item);
         if (unavailable() || !operations.start(description, new PackageTask(getApplicationContext(), item, command))) {
-            message("Operation in progress", "Wait for the current operation and its result before starting another.");
+            message("Please wait", "Let the current action finish, then try again.");
             return;
         }
         handler.removeCallbacks(monitorOperation); monitorOperation.run();
@@ -425,6 +443,23 @@ public final class MainActivity extends Activity {
     private void showDetails() {
         PackageScanner.Item item = selection();
         if (item != null && !unavailable()) message(PackagePresentation.name(item), PackagePresentation.details(item));
+    }
+    private void showHelp() {
+        message("Help", "Getting started\n" +
+            "1. Insert your USB drive and tap Refresh.\n" +
+            "2. Choose a tab, then select a package.\n" +
+            "3. Tap Install, Update, Run script, or Launch.\n\n" +
+            "Tabs\n" +
+            "Installed: packages on the head unit.\n" +
+            "Updates: newer versions found on USB.\n" +
+            "Available: USB packages ready to install.\n" +
+            "Scripts: tasks to run on the head unit; check their instructions first.\n\n" +
+            "Adding or updating packages\n" +
+            "Use the USB companion on your computer to copy releases to USB. Back here, tap Refresh, select the package, and confirm Install or Update.\n\n" +
+            "Need more information?\n" +
+            "Details shows versions, file locations, and errors. Install version means the versions could not be compared; check the release before continuing.\n" +
+            "Uninstall removes the package from the head unit and keeps its USB files. To remove Package Manager itself, use NEMESIS Manager > Packages.\n\n" +
+            "Use trusted releases that support your vehicle. Keep USB connected until the action finishes, and finish one action before using NEMESIS Manager.");
     }
     private static String writeActionLog(PackageScanner.Item item, String result) {
         File dir = item.dataDir();
