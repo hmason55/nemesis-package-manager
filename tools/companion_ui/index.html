@@ -30,14 +30,14 @@
       <section id="panel-packages" class="panel" role="tabpanel" aria-labelledby="tab-packages" tabindex="0">
         <div class="section-title"><h2>Packages on USB</h2><div class="list-controls"><label class="sr-only" for="package-filter">Filter packages</label><select id="package-filter"><option value="all">All packages</option><option value="install">Installers</option><option value="execute">Scripts</option><option value="attention">Needs attention</option></select><button id="add-package" type="button">Add package</button></div></div>
         <div class="table-wrap"><table><thead><tr><th scope="col">Package</th><th scope="col">On USB</th><th scope="col" class="type-column">Type</th><th scope="col">Status</th><th scope="col"><span class="sr-only">Actions</span></th></tr></thead><tbody id="packages"><tr><td colspan="5" class="empty">Select a drive to view its packages.</td></tr></tbody></table></div>
-        <p class="hint table-note">Versions describe installers on this drive. Install or update them through Package Manager in the vehicle.</p>
+        <p class="hint table-note">Install these packages through Package Manager in the vehicle.</p>
       </section>
       <section id="panel-import" class="panel" role="tabpanel" aria-labelledby="tab-import" tabindex="0" hidden>
         <div class="section-title"><h2>Add or update a package</h2></div>
         <form id="package-form" class="editor" novalidate>
           <div class="form-grid"><div><label for="import-mode">Action</label><select id="import-mode"><option value="add">Add a new package</option><option value="update" id="update-option" disabled>Update an existing package</option></select></div><div id="target-group" hidden><label for="package-target">Package to update</label><select id="package-target"><option value="">Choose a package…</option></select></div></div>
           <label for="package-file">Release ZIP</label><input id="package-file" type="file" accept=".zip">
-          <p id="import-note" class="hint">Choose a downloaded package release. Its folder name is filled in automatically.</p>
+          <p id="import-note" class="hint">The folder name is filled in from the ZIP.</p>
           <div id="new-folder" class="folder-options"><p class="destination">Package folder <strong id="folder-preview">Choose a ZIP first</strong></p><details id="folder-settings"><summary>Change folder name</summary><label for="package-name">Folder name</label><input id="package-name" placeholder="Filled in from the ZIP filename" maxlength="64" autocomplete="off"></details></div>
           <div class="actions"><button id="import-submit" type="submit">Add package</button><button id="cancel-import" class="quiet" type="button">Back to packages</button></div>
         </form>

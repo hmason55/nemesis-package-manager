@@ -71,6 +71,19 @@ public class UsabilityTest {
         ViewGroup packageRow = (ViewGroup) ((BaseAdapter) field(activity, "adapter")).getView(0, null, list);
         assertEquals(2, packageRow.getChildCount());
         assertEquals("v1.1", ((TextView) packageRow.getChildAt(1)).getText().toString());
+        android.widget.LinearLayout.LayoutParams nameLayout = (android.widget.LinearLayout.LayoutParams) packageRow.getChildAt(0).getLayoutParams();
+        android.widget.LinearLayout.LayoutParams versionLayout = (android.widget.LinearLayout.LayoutParams) packageRow.getChildAt(1).getLayoutParams();
+        assertTrue("Names receive more room than versions", nameLayout.weight > versionLayout.weight);
+        TextView rowState = (TextView) ((ViewGroup) packageRow.getChildAt(0)).getChildAt(1);
+        assertEquals("Update exceptions remain visible", View.VISIBLE, rowState.getVisibility());
+        item.version = "1.1";
+        ((BaseAdapter) field(activity, "adapter")).getView(0, packageRow, list);
+        assertEquals("Routine installed state is already supplied by the tab", View.GONE, rowState.getVisibility());
+        item.kind = PackageScanner.BROKEN;
+        ((BaseAdapter) field(activity, "adapter")).getView(0, packageRow, list);
+        assertEquals("Recycled rows still expose invalid installers", View.VISIBLE, rowState.getVisibility());
+        assertEquals("Invalid installer", rowState.getText().toString());
+        item.kind = PackageScanner.INSTALL; item.version = "1.2";
         for (String heading : new String[] { "Name", "Version" }) {
             boolean present = false;
             for (TextView view : texts(root)) if (heading.equals(view.getText().toString())) present = true;

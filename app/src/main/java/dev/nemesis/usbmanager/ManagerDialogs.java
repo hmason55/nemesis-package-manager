@@ -32,6 +32,7 @@ final class ManagerDialogs {
         root.setBackgroundColor(BACKGROUND);
         TextView heading = new TextView(activity);
         heading.setText(title); heading.setTextSize(22); heading.setTextColor(TEXT);
+        heading.setMaxLines(2); heading.setEllipsize(android.text.TextUtils.TruncateAt.END);
         heading.setTypeface(Typeface.DEFAULT, Typeface.BOLD);
         heading.setPadding(0, 0, 0, dp(activity, 12));
         root.addView(heading);
@@ -55,21 +56,23 @@ final class ManagerDialogs {
             other.setOnClickListener(new View.OnClickListener() {
                 public void onClick(View view) { if (secondaryAction != null) secondaryAction.run(); }
             });
-            buttons.addView(other, new LinearLayout.LayoutParams(-2, dp(activity, 52)));
+            buttons.addView(other, new LinearLayout.LayoutParams(0, dp(activity, 52), 1));
         }
         if (confirmed != null) {
             Button cancel = button(activity, "Cancel");
             cancel.setOnClickListener(new View.OnClickListener() { public void onClick(View view) { dialog.dismiss(); } });
-            buttons.addView(cancel, new LinearLayout.LayoutParams(-2, dp(activity, 52)));
+            buttons.addView(cancel, new LinearLayout.LayoutParams(0, dp(activity, 52), 1));
         }
         Button ok = button(activity, positive);
+        ok.setBackgroundColor(Color.rgb(25, 99, 137));
         ok.setOnClickListener(new View.OnClickListener() {
             public void onClick(View view) {
                 dialog.dismiss();
                 if (confirmed != null) confirmed.run();
             }
         });
-        LinearLayout.LayoutParams positiveLayout = new LinearLayout.LayoutParams(-2, dp(activity, 52));
+        boolean multipleActions = secondary != null || confirmed != null;
+        LinearLayout.LayoutParams positiveLayout = new LinearLayout.LayoutParams(multipleActions ? 0 : -2, dp(activity, 52), multipleActions ? 1 : 0);
         positiveLayout.leftMargin = dp(activity, 12);
         buttons.addView(ok, positiveLayout);
         root.addView(buttons, new LinearLayout.LayoutParams(-1, -2));

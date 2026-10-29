@@ -21,18 +21,20 @@ async function api(path, body, json = false) {
 }
 function availability() {
   $("workspace").disabled = busy || !selected;
+  $("workspace").setAttribute("aria-busy", String(busy));
   $("select-form").querySelectorAll("input, button").forEach((el) => { el.disabled = busy; });
   $("drive-select").disabled = busy;
   $("refresh").disabled = busy;
 }
 async function operation(label, action) {
   if (busy) return;
+  let errorTarget;
   busy = true;
   availability();
   message(label);
   try { await action(); }
-  catch (error) { message(error.message || "Connection lost. Check the companion's terminal window.", true); }
-  finally { busy = false; availability(); }
+  catch (error) { message(error.message || "Connection lost. Check the companion's terminal window.", true); errorTarget = error.focusTarget; }
+  finally { busy = false; availability(); if (errorTarget) errorTarget.focus(); }
 }
 function textElement(tag, text, className) {
   const element = document.createElement(tag);
@@ -74,7 +76,7 @@ function syncImport() {
   $("target-group").hidden = !update;
   $("new-folder").hidden = update;
   $("import-submit").textContent = update ? "Update package" : "Add package";
-  $("import-note").textContent = update ? "Choose the new release ZIP for this package. Existing data/ will be preserved." : "Choose a downloaded package release. Its folder name is filled in automatically.";
+  $("import-note").textContent = update ? "Choose the new release ZIP. Existing data/ is kept." : "The folder name is filled in from the ZIP.";
   $("folder-preview").textContent = $("package-name").value ? `packages/${$("package-name").value}/` : "Choose a ZIP first";
 }
 function renderTargets() {
@@ -112,14 +114,16 @@ function renderPackages() {
     const row = document.createElement("tr");
     const name = document.createElement("td");
     name.append(textElement("strong", pkg.name));
-    if (pkg.id) name.append(textElement("span", pkg.id, "package-id"));
     const details = textElement("details", "", "package-details");
-    details.append(textElement("summary", "Details"), textElement("code", pkg.path || `packages/${pkg.folder}/`));
+    details.append(textElement("summary", pkg.error ? "View issue" : "Details"));
+    if (pkg.id) details.append(textElement("code", pkg.id));
+    details.append(textElement("code", pkg.path || `packages/${pkg.folder}/`));
     if (pkg.description) details.append(textElement("p", pkg.description));
     if (pkg.error) details.append(textElement("p", pkg.error, "issue"));
     if (pkg.replaceable === false) details.append(textElement("p", "Loose ZIP installer. Import into a new package folder to manage updates."));
     name.append(details);
     const version = textElement("td", pkg.version || "Unknown", "version");
+    version.dataset.label = "On USB";
     const type = textElement("td", ({ install: "Installer", execute: "Script", source: "Source" })[pkg.kind] || "Unknown", "type-column");
     const status = document.createElement("td");
     const badge = textElement("span", pkg.error ? "Needs attention" : "Ready", pkg.error ? "badge attention" : "badge");
@@ -148,7 +152,7 @@ function render(drive) {
     const manager = drive.manager;
     $("manager-summary").textContent = manager.error ? "Needs attention" : manager.present ? manager.version || "Version unknown" : "Setup needed";
     $("manager-version").textContent = manager.present ? `On USB: ${manager.version || "Unknown"}` : "Setup needed";
-    $("manager-detail").textContent = manager.error || (manager.present ? "Package Manager is on this drive. Updating replaces its installer and preserves your launcher settings." : "Set up this drive with the Package Manager release bundle. Existing unrelated files stay in place.");
+    $("manager-detail").textContent = manager.error || (manager.present ? "Update the USB installer. Launcher settings are kept." : "Add Package Manager to this drive. Existing files are kept.");
     $("setup").hidden = manager.present;
     $("update-manager").hidden = !manager.present;
   }
@@ -201,7 +205,12 @@ $("package-form").addEventListener("submit", (event) => {
     const overwrite = $("import-mode").value === "update";
     const name = overwrite ? $("package-target").value : $("package-name").value;
     if (overwrite && !managedPackages().some(pkg => pkg.folder === name)) throw new Error("Choose the package to update.");
-    if (!folderPattern.test(name)) { $("folder-settings").open = true; $("package-name").focus(); throw new Error("Choose a folder name using 1–64 letters, numbers, dots, hyphens or underscores."); }
+    if (!folderPattern.test(name)) {
+      $("folder-settings").open = true;
+      const error = new Error("Choose a folder name using 1–64 letters, numbers, dots, hyphens or underscores.");
+      error.focusTarget = $("package-name");
+      throw error;
+    }
     if (overwrite && !confirm(`Update ${name} on ${selected.path}? Existing data/ will be preserved.`)) { message("Update cancelled."); return; }
     const query = new URLSearchParams({ name, overwrite });
     render(await api(`/api/package?${query}`, file));
