@@ -6,6 +6,7 @@ const tabNames = ["packages", "import", "setup"];
 let selected = null;
 let drives = [];
 let busy = false;
+let cloudRunning = false;
 let managerRelease = null;
 let releaseChecking = false;
 let removal = null;
@@ -101,11 +102,12 @@ async function api(path, body, json = false) {
 }
 function availability() {
   hideTooltip();
-  $("workspace").disabled = busy || !selected;
+  $("workspace").disabled = busy || cloudRunning || !selected;
   $("workspace").setAttribute("aria-busy", String(busy));
-  $("select-form").querySelectorAll("input, button").forEach((el) => { el.disabled = busy; });
-  $("drive-select").disabled = busy;
+  $("select-form").querySelectorAll("input, button").forEach((el) => { el.disabled = busy || cloudRunning; });
+  $("drive-select").disabled = busy || cloudRunning;
   $("refresh").disabled = busy;
+  window.dispatchEvent(new Event("companion-state"));
 }
 async function operation(label, action) {
   if (busy) return;

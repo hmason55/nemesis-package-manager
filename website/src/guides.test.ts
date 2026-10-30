@@ -1,0 +1,69 @@
+// @vitest-environment happy-dom
+import { describe, it, expect } from "vitest";
+import { existsSync } from "node:fs";
+import { guides, renderGuides } from "./guides";
+import { parseRoute } from "./routes";
+import { advice, profileCheck } from "./compatibility";
+import fixtures from "../../contracts/fixtures/compatibility.json";
+
+describe("published task guides", () => {
+  it("keeps old help links and individual guide sections shareable", () => {
+    expect(parseRoute("#help")).toEqual({ page: "guides", id: "", section: 0 });
+    expect(parseRoute("#guides/publish?section=2")).toEqual({
+      page: "guides",
+      id: "publish",
+      section: 2,
+    });
+  });
+  it("renders every guide with steps, an available described image, and working related links", () => {
+    for (const guide of guides) {
+      const root = document.createElement("div");
+      renderGuides(root, guide.id);
+      expect(root.querySelectorAll("ol").length).toBe(guide.sections.length);
+      expect(root.querySelector("img")?.alt).toBeTruthy();
+      expect(
+        existsSync(
+          new URL("../public/guides/" + guide.figure, import.meta.url),
+        ),
+      ).toBe(true);
+      for (const a of Array.from(
+        root.querySelectorAll<HTMLAnchorElement>('a[href^="#guides/"]'),
+      )) {
+        const id = a.getAttribute("href")!.split("/")[1].split("?")[0];
+        expect(guides.some((g) => g.id === id)).toBe(true);
+      }
+    }
+  });
+  it("offers useful navigation for unknown guide bookmarks", () => {
+    const root = document.createElement("div");
+    renderGuides(root, "missing");
+    expect(root.textContent).toContain("Guide not found");
+    expect(root.querySelectorAll("h2 a").length).toBe(guides.length);
+  });
+});
+describe("optional advisory compatibility", () => {
+  it("matches the shared contract fixtures", () => {
+    for (const f of fixtures)
+      expect(advice(f.declarations, f.profile).status, f.name).toBe(f.status);
+  });
+  it("shows mismatches without creating an installation or download gate", () => {
+    localStorage.clear();
+    const root = document.createElement("div");
+    const download = document.createElement("a");
+    download.href = "https://registry.test/download";
+    download.textContent = "Download";
+    root.append(download);
+    profileCheck(root, { vehicles: ["EV6"], firmware: [], nemesis: "" });
+    const model = root.querySelector<HTMLInputElement>("[name=vehicle]")!;
+    model.value = "IONIQ 5";
+    root.querySelector<HTMLButtonElement>("button")!.click();
+    expect(root.textContent).toContain("Compatibility warning");
+    expect(root.textContent).toContain(
+      "Downloads and installation remain available",
+    );
+    expect(download.getAttribute("href")).toBe(
+      "https://registry.test/download",
+    );
+    expect(root.querySelector("[disabled]")).toBeNull();
+  });
+});

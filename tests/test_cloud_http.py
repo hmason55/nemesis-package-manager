@@ -13,6 +13,10 @@ from tools.companion_cloud_destinations import available_updates
 class CloudHttpTests(unittest.TestCase):
     def test_dispatches_reads_and_rejects_unknown_routes(self):
         handler = Mock()
+        handler.server.cloud.registry.return_value.package.return_value = {
+            "versions": []
+        }
+        handler.server.cloud.updates.return_value = {"updates": []}
         for route in (
             "packages?q=test&page=2",
             "package?id=example.app",
@@ -39,11 +43,42 @@ class CloudHttpTests(unittest.TestCase):
         handler.rfile = io.BytesIO(b"{}")
         self.assertTrue(cloud_post(handler, urlsplit("/api/cloud/cancel"), 2))
         handler.server.cloud.cancelled.set.assert_called_once()
+        handler.server.cloud.snapshot.return_value = None
+        handler.rfile = io.BytesIO(b'{"url":"https://registry.test"}')
+        self.assertTrue(cloud_post(handler, urlsplit("/api/cloud/config"), 31))
+        self.assertEqual(handler.server.cloud.client.base, "https://registry.test")
+        self.assertTrue(cloud_get(handler, urlsplit("/api/cloud/config")))
+        handler.server.cloud.snapshot.return_value = {"status": "running"}
+        handler.rfile = io.BytesIO(b'{"url":"https://other.test"}')
+        with self.assertRaises(ValueError):
+            cloud_post(handler, urlsplit("/api/cloud/config"), 28)
+        self.assertEqual(handler.server.cloud.client.base, "https://registry.test")
+        handler.server.cloud.snapshot.return_value = None
+        handler.rfile = io.BytesIO(b'{"url":12}')
+        with self.assertRaises(ValueError):
+            cloud_post(handler, urlsplit("/api/cloud/config"), 10)
+        handler.rfile = io.BytesIO(b'{"url":""}')
+        self.assertTrue(cloud_post(handler, urlsplit("/api/cloud/config"), 10))
+        self.assertTrue(cloud_get(handler, urlsplit("/api/cloud/config")))
         with self.assertRaises(ValueError):
             cloud_post(handler, urlsplit("/api/cloud/start"), 0)
         handler.rfile = io.BytesIO(b"[]")
         with self.assertRaises(ValueError):
             cloud_post(handler, urlsplit("/api/cloud/start"), 2)
+
+    def test_device_profile_advice_does_not_gate_version_details(self):
+        handler = Mock()
+        handler.server.cloud.registry.return_value.package.return_value = {
+            "versions": [{"version": "1", "compatibility": {"vehicles": ["EV6"]}}]
+        }
+        cloud_get(
+            handler, urlsplit("/api/cloud/package?id=example.app&vehicle=IONIQ+5")
+        )
+        result = handler.respond.call_args.args[1]
+        self.assertEqual(result["versions"][0]["version"], "1")
+        self.assertEqual(
+            result["versions"][0]["compatibility_advice"][0]["state"], "mismatch"
+        )
 
     def test_update_checks_keep_unknown_versions_manual_and_report_failures(self):
         client = Mock()

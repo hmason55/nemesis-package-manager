@@ -1,4 +1,5 @@
 import { compatibility } from "./client";
+import { profileCheck } from "./compatibility";
 import { catalogLink, packageLink } from "./routes";
 import {
   el,
@@ -260,6 +261,7 @@ export function renderPackage(
     ),
   );
   const notes = el("section");
+  profileCheck(requirements, selected.compatibility);
   notes.append(
     el("h2", "Release notes"),
     el(

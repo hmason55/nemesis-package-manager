@@ -1,0 +1,149 @@
+[
+  {
+    "name": "exact match ignores case",
+    "declarations": {
+      "vehicles": [
+        "IONIQ 5"
+      ],
+      "firmware": [
+        "260507"
+      ],
+      "nemesis": "1.0"
+    },
+    "profile": {
+      "vehicle": "ioniq 5",
+      "firmware": "260507",
+      "nemesis": "1.0"
+    },
+    "status": "match"
+  },
+  {
+    "name": "known firmware mismatch",
+    "declarations": {
+      "vehicles": [],
+      "firmware": [
+        "260507"
+      ],
+      "nemesis": ""
+    },
+    "profile": {
+      "vehicle": "",
+      "firmware": "older",
+      "nemesis": ""
+    },
+    "status": "mismatch"
+  },
+  {
+    "name": "unknown device",
+    "declarations": {
+      "vehicles": [
+        "IONIQ 5"
+      ],
+      "firmware": [],
+      "nemesis": ""
+    },
+    "profile": {
+      "vehicle": "",
+      "firmware": "",
+      "nemesis": ""
+    },
+    "status": "unknown"
+  },
+  {
+    "name": "no declarations",
+    "declarations": {
+      "vehicles": [],
+      "firmware": [],
+      "nemesis": ""
+    },
+    "profile": {
+      "vehicle": "IONIQ 5",
+      "firmware": "260507",
+      "nemesis": "1.0"
+    },
+    "status": "unknown"
+  },
+  {
+    "name": "unrestricted wildcard",
+    "declarations": {
+      "vehicles": [
+        "*"
+      ],
+      "firmware": [
+        "*"
+      ],
+      "nemesis": "*"
+    },
+    "profile": {
+      "vehicle": "",
+      "firmware": "",
+      "nemesis": ""
+    },
+    "status": "match"
+  },
+  {
+    "name": "range remains informational",
+    "declarations": {
+      "vehicles": [],
+      "firmware": [],
+      "nemesis": ">=1"
+    },
+    "profile": {
+      "vehicle": "",
+      "firmware": "",
+      "nemesis": "2"
+    },
+    "status": "unknown"
+  },
+  {
+    "name": "known mismatch takes precedence over unknown",
+    "declarations": {
+      "vehicles": [
+        "EV6"
+      ],
+      "firmware": [
+        "260507"
+      ],
+      "nemesis": ""
+    },
+    "profile": {
+      "vehicle": "IONIQ 5",
+      "firmware": "",
+      "nemesis": ""
+    },
+    "status": "mismatch"
+  },
+  {
+    "name": "literal match precedes informational alternative",
+    "declarations": {
+      "vehicles": [
+        "*"
+      ],
+      "firmware": [
+        "260507",
+        ">=260000"
+      ],
+      "nemesis": "*"
+    },
+    "profile": {
+      "vehicle": "",
+      "firmware": "260507",
+      "nemesis": ""
+    },
+    "status": "match"
+  },
+  {
+    "name": "partial wildcard is informational",
+    "declarations": {
+      "vehicles": [],
+      "firmware": [],
+      "nemesis": "1.*"
+    },
+    "profile": {
+      "vehicle": "",
+      "firmware": "",
+      "nemesis": "1.2"
+    },
+    "status": "unknown"
+  }
+]

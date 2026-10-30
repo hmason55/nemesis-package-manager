@@ -1,0 +1,22 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1024" height="612" viewBox="0 0 1024 612" role="img" aria-labelledby="title desc">
+  <title id="title">Package Manager: Details</title>
+  <desc id="desc">Separate status, version, source and data sections with readable spacing.</desc>
+  <g font-family="Arial, Helvetica, sans-serif">
+    <rect width="1024" height="612" fill="#14181e" />
+    <text x="20" y="595" font-size="14" fill="#a5b2c5">Illustrative mockup - Example data - Not a vehicle screenshot</text>
+    <rect x="100" y="20" width="824" height="530" rx="6" fill="#14181e" stroke="#5b748f" />
+    <text x="124" y="58" font-size="25" fill="#ebeef4" font-weight="700">Example Player</text>
+    <text x="124" y="99" font-size="17" fill="#a8d5ff" font-weight="700">Status</text>
+    <text x="124" y="129" font-size="17" fill="#ebeef4" font-weight="400">Update available</text>
+    <text x="124" y="175" font-size="17" fill="#a8d5ff" font-weight="700">Versions</text>
+    <text x="124" y="205" font-size="17" fill="#ebeef4" font-weight="400">USB: 1.5     Installed: 1.4</text>
+    <text x="124" y="251" font-size="17" fill="#a8d5ff" font-weight="700">Package ID</text>
+    <text x="124" y="281" font-size="17" fill="#ebeef4" font-weight="400">example.player</text>
+    <text x="124" y="327" font-size="17" fill="#a8d5ff" font-weight="700">USB source</text>
+    <text x="124" y="357" font-size="17" fill="#ebeef4" font-weight="400">/storage/usb0/packages/Example-Player/player.zip</text>
+    <text x="124" y="403" font-size="17" fill="#a8d5ff" font-weight="700">Data and history</text>
+    <text x="124" y="433" font-size="17" fill="#ebeef4" font-weight="400">/storage/usb0/packages/Example-Player/data</text>
+    <rect x="748" y="482" width="152" height="48" rx="6" fill="#196389" stroke="#5b748f" />
+    <text x="824.0" y="512" font-size="18" fill="#ebeef4" font-weight="400" text-anchor="middle">OK</text>
+  </g>
+</svg>

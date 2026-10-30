@@ -36,13 +36,18 @@ class RegistryClient:
             raise ValueError("Configure an HTTPS registry URL.")
         self.base = base.rstrip("/")
         self.opener = opener or build_opener(NoRedirect())
+        self.opener.addheaders = [("User-Agent", "NEMESIS-USB-Companion")]
 
     def json(self, path):
         """Bound JSON memory use and request fresh approval from intermediaries."""
         with self.opener.open(
             Request(
                 self.base + path,
-                headers={"Accept": "application/json", "Cache-Control": "no-cache"},
+                headers={
+                    "Accept": "application/json",
+                    "Cache-Control": "no-cache",
+                    "User-Agent": "NEMESIS-USB-Companion",
+                },
             ),
             timeout=30,
         ) as response:

@@ -2,7 +2,7 @@ import { env, applyD1Migrations } from "cloudflare:test";
 import { beforeAll, beforeEach, describe, it, expect, vi } from "vitest";
 import worker from "../src/index";
 import { hash, seal, challenge } from "../src/security";
-import { Env, now } from "../src/types";
+import { Env, now, metadata as parseMetadata } from "../src/types";
 import { publicVersion } from "../src/catalog";
 import { synchronize } from "../src/webhooks";
 import { github } from "../src/github";
@@ -92,6 +92,21 @@ beforeEach(async () => {
   await bindings.PACKAGES.put("sha256/" + sha + ".zip", "zip");
 });
 describe("public catalog and moderation", () => {
+  it("allows omitted advisory declarations and retains informational ranges", () => {
+    const { compatibility: ignored, ...input } = metadata;
+    expect(parseMetadata(input).compatibility).toEqual({
+      vehicles: [],
+      firmware: [],
+      nemesis: "",
+    });
+    expect(
+      parseMetadata({ ...input, compatibility: { nemesis: ">=1" } })
+        .compatibility.nemesis,
+    ).toBe(">=1");
+    expect(() =>
+      parseMetadata({ ...input, compatibility: { vehicles: 42 } }),
+    ).toThrow("Invalid metadata list");
+  });
   it("uses canonical URL components shared by the Python and vehicle clients", () => {
     for (const fixture of urlFixtures) {
       const value = publicVersion(

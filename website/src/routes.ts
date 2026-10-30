@@ -7,10 +7,17 @@ export type Route =
       number: number;
     }
   | { page: "package"; id: string; version: string }
-  | { page: "publish" | "moderate" | "help" };
+  | { page: "publish" | "moderate" | "help" }
+  | { page: "guides"; id: string; section: number };
 export function parseRoute(hash: string): Route {
   const [path, search = ""] = hash.replace(/^#/, "").split("?"),
     query = new URLSearchParams(search);
+  if (path === "guides" || path === "help" || path.startsWith("guides/"))
+    return {
+      page: "guides",
+      id: path.startsWith("guides/") ? path.slice(7) : "",
+      section: Number(query.get("section") || 0),
+    };
   if (path.startsWith("packages/")) {
     try {
       return {

@@ -204,3 +204,7 @@ Use **Run Package Manager when this USB is inserted** to control its execution d
 Use **Remove** on a package row to open a confirmation. **Also delete this package's USB data** is unchecked by default. Keeping data leaves it in the original package folder; importing the same folder later reuses it. Loose ZIP removal keeps shared data and sibling installers. This changes only USB files, never installed head-unit apps.
 
 See the [illustrated companion controls](USER-GUIDE.md#manage-the-usb-drive-on-your-computer).
+
+## Illustrated online guides
+
+Open [NEMESIS user and publisher guides](https://hmason55.github.io/nemesis-package-manager/#guides) for vehicle Settings/source choice, manual and registry USB preparation, compatibility warnings, and GitHub publisher onboarding. The hosted guides include labeled example illustrations and recovery steps. Package Manager itself retains its dedicated update workflow.

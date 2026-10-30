@@ -393,7 +393,7 @@ components:
   schemas:
     Metadata:
       type: object
-      required: [name, description, categories, compatibility, release_notes]
+      required: [name, description, categories, release_notes]
       properties:
         name: { type: string, minLength: 1, maxLength: 160 }
         description: { type: string, maxLength: 10000 }
@@ -401,7 +401,7 @@ components:
           { type: array, maxItems: 30, items: { type: string, maxLength: 160 } }
         compatibility:
           type: object
-          required: [vehicles, firmware, nemesis]
+          description: Optional advisory declarations. Exact case-insensitive values or '*' can be matched to a user profile; prose and ranges remain informational. Never a publication or installation gate.
           properties:
             vehicles: { type: array, items: { type: string } }
             firmware: { type: array, items: { type: string } }
