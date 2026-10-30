@@ -21,6 +21,9 @@ class MultipartRunnerTests(unittest.TestCase):
             def opened(request, **_):
                 requests.append(request)
                 self.assertEqual(request.get_header("X-upload-id"), "upload")
+                self.assertEqual(
+                    request.get_header("User-agent"), "NEMESIS-Registry-Validator"
+                )
                 return io.BytesIO(b"{}")
 
             with patch("tools.registry_upload.urlopen", side_effect=opened):
