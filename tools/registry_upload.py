@@ -22,7 +22,11 @@ def upload_large(job_url, token, archive, result, request_json):
     state = request_json(
         endpoint + "/start", token, {"sha256": result["sha256"], "size": result["size"]}
     )
-    headers = {"Authorization": "Bearer " + token, "X-Upload-ID": state["upload_id"]}
+    headers = {
+        "User-Agent": "NEMESIS-Registry-Validator",
+        "Authorization": "Bearer " + token,
+        "X-Upload-ID": state["upload_id"],
+    }
     try:
         with archive.open("rb") as source:
             number = 0

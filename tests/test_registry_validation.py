@@ -33,6 +33,10 @@ class ValidationRunnerTests(unittest.TestCase):
 
         def opened(request, **_):
             address = request if isinstance(request, str) else request.full_url
+            if address.startswith("https://registry.test/"):
+                self.assertEqual(
+                    request.get_header("User-agent"), "NEMESIS-Registry-Validator"
+                )
             if address.endswith("/claim"):
                 return io.BytesIO(json.dumps(job).encode())
             if address.startswith("https://api.github.com/"):

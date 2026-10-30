@@ -23,6 +23,7 @@ def request_json(url, token, data):
         url,
         data=json.dumps(data).encode(),
         headers={
+            "User-Agent": "NEMESIS-Registry-Validator",
             "Authorization": "Bearer " + token,
             "Content-Type": "application/json",
         },
@@ -88,6 +89,7 @@ def upload_artifact(job_url, token, archive, result):
             data=source,
             method="PUT",
             headers={
+                "User-Agent": "NEMESIS-Registry-Validator",
                 "Authorization": "Bearer " + token,
                 "Content-Type": "application/zip",
                 "Content-Length": str(result["size"]),
