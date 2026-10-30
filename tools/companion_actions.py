@@ -62,12 +62,15 @@ def handle_action(handler, route, length):
     The single server thread serializes these actions with imports. A stale tab
     cannot delete from a newly selected drive or change that drive's launcher.
     """
-    root = handler.server.bound_root(handler.headers.get("X-Companion-Drive", ""))
+    selection_id = handler.headers.get("X-Companion-Drive", "")
+    handler.server.bound_root(selection_id)
     if not 0 < length <= 8192:
         raise ValueError("Invalid request size.")
     data = json.loads(handler.rfile.read(length))
     if not isinstance(data, dict):
         raise ValueError("Supply action options.")
+    # Media can change while a request body is arriving, just as during an upload.
+    root = handler.server.bound_root(selection_id)
     if route == "/api/remove":
         remove_package(root, data.get("path"), data.get("delete_data"))
     else:

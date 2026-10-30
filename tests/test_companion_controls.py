@@ -5,9 +5,10 @@ import json
 import http.client
 import threading
 import unittest
+from types import SimpleNamespace
 from unittest.mock import patch
 from test_usb_companion import CompanionFixture, payload
-from tools.companion_actions import remove_package
+from tools.companion_actions import remove_package, handle_action
 from tools.companion_launcher import set_launcher, launcher_state, GUARD
 from tools.companion_packages import add_package
 from tools.companion_releases import latest_release, version_key
@@ -97,6 +98,29 @@ class USBControlTests(CompanionFixture):
         self.assertFalse(launcher_state(self.usb)["available"])
         (self.usb / "NEMESIS.data").write_text("not an ini")
         self.assertFalse(launcher_state(self.usb)["available"])
+
+    def test_volume_changed_during_json_read_keeps_package_and_data(self):
+        data = self.package()
+        with CompanionServer(usb=self.usb) as server:
+
+            class ChangedDrive(io.BytesIO):
+                def read(self, size=-1):
+                    body = super().read(size)
+                    server.device = -1
+                    return body
+
+            body = json.dumps(
+                {"path": "packages/Example", "delete_data": True}
+            ).encode()
+            handler = SimpleNamespace(
+                server=server,
+                headers={"X-Companion-Drive": server.selection_id},
+                rfile=ChangedDrive(body),
+            )
+            with self.assertRaisesRegex(ValueError, "Drive changed"):
+                handle_action(handler, "/api/remove", len(body))
+            self.assertEqual((data / "recording").read_text(), "keep")
+            self.assertTrue((data.parent / "NEMESIS.data").is_file())
 
     def test_json_actions_require_current_drive_binding(self):
         self.package()
