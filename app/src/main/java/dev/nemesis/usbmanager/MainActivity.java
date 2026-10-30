@@ -54,6 +54,10 @@ public final class MainActivity extends Activity {
     private TextView operationStatus;
     private TextView operationInstruction;
     private boolean destroyed;
+    private boolean cloudSelected;
+    private boolean sourcePrompted;
+    private String cloudQuery = "";
+    private java.util.concurrent.atomic.AtomicBoolean downloadCancelled = new java.util.concurrent.atomic.AtomicBoolean();
     private static final OperationCoordinator operations = new OperationCoordinator();
     private final Handler handler = new Handler();
     private boolean resumed;
@@ -80,6 +84,7 @@ public final class MainActivity extends Activity {
 
     @Override public void onCreate(Bundle state) {
         super.onCreate(state);
+        cloudSelected = "cloud".equals(getPreferences(MODE_PRIVATE).getString("source", "usb"));
         buildUi();
     }
     @Override protected void onResume() {
@@ -87,6 +92,7 @@ public final class MainActivity extends Activity {
         resumed = true;
         handler.removeCallbacks(monitorOperation);
         monitorOperation.run();
+        if (!sourcePrompted && !getPreferences(MODE_PRIVATE).contains("source")) { sourcePrompted = true; chooseSource(); }
     }
     @Override protected void onPause() {
         resumed = false;
@@ -95,6 +101,7 @@ public final class MainActivity extends Activity {
     }
     @Override protected void onDestroy() {
         destroyed = true;
+        downloadCancelled.set(true);
         handler.removeCallbacks(monitorOperation);
         for (Dialog dialog : new ArrayList<Dialog>(dialogs)) dialog.dismiss();
         dialogs.clear();
@@ -148,6 +155,9 @@ public final class MainActivity extends Activity {
         title.setMaxLines(1); title.setEllipsize(TextUtils.TruncateAt.END);
         title.setTypeface(Typeface.DEFAULT, Typeface.BOLD);
         header.addView(title, new LinearLayout.LayoutParams(0, -2, 1));
+        Button changeSource = button("Change Source"); changeSource.setTextSize(13);
+        header.addView(changeSource, spaced(dp(128), 48, 0, 6));
+        changeSource.setOnClickListener(new View.OnClickListener() { public void onClick(View view) { if (!unavailable()) chooseSource(); } });
         refreshButton = button("Refresh");
         Button help = button("Help");
         Button close = button("Close");
@@ -249,8 +259,10 @@ public final class MainActivity extends Activity {
     }
     private void filterItems(String previousKey) {
         items.clear(); selected = -1;
+        Set<String> installedIds = new HashSet<String>();
         for (PackageScanner.Item item : allItems) {
             if (!PackagePresentation.inCategory(item, category)) continue;
+            if (category == PackagePresentation.INSTALLED && item.id != null && !installedIds.add(item.id)) continue;
             if (PackagePresentation.key(item).equals(previousKey)) selected = items.size();
             items.add(item);
         }
@@ -274,6 +286,7 @@ public final class MainActivity extends Activity {
                 "No scripts on USB." };
             empty.setText(emptyMessages[category]);
         }
+        if (!busy && cloudSelected && items.isEmpty() && scanError == null) empty.setText(category == PackagePresentation.SCRIPTS ? "Scripts are available from USB Storage.\nUse Change Source to switch to USB." : category == PackagePresentation.UPDATES ? "No confirmed newer registry versions." : category == PackagePresentation.INSTALLED ? "No installed packages." : "No approved packages match your search.");
         updateButtons();
     }
     private PackageScanner.Item selection() {
@@ -315,7 +328,13 @@ public final class MainActivity extends Activity {
             public void run() {
                 try {
                     final File usb = PackageScanner.findUsbRoot();
-                    final ArrayList<PackageScanner.Item> next = PackageScanner.scan(usb);
+                    final ArrayList<PackageScanner.Item> next = new ArrayList<PackageScanner.Item>();
+                    String loadError = null;
+                    try {
+                        PackageSource source = cloudSelected ? cloudSource() : new UsbPackageSource(usb);
+                        for (PackageRecord record : source.list(cloudSelected ? cloudQuery : "")) next.add(record.local != null ? record.local : CloudPackageSource.item(record, null));
+                    } catch (Exception error) { loadError = "Cloud registry unavailable: " + error.getMessage(); }
+                    final String sourceError = loadError;
                     NemesisCli.Result query = NemesisCli.run("pkg-list");
                     final InstalledPackages registry = InstalledPackages.parse(query.rc, query.out);
                     if (registry.available() && !registry.names.isEmpty()) {
@@ -355,7 +374,7 @@ public final class MainActivity extends Activity {
                         public void run() {
                             if (destroyed) return;
                             allItems.clear(); allItems.addAll(next);
-                            scanError = registry.error;
+                            scanError = registry.error != null ? registry.error : sourceError;
                             empty.setText(usb == null ? "No packages found.\nInsert a USB drive with a packages/ folder, then tap Refresh." :
                                 "No packages found.\nAdd a release under packages/ on your USB, then tap Refresh.");
                             busy = false; filterItems(previousKey);
@@ -417,6 +436,7 @@ public final class MainActivity extends Activity {
     private void chooseAction() {
         final PackageScanner.Item item = selection();
         if (category == PackagePresentation.INSTALLED || unavailable() || !PackagePresentation.canInstall(item)) return;
+        if (item.remote != null && item.target == null) { download(item); return; }
         String action = PackagePresentation.action(item);
         confirm(action + " " + PackagePresentation.name(item) + "?",
             PackagePresentation.confirmation(item), action, new Runnable() {
@@ -446,7 +466,7 @@ public final class MainActivity extends Activity {
         if (command == null && !PackagePresentation.canInstall(item)) return;
         String description = (command == null ? (PackageScanner.EXECUTE.equals(item.kind) ? "Running script" : item.installed ? "Updating" : "Installing") :
             ("uninstall".equals(command) ? "Uninstalling" : "Launching")) + "\n" + PackagePresentation.name(item);
-        if (unavailable() || !operations.start(description, "install".equals(PackagePresentation.operation(item, command)) || "update".equals(PackagePresentation.operation(item, command)), new PackageTask(getApplicationContext(), item, command))) {
+        if (unavailable() || !operations.start(description, item.remote == null && ("install".equals(PackagePresentation.operation(item, command)) || "update".equals(PackagePresentation.operation(item, command))), new PackageTask(getApplicationContext(), item, command))) {
             message("Please wait", "Let the current action finish, then try again.");
             return;
         }
@@ -463,6 +483,11 @@ public final class MainActivity extends Activity {
             String operation = PackagePresentation.operation(item, command);
             NemesisCli.Result result;
             try {
+                if (command == null && item.remote != null) {
+                    android.content.SharedPreferences preferences = context.getSharedPreferences("MainActivity", Context.MODE_PRIVATE);
+                    new CloudPackageSource(preferences.getString("registry_url", ""), context.getCacheDir()).current(item.remote);
+                    CloudArchive.validate(item.target, item.remote);
+                }
                 result = command != null ? NemesisCli.run(command, item.id) :
                     (PackageScanner.EXECUTE.equals(item.kind) ? NemesisCli.execute(item) : NemesisCli.install(context, item));
             } catch (Exception error) { result = new NemesisCli.Result(1, error.toString()); }
@@ -478,7 +503,69 @@ public final class MainActivity extends Activity {
     }
     private void showDetails() {
         PackageScanner.Item item = selection();
-        if (item != null && !unavailable()) message(PackagePresentation.name(item), PackagePresentation.details(item));
+        if (item != null && !unavailable()) {
+            if (item.remote == null) message(PackagePresentation.name(item), PackagePresentation.details(item));
+            else {
+                final String id = item.id;
+                showDialog(PackagePresentation.name(item), PackagePresentation.details(item), "OK", null, "Choose version", new Runnable() { public void run() { chooseCloudVersion(id); } });
+            }
+        }
+    }
+    private void chooseCloudVersion(String id) {
+        final ArrayList<PackageScanner.Item> versions = new ArrayList<PackageScanner.Item>();
+        for (PackageScanner.Item item : allItems) if (item.remote != null && id.equals(item.id)) versions.add(item);
+        String[] labels = new String[versions.size()];
+        for (int i = 0; i < labels.length; i++) labels[i] = versions.get(i).version + " — " + PackagePresentation.action(versions.get(i));
+        android.app.AlertDialog dialog = new android.app.AlertDialog.Builder(this).setTitle("Choose package version").setItems(labels, new android.content.DialogInterface.OnClickListener() { public void onClick(android.content.DialogInterface dialog, int which) {
+            PackageScanner.Item item = versions.get(which);
+            if (PackagePresentation.canInstall(item)) download(item);
+            else message("Version not selected", "This version is already installed, older, locked, or its installed state is unavailable. Choose a newer version or check its details.");
+        } }).setNegativeButton("Cancel", null).create();
+        dialogs.add(dialog); dialog.show();
+    }
+    private CloudPackageSource cloudSource() throws Exception { return new CloudPackageSource(getPreferences(MODE_PRIVATE).getString("registry_url", ""), getCacheDir()); }
+    private void chooseSource() {
+        if (!resumed || destroyed || operations.isRunning()) return;
+        android.widget.LinearLayout panel = new android.widget.LinearLayout(this); panel.setOrientation(LinearLayout.VERTICAL); panel.setPadding(dp(20), dp(8), dp(20), dp(8));
+        final android.widget.RadioGroup sources = new android.widget.RadioGroup(this);
+        android.widget.RadioButton cloud = new android.widget.RadioButton(this); cloud.setId(1001); cloud.setText("Cloud Registry — browse and download packages"); sources.addView(cloud);
+        android.widget.RadioButton usb = new android.widget.RadioButton(this); usb.setId(1002); usb.setText("USB Storage — packages and scripts, available offline"); sources.addView(usb); sources.check(cloudSelected ? 1001 : 1002); panel.addView(sources);
+        final android.widget.CheckBox remember = new android.widget.CheckBox(this); remember.setText("Remember my selection"); remember.setChecked(getPreferences(MODE_PRIVATE).contains("source")); panel.addView(remember);
+        final android.widget.EditText address = new android.widget.EditText(this); address.setHint("Registry HTTPS address"); address.setSingleLine(true); address.setInputType(android.text.InputType.TYPE_CLASS_TEXT | android.text.InputType.TYPE_TEXT_VARIATION_URI); address.setText(getPreferences(MODE_PRIVATE).getString("registry_url", "")); panel.addView(address);
+        final android.widget.EditText search = new android.widget.EditText(this); search.setHint("Search cloud packages (optional)"); search.setSingleLine(true); search.setText(cloudQuery); panel.addView(search);
+        final android.widget.EditText profile = new android.widget.EditText(this); profile.setHint("Vehicle / firmware notes (optional)"); profile.setText(getPreferences(MODE_PRIVATE).getString("profile", android.os.Build.MODEL + " / " + android.os.Build.DISPLAY)); panel.addView(profile);
+        android.widget.ScrollView scroll = new android.widget.ScrollView(this); scroll.addView(panel);
+        final android.app.AlertDialog dialog = new android.app.AlertDialog.Builder(this).setTitle("Choose package source").setView(scroll).setPositiveButton("Continue", null).setNegativeButton("Cancel", null).create();
+        dialogs.add(dialog); dialog.show();
+        dialog.getButton(android.app.AlertDialog.BUTTON_POSITIVE).setOnClickListener(new View.OnClickListener() { public void onClick(View view) {
+            if (unavailable()) { android.widget.Toast.makeText(MainActivity.this, "Wait for the current refresh to finish", android.widget.Toast.LENGTH_SHORT).show(); return; }
+            boolean nextCloud = sources.getCheckedRadioButtonId() == 1001;
+            if (nextCloud) try { new CloudPackageSource(address.getText().toString().trim(), getCacheDir()); } catch (Exception error) { address.setError("Enter the registry HTTPS address"); return; }
+            cloudSelected = nextCloud; cloudQuery = search.getText().toString();
+            android.content.SharedPreferences.Editor edit = getPreferences(MODE_PRIVATE).edit().putString("registry_url", address.getText().toString().trim()).putString("profile", profile.getText().toString());
+            if (remember.isChecked()) edit.putString("source", cloudSelected ? "cloud" : "usb"); else edit.remove("source"); edit.apply(); dialog.dismiss(); refresh();
+        } });
+    }
+    private void download(final PackageScanner.Item selectedItem) {
+        busy = true; updateButtons(); downloadCancelled.set(false);
+        final android.app.ProgressDialog dialog = new android.app.ProgressDialog(this); dialog.setTitle("Download " + selectedItem.title); dialog.setMessage("Verifying approved release…"); dialog.setProgressStyle(android.app.ProgressDialog.STYLE_HORIZONTAL); dialog.setMax(100); dialog.setCancelable(false);
+        dialog.setButton(android.content.DialogInterface.BUTTON_NEGATIVE, "Cancel download", new android.content.DialogInterface.OnClickListener() { public void onClick(android.content.DialogInterface d, int which) { downloadCancelled.set(true); } });
+        dialogs.add(dialog); dialog.show();
+        new Thread(new Runnable() { public void run() {
+            try {
+                final PackageScanner.Item acquired = cloudSource().acquire(selectedItem.remote, new PackageSource.Progress() {
+                    public boolean cancelled() { return downloadCancelled.get() || destroyed; }
+                    public void update(final long received, final long total) { runOnUiThread(new Runnable() { public void run() { if (!destroyed) { dialog.setProgress((int) (received * 100 / total)); dialog.setMessage(received / 1024 + " / " + total / 1024 + " KiB"); } } }); }
+                });
+                acquired.installed = selectedItem.installed; acquired.installedStateKnown = selectedItem.installedStateKnown; acquired.installedVersion = selectedItem.installedVersion; acquired.installedVersionSaved = selectedItem.installedVersionSaved; acquired.locked = selectedItem.locked; acquired.types = selectedItem.types;
+                acquired.customDataDir = new File(new File(getFilesDir(), "package-history"), acquired.id);
+                runOnUiThread(new Runnable() { public void run() {
+                    busy = false; dialog.dismiss(); if (destroyed || downloadCancelled.get()) return; updateButtons();
+                    String profile = getPreferences(MODE_PRIVATE).getString("profile", android.os.Build.MODEL + " / " + android.os.Build.DISPLAY);
+                    confirm("Install " + acquired.title + " " + acquired.version + "?", "Download verified against registry approval.\n\nYour device: " + profile + "\n\n" + acquired.remote.compatibility + "\n\nCompatibility is advisory. A mismatch or missing information does not establish support. Check the publisher's requirements before continuing.\n\n" + acquired.remote.releaseNotes, "Install", new Runnable() { public void run() { startOperation(acquired, null); } });
+                } });
+            } catch (final Exception error) { runOnUiThread(new Runnable() { public void run() { busy = false; dialog.dismiss(); if (!destroyed) { updateButtons(); message("Download not completed", error.getMessage()); } } }); }
+        } }, "nemesis-cloud-download").start();
     }
     private void showHelp() {
         message("Help", "Getting started\n" +

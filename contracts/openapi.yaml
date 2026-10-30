@@ -1,0 +1,466 @@
+openapi: 3.1.0
+info:
+  title: NEMESIS Registry API
+  version: 1.0.0
+  description: Anonymous discovery and verified downloads; GitHub-authenticated publishing and administrator moderation.
+servers:
+  - url: https://REGISTRY_WORKER.workers.dev
+paths:
+  /v1/packages:
+    get:
+      operationId: listPackages
+      parameters:
+        - { name: q, in: query, schema: { type: string, maxLength: 160 } }
+        - { name: category, in: query, schema: { type: string } }
+        - {
+            name: sort,
+            in: query,
+            schema: { type: string, enum: [name, recent], default: name },
+          }
+        - {
+            name: page,
+            in: query,
+            schema: { type: integer, minimum: 1, maximum: 10000, default: 1 },
+          }
+      responses:
+        "200":
+          description: Up to 50 approved packages, with ETag and a 60-second cache lifetime.
+          content:
+            application/json:
+              schema:
+                type: object
+                required: [schema_version, packages, page, next_page]
+                properties:
+                  schema_version: { const: 1 }
+                  packages:
+                    {
+                      type: array,
+                      items: { $ref: "#/components/schemas/Package" },
+                    }
+                  page: { type: integer }
+                  next_page: { type: [integer, "null"] }
+                  total: { type: integer, minimum: 0 }
+                  categories: { type: array, items: { type: string } }
+                  sort: { type: string, enum: [name, recent] }
+        "304": { description: ETag unchanged }
+  /v1/packages/{id}:
+    parameters: [{ $ref: "#/components/parameters/Id" }]
+    get:
+      operationId: getPackage
+      responses:
+        "200":
+          description: Package metadata plus all approved versions, newest submission first; order does not establish version precedence.
+          content:
+            application/json:
+              schema:
+                allOf:
+                  - { $ref: "#/components/schemas/Package" }
+                  - {
+                      type: object,
+                      required: [versions],
+                      properties:
+                        {
+                          versions:
+                            {
+                              type: array,
+                              items: { $ref: "#/components/schemas/Version" },
+                            },
+                        },
+                    }
+        "404": { $ref: "#/components/responses/NotFound" }
+  /v1/packages/{id}/versions/{version}:
+    parameters:
+      [
+        { $ref: "#/components/parameters/Id" },
+        { $ref: "#/components/parameters/Version" },
+      ]
+    get:
+      operationId: getVersion
+      responses:
+        "200":
+          description: Approved immutable artifact identity. Clients refresh this before acquisition and use SHA-256 to verify exact bytes.
+          content:
+            {
+              application/json:
+                { schema: { $ref: "#/components/schemas/Version" } },
+            }
+        "404": { $ref: "#/components/responses/NotFound" }
+  /v1/packages/{id}/versions/{version}/download:
+    parameters:
+      [
+        { $ref: "#/components/parameters/Id" },
+        { $ref: "#/components/parameters/Version" },
+      ]
+    get:
+      operationId: downloadVersion
+      responses:
+        "200":
+          description: Approved ZIP streamed from private R2. No redirects, account, or client credentials required. Response is not cached.
+          headers:
+            X-Checksum-SHA256: { schema: { type: string } }
+          content:
+            { application/zip: { schema: { type: string, format: binary } } }
+        "404": { $ref: "#/components/responses/NotFound" }
+  /auth/start:
+    get:
+      operationId: startLogin
+      parameters:
+        [
+          {
+            name: challenge,
+            in: query,
+            required: true,
+            schema: { type: string, description: Browser S256 challenge },
+          },
+        ]
+      responses:
+        {
+          "302":
+            {
+              description: GitHub App authorization redirect; sets secure HttpOnly transaction cookie,
+            },
+        }
+  /auth/callback:
+    get:
+      operationId: githubCallback
+      parameters:
+        [
+          { name: state, in: query, required: true, schema: { type: string } },
+          { name: code, in: query, required: true, schema: { type: string } },
+        ]
+      responses:
+        {
+          "302":
+            {
+              description: "Fixed Pages URL with single-use exchange code in fragment, valid for 60 seconds",
+            },
+        }
+  /auth/exchange:
+    post:
+      operationId: exchangeLogin
+      requestBody:
+        required: true
+        content:
+          {
+            application/json:
+              {
+                schema:
+                  {
+                    type: object,
+                    required: [code, verifier],
+                    properties:
+                      { code: { type: string }, verifier: { type: string } },
+                  },
+              },
+          }
+      responses:
+        {
+          "200":
+            {
+              description: Opaque registry token and expires_in=3600; retain token in memory,
+            },
+          "401":
+            { description: "Expired, replayed, or wrong-verifier exchange" },
+        }
+  /auth/logout:
+    post:
+      operationId: logout
+      security: [{ registrySession: [] }]
+      responses: { "200": { description: Session revoked } }
+  /v1/publisher/me:
+    get:
+      operationId: currentPublisher
+      security: [{ registrySession: [] }]
+      responses:
+        {
+          "200":
+            {
+              description: "GitHub ID, login, administrator flag, and app installation URL",
+            },
+        }
+  /v1/publisher/repositories:
+    get:
+      operationId: publisherRepositories
+      security: [{ registrySession: [] }]
+      responses:
+        {
+          "200":
+            { description: Registered repositories and authorization status },
+        }
+    post:
+      operationId: registerRepository
+      security: [{ registrySession: [] }]
+      requestBody:
+        required: true
+        content:
+          {
+            application/json:
+              {
+                schema:
+                  {
+                    type: object,
+                    required: [repository, redistribution_consent],
+                    properties:
+                      {
+                        repository: { type: string },
+                        redistribution_consent: { const: true },
+                      },
+                  },
+              },
+          }
+      responses:
+        {
+          "200": { description: Verified public repository registered },
+          "403": { description: User permission or app installation missing },
+        }
+  /v1/publisher/repositories/{repositoryId}/releases:
+    parameters:
+      [
+        {
+          name: repositoryId,
+          in: path,
+          required: true,
+          schema: { type: integer },
+        },
+      ]
+    get:
+      operationId: repositoryReleases
+      security: [{ registrySession: [] }]
+      responses:
+        {
+          "200":
+            {
+              description: Most recent 100 GitHub releases with assets; current repository permissions checked,
+            },
+        }
+  /v1/publisher/submissions:
+    get:
+      operationId: publisherSubmissions
+      security: [{ registrySession: [] }]
+      responses:
+        {
+          "200":
+            {
+              description: Latest 200 submissions for the publisher's registered repositories,
+            },
+        }
+    post:
+      operationId: submitVersion
+      security: [{ registrySession: [] }]
+      requestBody:
+        {
+          required: true,
+          content:
+            {
+              application/json:
+                { schema: { $ref: "#/components/schemas/SubmissionInput" } },
+            },
+        }
+      responses:
+        {
+          "202":
+            {
+              description: Durable validation job ID; duplicate asset returns existing ID,
+            },
+          "409":
+            {
+              description: Ownership conflict or immutable version already published,
+            },
+        }
+  /v1/publisher/sync:
+    post:
+      operationId: manualSync
+      security: [{ registrySession: [] }]
+      requestBody:
+        {
+          required: true,
+          content:
+            {
+              application/json:
+                { schema: { $ref: "#/components/schemas/SubmissionInput" } },
+            },
+        }
+      responses:
+        {
+          "202":
+            {
+              description: Same validation and moderation path as explicit submission,
+            },
+        }
+  /v1/publisher/events:
+    get:
+      operationId: publisherReleaseEvents
+      security: [{ registrySession: [] }]
+      responses:
+        {
+          "200":
+            {
+              description: "Latest 100 automatic release events, including those requiring manual asset selection",
+            },
+        }
+  /v1/admin/submissions:
+    get:
+      operationId: reviewQueue
+      security: [{ registrySession: [] }]
+      responses:
+        {
+          "200":
+            {
+              description: "Latest 200 submissions with metadata, validation reports, and hashes",
+            },
+          "403": { description: Administrator required },
+        }
+  /v1/admin/submissions/{submissionId}/{action}:
+    parameters:
+      - {
+          name: submissionId,
+          in: path,
+          required: true,
+          schema: { type: string },
+        }
+      - {
+          name: action,
+          in: path,
+          required: true,
+          schema: { enum: [approve, reject, withdraw, retry] },
+        }
+    post:
+      operationId: moderateSubmission
+      security: [{ registrySession: [] }]
+      requestBody:
+        {
+          required: true,
+          content:
+            {
+              application/json:
+                {
+                  schema:
+                    {
+                      type: object,
+                      properties: { reason: { type: string, maxLength: 2000 } },
+                    },
+                },
+            },
+        }
+      responses:
+        {
+          "200": { description: Moderation transition recorded in audit log },
+          "403": { description: Administrator required },
+          "409":
+            {
+              description: "Invalid transition, ownership conflict, or missing validated artifact",
+            },
+        }
+  /webhooks/github:
+    post:
+      operationId: githubWebhook
+      responses:
+        {
+          "202":
+            {
+              description: HMAC-verified delivery recorded and deduplicated; release discovery is processed by scheduled job,
+            },
+          "401": { description: Invalid signature },
+        }
+components:
+  securitySchemes:
+    registrySession:
+      {
+        type: http,
+        scheme: bearer,
+        description: "Opaque registry session token, not a GitHub access token",
+      }
+  parameters:
+    Id:
+      {
+        name: id,
+        in: path,
+        required: true,
+        schema: { type: string, maxLength: 64 },
+      }
+    Version:
+      {
+        name: version,
+        in: path,
+        required: true,
+        schema: { type: string, maxLength: 128 },
+      }
+  responses:
+    NotFound:
+      {
+        description: No approved package/version; also used for withdrawn versions,
+      }
+  schemas:
+    Metadata:
+      type: object
+      required: [name, description, categories, compatibility, release_notes]
+      properties:
+        name: { type: string, minLength: 1, maxLength: 160 }
+        description: { type: string, maxLength: 10000 }
+        categories:
+          { type: array, maxItems: 30, items: { type: string, maxLength: 160 } }
+        compatibility:
+          type: object
+          required: [vehicles, firmware, nemesis]
+          properties:
+            vehicles: { type: array, items: { type: string } }
+            firmware: { type: array, items: { type: string } }
+            nemesis: { type: string }
+        release_notes: { type: string, maxLength: 20000 }
+    Package:
+      allOf:
+        - { $ref: "#/components/schemas/Metadata" }
+        - {
+            type: object,
+            required: [id, repository],
+            properties:
+              {
+                id: { type: string },
+                repository: { type: string },
+                publisher: { type: string },
+                latest_published_version:
+                  {
+                    type: string,
+                    description: Most recently approved version; does not establish version precedence,
+                  },
+                published_at:
+                  {
+                    type: integer,
+                    description: Unix seconds of most recent approval,
+                  },
+                version_count: { type: integer, minimum: 1 },
+              },
+          }
+    Version:
+      allOf:
+        - { $ref: "#/components/schemas/Metadata" }
+        - type: object
+          required:
+            [
+              package_id,
+              version,
+              sha256,
+              size,
+              download_url,
+              release_id,
+              asset_id,
+            ]
+          properties:
+            package_id: { type: string }
+            version: { type: string }
+            sha256: { type: string, pattern: "^[a-f0-9]{64}$" }
+            size: { type: integer, minimum: 1, maximum: 536870912 }
+            download_url: { type: string, format: uri }
+            release_id: { type: integer }
+            asset_id: { type: integer }
+    SubmissionInput:
+      type: object
+      required:
+        [repository_id, release_id, asset_id, package_id, version, metadata]
+      properties:
+        repository_id: { type: integer }
+        release_id: { type: integer }
+        asset_id: { type: integer }
+        package_id: { type: string }
+        version: { type: string }
+        metadata: { $ref: "#/components/schemas/Metadata" }

@@ -1,0 +1,185 @@
+# Cloud registry: development, deployment, and operation
+
+The registry includes the GitHub Pages website (`website/`), Cloudflare Worker
+(`registry/`), D1 migrations, a private R2 package store, trusted Actions
+validation, and optional clients in both existing applications. The API contract
+is `contracts/openapi.yaml`. Nothing in the local USB workflow requires it.
+
+Account owners can start with [the step-by-step setup checklist](CLOUD-SETUP-CHECKLIST.md),
+which separates manual account setup from work Codex can complete after login.
+
+## Local development
+
+Use Node 24, Python 3.12, JDK 17, and the existing Android SDK requirements.
+
+```sh
+npm ci
+npm run check
+npm test
+npm run build
+cd registry
+npx wrangler d1 migrations apply nemesis-local --local
+npm run dev
+```
+
+Run `npm run dev --workspace website` in a second terminal. Configure
+`VITE_REGISTRY_URL=http://localhost:8787` in the website's local environment for
+browser development. Native clients require HTTPS and do not accept this local
+HTTP endpoint. Use a staging Worker for client integration tests.
+
+Copy `registry/.dev.vars.example` to ignored `registry/.dev.vars` for local
+authentication testing. GitHub callback URLs must exactly match the actual
+Worker `/auth/callback` URL. Production and staging should use separate GitHub
+Apps and secrets. Never put any secret in a `VITE_` variable.
+
+## Provision staging and production
+
+1. In Cloudflare, create separate D1 databases and private R2 buckets named as in
+   `registry/wrangler.jsonc`. Replace each environment's D1 ID. Keep public R2
+   access disabled. The Worker streams approved objects through its R2 binding.
+2. Create a GitHub App for each environment. Request **Metadata: read** and
+   **Contents: read** repository permissions, selected-repository installation,
+   and user authorization. Leave **Request user authorization during installation**
+   disabled: website sign-in establishes the OAuth state/PKCE transaction. Set
+   the Setup URL to the website's `#publish` route. Subscribe to Release, Repository, Installation, and
+   Installation repositories events. Set the callback and webhook URLs to
+   `/auth/callback` and `/webhooks/github` on that environment's Worker.
+3. Set non-secret Worker vars: `GITHUB_APP_ID`, `GITHUB_APP_SLUG`,
+   `GITHUB_CLIENT_ID`, `ADMIN_IDS` (comma-separated numeric GitHub user IDs),
+   `VALIDATOR_REPOSITORY`, `VALIDATION_ENVIRONMENT` (`staging` or `production`),
+   and `SITE_URL`. The Pages site URL includes `/nemesis-package-manager/`.
+4. Configure Worker secrets with `wrangler secret put NAME --env staging`
+   (repeat for production): `GITHUB_CLIENT_SECRET`, `GITHUB_PRIVATE_KEY`,
+   `GITHUB_WEBHOOK_SECRET`, `SESSION_ENCRYPTION_KEY`, `VALIDATOR_TOKEN`, and
+   `GITHUB_DISPATCH_TOKEN`. Generate independent random values for the webhook,
+   validator, and encryption secrets. The encryption key is 32 random bytes
+   encoded as 64 hex characters. The private key must be PEM **PKCS#8**, not
+   PKCS#1; convert the downloaded GitHub App key with
+   `openssl pkcs8 -topk8 -nocrypt -in app.pem -out app-pkcs8.pem`.
+5. The dispatch token is a dedicated fine-grained automation credential with
+   **Actions: write** only on the trusted registry repository. It triggers the
+   validation workflow on `main`; it has no publisher-repository write access.
+6. Create GitHub environments `registry-staging` and `registry-production`.
+   Each needs `REGISTRY_API_URL` as a variable and `REGISTRY_VALIDATOR_TOKEN` as
+   a secret matching that Worker's validator token. Restrict the environments
+   to `main`. Validation workflow code must be on the trusted default branch.
+7. Apply migrations with `npx wrangler d1 migrations apply nemesis-staging
+   --remote --env staging`, then `npm run deploy:staging --workspace registry`.
+   Repeat with the production database and environment only after staging passes.
+8. Set repository variable `REGISTRY_API_URL` to the production Worker HTTPS
+   address. Enable GitHub Pages using **GitHub Actions**, then run **Deploy
+   registry website**. No custom domain is needed. Website publication is manual;
+   ordinary main pushes run checks without deploying the cloud components.
+
+GitHub user tokens are encrypted in D1; registry bearer tokens are stored as
+hashes. Browser bearer tokens stay in memory and expire after one hour. Reloading
+the website requires sign-in again. OAuth handoff codes expire in 60 seconds and
+require the originating browser verifier. Cookie-based cross-site API sessions
+are not required. An API encryption-key change invalidates outstanding sessions.
+
+## Publish and moderate
+
+Install the GitHub App on a public repository, sign in, and register it with
+redistribution consent. Write, maintain, or admin permission is required. Select
+a release and installable ZIP and enter its **exact internal** NEMESIS ID and
+version. The version need not be SemVer. ZIPs can have a root manifest or a
+single enclosing directory; wrapper USB releases and executable descriptors are
+not accepted. Limits are 512 MiB compressed, 3 GiB declared expansion, 20,000
+members, and a 64 KiB package manifest. All members are read for CRC checks, but
+no package hooks are executed.
+
+Submission states are `queued → validating → review → approved`. Validation
+errors become `failed` and can be retried by an administrator. Rejection is
+terminal for that asset; submit a corrected release asset with a new ID.
+Approval claims the global package ID for that repository. Every later version
+also needs approval. An approved version's bytes cannot be replaced, including
+after withdrawal. Package descriptions and compatibility are versioned with
+submissions; changes reach the public listing only through approval.
+
+Validation uploads above 64 MiB use 8 MiB R2 multipart requests, avoiding the
+Cloudflare request-body limit without changing the package size limit. The trusted
+runner hashes the complete ZIP; the Worker verifies each part's checksum before
+R2 assembly. Multipart ETags are never substituted for the package SHA-256.
+Incomplete uploads are aborted on failure and stale sessions are cleaned on the
+Worker schedule. Apply migration `0002_multipart.sql` along with the initial schema.
+
+Release webhooks are durably queued and processed every ten minutes. A registered
+repository with one package and exactly one ZIP can create a proposal
+automatically; the release tag (without a leading numeric `v`) is checked against
+the manifest by validation. Multiple packages/assets require manual selection in
+the publisher portal. Drafts do not publish. Queued validation dispatches retry
+on the schedule, and validation leases time out after an hour. Repository
+transfers, installation removal, suspension, and privatization suspend publishing;
+re-register after authorization is verified again. Previously approved R2 copies
+remain available unless withdrawn.
+
+An administrator configured by numeric GitHub ID uses **Review** to inspect
+reports, ownership, hashes, and metadata. Validation success alone never publishes
+a package. Registry approval plus a hash is an integrity/trust assertion, not a
+publisher signature or a guarantee that package code is safe.
+
+## Configure clients
+
+Companion from source:
+
+```sh
+python -m tools.usb_companion --registry-url https://YOUR_WORKER.workers.dev
+```
+
+Standalone companion users can set environment variable `NEMESIS_REGISTRY_URL`
+before launching. Local imports work with no registry configured. Cloud preparation
+downloads to temporary computer storage, checks approval and bytes, then uses the
+same importer and data-preserving replacement as manual imports. Batch results are
+per package, not an all-or-nothing transaction. Cancellation stops before the next
+USB publication; an already-running directory swap finishes. Duplicate USB
+identities require an explicit destination. Loose ZIPs remain view-only.
+
+On the vehicle choose **Change Source**, enter the registry HTTPS address, and
+optionally save vehicle/firmware notes and a search term. Choose **Remember my
+selection** to skip the picker next time. Installed packages remain available in
+either source. Cloud versions are individually selectable rows; **Details → Choose
+version** also exposes versions for installed packages, including versions whose
+ordering is unknown. Equal/older versions keep the existing no-downgrade behavior. Downloads are
+bounded to a 512 MiB private installer cache, verified before confirmation, and
+checked against current approval again before NEMESIS installation. Scripts stay
+in USB mode. Compatibility requirements and device notes are advisory even when
+they conflict; read the warning before confirming.
+
+## Withdrawal, backups, and incident response
+
+Withdraw a version in **Review**. Fresh API discovery excludes it immediately;
+metadata caches may retain it for up to 60 seconds. Its download endpoint checks
+approval on every request and is not cached. Existing downloads/offline copies
+cannot be recalled, and withdrawal does not uninstall anything on vehicles.
+
+Before schema migrations export a private D1 backup:
+
+```sh
+npx wrangler d1 export nemesis-production --remote --env production --output backup.sql
+```
+
+Backups contain encrypted sessions and publisher information; store them privately.
+For recovery create a replacement D1 database, import the backup with `wrangler d1
+execute DATABASE --remote --file backup.sql`, bind staging to it, verify counts and
+approved-version/R2 consistency, then switch production's binding. Keep matching
+encryption secrets when restoring sessions, or delete sessions and auth tables to
+force sign-in. R2 artifacts are immutable and separate from D1; retain independent
+object backups and test recovery. Retain approved/withdrawn bytes for audit; unused
+validation objects require deliberate cleanup after checking D1 references.
+
+Structured logs record job, synchronization, and API errors without credentials or
+OAuth query strings. D1 `audit` records moderation and publishing events. Invocation
+request logging is disabled. Alert on recurring dispatch failures, validation
+timeouts, missing R2 objects, and sustained API errors. Rotate automation credentials
+and revoke sessions if compromised. A D1 read failure fails downloads closed.
+
+## Release gate
+
+Run Node checks/tests/build, Python and Java tests/coverage, API 19 UI tests, APK
+build, and standalone companion smoke tests on Windows and Linux. Then verify a
+real GitHub submission through staging approval, companion download, and vehicle
+installation. Real hardware must establish TLS 1.2/certificate verification,
+available cache space, and NEMESIS access to the private cached ZIP **without USB**.
+Never bypass certificate or hostname verification. Simulator/host tests alone do
+not establish head-unit compatibility. Supply infrastructure/secrets and pass this
+gate before advertising the service as deployed or production validated.

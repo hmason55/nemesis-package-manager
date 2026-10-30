@@ -1,0 +1,71 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <meta name="referrer" content="no-referrer" />
+    <meta
+      http-equiv="Content-Security-Policy"
+      content="default-src 'self'; connect-src 'self' https: http://localhost:8787; style-src 'self'; script-src 'self'; base-uri 'self'; object-src 'none'"
+    />
+    <title>NEMESIS Package Registry</title>
+    <meta
+      name="description"
+      content="Discover community packages for NEMESIS. Prepare a USB drive, install in your vehicle, or publish a package with GitHub."
+    />
+    <link rel="stylesheet" href="/src/style.css" />
+  </head>
+  <body>
+    <a class="skip-link" href="#content">Skip to package content</a>
+    <header class="site-header">
+      <div class="header-inner">
+        <a class="brand" href="#packages" aria-label="NEMESIS Registry home"
+          ><span class="brand-mark" aria-hidden="true">N</span>NEMESIS
+          <span class="brand-label">packages</span></a
+        >
+        <nav aria-label="Main navigation">
+          <a id="browse" href="#packages">Packages</a
+          ><a id="publish" href="#publish">Publish</a
+          ><a id="help" href="#help">Help</a
+          ><a id="moderate" href="#moderate" hidden>Review</a>
+        </nav>
+        <div class="account">
+          <button id="signin" type="button">Sign in with GitHub</button
+          ><button id="signout" type="button" hidden>Sign out</button>
+        </div>
+      </div>
+    </header>
+    <div class="search-band">
+      <form id="search" role="search">
+        <label class="sr-only" for="search-query">Search packages</label
+        ><input
+          id="search-query"
+          type="search"
+          maxlength="160"
+          placeholder="Search packages…"
+          autocomplete="off"
+        /><button type="submit" class="primary">Search</button>
+      </form>
+    </div>
+    <div id="notice" role="status" aria-live="polite" aria-atomic="true"></div>
+    <main id="content" tabindex="-1"></main>
+    <footer class="site-footer">
+      <div>
+        <strong>NEMESIS community registry</strong>
+        <p>
+          Use packages through NEMESIS Package Manager. Always check publisher
+          requirements.
+        </p>
+        <a href="#help">Package help</a> ·
+        <a
+          href="https://github.com/hmason55/nemesis-package-manager"
+          target="_blank"
+          rel="noopener noreferrer"
+          >Source and documentation</a
+        >
+      </div>
+      <button id="theme" type="button" class="quiet">Use dark theme</button>
+    </footer>
+    <script type="module" src="/src/main.ts"></script>
+  </body>
+</html>

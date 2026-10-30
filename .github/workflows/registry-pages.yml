@@ -1,0 +1,43 @@
+name: Deploy registry website
+on:
+  workflow_dispatch:
+permissions:
+  contents: read
+  pages: write
+  id-token: write
+concurrency:
+  group: registry-pages
+  cancel-in-progress: false
+jobs:
+  build:
+    if: github.ref == 'refs/heads/main'
+    runs-on: ubuntu-24.04
+    steps:
+      - uses: actions/checkout@v6
+      - uses: actions/setup-node@v5
+        with:
+          node-version: '24'
+          cache: npm
+      - run: npm ci
+      - run: npm run check
+      - run: npm test
+      - name: Require configured HTTPS registry
+        env:
+          REGISTRY_API_URL: ${{ vars.REGISTRY_API_URL }}
+        run: node -e "const u=new URL(process.env.REGISTRY_API_URL); if(u.protocol!=='https:' || u.username || u.password || u.search || u.hash || u.pathname!=='/') process.exit(1)"
+      - run: npm run build
+        env:
+          VITE_REGISTRY_URL: ${{ vars.REGISTRY_API_URL }}
+      - uses: actions/configure-pages@v5
+      - uses: actions/upload-pages-artifact@v4
+        with:
+          path: website/dist
+  deploy:
+    needs: build
+    runs-on: ubuntu-24.04
+    environment:
+      name: github-pages
+      url: ${{ steps.deployment.outputs.page_url }}
+    steps:
+      - uses: actions/deploy-pages@v4
+        id: deployment

@@ -42,6 +42,7 @@ def smoke(executable):
                 for path, expected in (
                     ("/", b"USB companion"),
                     ("/app.js", b"X-Companion-Token"),
+                    ("/cloud.js", b"/api/cloud/start"),
                     ("/style.css", b":root"),
                     ("/api/state", b"drives"),
                 ):

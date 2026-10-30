@@ -35,7 +35,7 @@ public final class PackagePresentationTest {
         check(PackagePresentation.completion(item, "uninstall", 0, null).output.contains("data folder were kept"), "uninstall explains USB data retention");
         check("Install".equals(PackagePresentation.action(item)), "new package action");
         item.installed = true;
-        check("Update unavailable".equals(PackagePresentation.action(item)) && !PackagePresentation.canInstall(item), "missing installed version cannot trigger a blind update");
+        check("Install version".equals(PackagePresentation.action(item)), "missing installed version does not claim update");
         item.installedVersion = "1.1";
         check("1.1".equals(PackagePresentation.versionColumn(item, PackagePresentation.INSTALLED)), "Installed shows only installed version");
         check("1.1 \u2192 1.2".equals(PackagePresentation.versionColumn(item, PackagePresentation.UPDATES)), "Updates compares installed and USB versions in one column");
