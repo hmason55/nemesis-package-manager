@@ -1,0 +1,39 @@
+name: Validate registry installer
+on:
+  workflow_dispatch:
+    inputs:
+      submission_id:
+        description: Registry submission ID
+        required: true
+        type: string
+      environment:
+        description: Registry environment
+        required: true
+        type: choice
+        options: [staging, production]
+permissions:
+  contents: read
+concurrency:
+  group: registry-validation-${{ inputs.environment }}-${{ inputs.submission_id }}
+  cancel-in-progress: false
+jobs:
+  validate:
+    if: github.ref == 'refs/heads/main' && contains(fromJSON('["staging","production"]'), inputs.environment)
+    runs-on: ubuntu-24.04
+    timeout-minutes: 30
+    environment: registry-${{ inputs.environment }}
+    steps:
+      - uses: actions/checkout@v6
+        with:
+          ref: main
+          persist-credentials: false
+      - uses: actions/setup-python@v6
+        with:
+          python-version: '3.12'
+      - name: Validate archive without running package code
+        env:
+          SUBMISSION_ID: ${{ inputs.submission_id }}
+          REGISTRY_API_URL: ${{ vars.REGISTRY_API_URL }}
+          REGISTRY_VALIDATOR_TOKEN: ${{ secrets.REGISTRY_VALIDATOR_TOKEN }}
+          GITHUB_TOKEN: ${{ github.token }}
+        run: python -m tools.registry_validate "$SUBMISSION_ID"

@@ -8,8 +8,8 @@ idle browser keep-alive connections blocking subsequent requests.
 """
 
 import configparser
-import json
 import secrets
+import threading
 import zipfile
 from http.server import HTTPServer
 from tools.companion_transport import CompanionTransport
@@ -18,9 +18,10 @@ from urllib.parse import urlsplit
 
 from tools.companion_drives import drive_candidates, drive_root
 from tools.companion_metadata import scan_drive
-from tools.companion_uploads import UPLOAD_ROUTES, handle_upload
-from tools.companion_actions import handle_action
+from tools.companion_mutations import mutate
 from tools.companion_releases import latest_release
+from tools.companion_cloud_http import cloud_get, cloud_post
+from tools.companion_cloud import CloudJobs
 
 ASSETS = Path(__file__).with_name("companion_ui")
 EXPECTED_ERRORS = (
@@ -35,13 +36,15 @@ EXPECTED_ERRORS = (
 class CompanionServer(HTTPServer):
     """Serialize drive operations so imports and selection cannot race each other."""
 
-    def __init__(self, port=0, usb=None):
+    def __init__(self, port=0, usb=None, registry_url=""):
+        self.drive_lock = threading.RLock()
         self.usb = drive_root(usb) if usb else None
         self.device = self.usb.stat().st_dev if self.usb else None
         super().__init__(("127.0.0.1", port), CompanionHandler)
         self.token = secrets.token_urlsafe(32)
         self.selection_id = secrets.token_urlsafe(24)
         self.origin = f"http://127.0.0.1:{self.server_port}"
+        self.cloud = CloudJobs(self, registry_url)
 
     def selected_root(self):
         """Revalidate selection before writes, including after a long upload."""
@@ -92,6 +95,8 @@ class CompanionHandler(CompanionTransport):
         if not self.authorized(api=path.startswith("/api/")):
             return
         try:
+            if cloud_get(self, urlsplit(self.path)):
+                return
             if path == "/api/manager-release":
                 self.respond(200, latest_release())
                 return
@@ -107,6 +112,7 @@ class CompanionHandler(CompanionTransport):
             assets = {
                 "/": ("index.html", "text/html; charset=utf-8"),
                 "/app.js": ("app.js", "text/javascript; charset=utf-8"),
+                "/cloud.js": ("cloud.js", "text/javascript; charset=utf-8"),
                 "/style.css": ("style.css", "text/css; charset=utf-8"),
             }
             if path not in assets:
@@ -131,26 +137,9 @@ class CompanionHandler(CompanionTransport):
         try:
             length = int(self.headers.get("Content-Length", "0"))
             route = urlsplit(self.path)
-            if route.path in ("/api/remove", "/api/launcher"):
-                self.respond(200, handle_action(self, route.path, length))
+            if cloud_post(self, route, length):
                 return
-            if route.path == "/api/select":
-                if not 0 < length <= 8192:
-                    raise ValueError("Invalid selection request size.")
-                data = json.loads(self.rfile.read(length))
-                if not isinstance(data, dict) or not isinstance(data.get("path"), str):
-                    raise ValueError("Supply a drive path.")
-                root = drive_root(data["path"])
-                state = scan_drive(root)
-                self.server.usb = root
-                self.server.device = root.stat().st_dev
-                self.server.selection_id = secrets.token_urlsafe(24)
-                state["selection_id"] = self.server.selection_id
-                self.respond(200, state)
-                return
-            if route.path not in UPLOAD_ROUTES:
+            if not mutate(self, route, length):
                 self.respond(404, {"error": "Not found."})
-                return
-            self.respond(200, handle_upload(self, route, length))
         except EXPECTED_ERRORS as error:
             self.respond(400, {"error": str(error)})

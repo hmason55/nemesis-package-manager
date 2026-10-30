@@ -66,6 +66,12 @@ path=usb.package.manager.zip</code></pre>
       </section>
     </fieldset>
     <dialog id="remove-dialog" aria-labelledby="remove-title"><form id="remove-form"><h2 id="remove-title">Remove package from USB?</h2><p id="remove-description"></p><label class="check-label"><input id="delete-data" type="checkbox"> Also delete this package's USB data</label><p id="remove-data-note" class="hint"></p><div class="actions"><button id="cancel-remove" class="secondary" type="button">Cancel</button><button class="danger" type="submit">Remove from USB</button></div></form></dialog>
+    <section class="panel" aria-label="Cloud registry">
+      <h2>Cloud registry</h2><p>Browse approved releases and prepare your USB drive. Install packages in the vehicle afterward.</p>
+      <form id="cloud-search" class="inline"><label for="cloud-query">Search packages</label><input id="cloud-query"><button>Search registry</button><button id="cloud-updates" type="button">Check USB updates</button></form>
+      <div id="cloud-packages"></div><div class="actions"><button id="cloud-prepare" type="button">Prepare selected versions</button><button id="cloud-cancel" type="button">Cancel downloads</button></div><pre id="cloud-progress" role="status" aria-live="polite"></pre>
+    </section>
+    <script src="/cloud.js" defer></script>
     <footer>Only import trusted releases. Keep the drive connected until copying finishes.</footer>
   </main>
 </body>

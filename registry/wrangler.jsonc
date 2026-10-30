@@ -1,0 +1,78 @@
+{
+  "$schema": "../node_modules/wrangler/config-schema.json",
+  "name": "nemesis-registry-local",
+  "account_id": "3d070a4a6c3b40bf460e171814005a1a",
+  "workers_dev": true,
+  "main": "src/index.ts",
+  "compatibility_date": "2026-10-30",
+  "vars": {
+    "SITE_URL": "http://localhost:5173/nemesis-package-manager/",
+    "GITHUB_APP_ID": "",
+    "GITHUB_CLIENT_ID": "",
+    "GITHUB_APP_SLUG": "",
+    "VALIDATION_ENVIRONMENT": "staging",
+    "ADMIN_IDS": "18219788",
+    "VALIDATOR_REPOSITORY": "hmason55/nemesis-package-manager",
+  },
+  "d1_databases": [
+    {
+      "binding": "DB",
+      "database_name": "nemesis-local",
+      "database_id": "local",
+      "migrations_dir": "migrations",
+    },
+  ],
+  "r2_buckets": [
+    { "binding": "PACKAGES", "bucket_name": "nemesis-packages-local" },
+  ],
+  "env": {
+    "staging": {
+      "name": "nemesis-registry-staging",
+      "vars": {
+        "SITE_URL": "https://hmason55.github.io/nemesis-package-manager/",
+        "GITHUB_APP_ID": "5545234",
+        "GITHUB_CLIENT_ID": "Iv23liwVeSh326CoqlRW",
+        "GITHUB_APP_SLUG": "nemesis-registry-staging",
+        "VALIDATION_ENVIRONMENT": "staging",
+        "ADMIN_IDS": "18219788",
+        "VALIDATOR_REPOSITORY": "hmason55/nemesis-package-manager",
+      },
+      "d1_databases": [
+        {
+          "binding": "DB",
+          "database_name": "nemesis-staging",
+          "database_id": "b0d9022d-83bd-4daf-bc9d-968521d4aa26",
+          "migrations_dir": "migrations",
+        },
+      ],
+      "r2_buckets": [
+        { "binding": "PACKAGES", "bucket_name": "nemesis-packages-staging" },
+      ],
+    },
+    "production": {
+      "name": "nemesis-registry",
+      "vars": {
+        "SITE_URL": "https://hmason55.github.io/nemesis-package-manager/",
+        "GITHUB_APP_ID": "",
+        "GITHUB_CLIENT_ID": "",
+        "GITHUB_APP_SLUG": "",
+        "VALIDATION_ENVIRONMENT": "production",
+        "ADMIN_IDS": "18219788",
+        "VALIDATOR_REPOSITORY": "hmason55/nemesis-package-manager",
+      },
+      "d1_databases": [
+        {
+          "binding": "DB",
+          "database_name": "nemesis-production",
+          "database_id": "REPLACE_PRODUCTION_D1_ID",
+          "migrations_dir": "migrations",
+        },
+      ],
+      "r2_buckets": [
+        { "binding": "PACKAGES", "bucket_name": "nemesis-packages-production" },
+      ],
+    },
+  },
+  "observability": { "enabled": true, "logs": { "invocation_logs": false } },
+  "triggers": { "crons": ["*/10 * * * *"] },
+}

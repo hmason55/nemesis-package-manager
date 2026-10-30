@@ -27,3 +27,11 @@ htmlcov/
 *.jks
 .DS_Store
 Thumbs.db
+
+# Cloud tooling and generated website files
+node_modules/
+.wrangler/
+.dev.vars
+.dev.vars.*
+!.dev.vars.example
+website/dist/

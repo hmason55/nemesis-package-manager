@@ -5,7 +5,7 @@ PYTHON="${PYTHON:-python3}"
 "$PYTHON" -m unittest discover -s tests -p 'test_*.py' -v
 TMP="$(mktemp -d)"
 trap 'rm -rf "$TMP"' EXIT
-javac -d "$TMP/classes" app/src/main/java/dev/nemesis/usbmanager/PackageScanner.java tests/ScannerTest.java
+javac -d "$TMP/classes" app/src/main/java/dev/nemesis/usbmanager/PackageRecord.java app/src/main/java/dev/nemesis/usbmanager/PackageScanner.java tests/ScannerTest.java
 java -cp "$TMP/classes" dev.nemesis.usbmanager.ScannerTest "$TMP/usb"
 javac -source 7 -target 7 -cp "$TMP/classes" -d "$TMP/classes" app/src/main/java/dev/nemesis/usbmanager/InstalledPackages.java tests/InstalledPackagesTest.java
 java -cp "$TMP/classes" dev.nemesis.usbmanager.InstalledPackagesTest

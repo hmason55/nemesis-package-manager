@@ -92,3 +92,12 @@ Package Manager is built on [NEMESIS](https://github.com/xwtk/hmg_nemesis/), dev
 ## License
 
 GNU Affero General Public License, version 3. See [LICENSE](LICENSE).
+
+## Cloud registry (staging)
+
+The Cloudflare registry and NuGet-inspired GitHub Pages website add public
+package discovery, GitHub-authenticated publishing, trusted archive validation,
+and administrator approval. Companion and vehicle clients can acquire verified
+installers while preserving offline USB workflows. Production rollout remains
+gated on the staging and real head-unit checks. See [cloud setup](docs/CLOUD-SETUP-CHECKLIST.md),
+[operations](docs/CLOUD-REGISTRY.md), and [deployment status](docs/CLOUD-DEPLOYMENT.md).

@@ -1,0 +1,15 @@
+PRAGMA foreign_keys = ON;
+CREATE TABLE publishers (id INTEGER PRIMARY KEY, login TEXT NOT NULL);
+CREATE TABLE repositories (id INTEGER PRIMARY KEY, full_name TEXT NOT NULL UNIQUE, installation_id INTEGER NOT NULL, owner_id INTEGER NOT NULL, active INTEGER NOT NULL DEFAULT 1, consent_at INTEGER NOT NULL);
+CREATE TABLE repository_publishers (repository_id INTEGER NOT NULL REFERENCES repositories(id), publisher_id INTEGER NOT NULL REFERENCES publishers(id), PRIMARY KEY(repository_id,publisher_id));
+CREATE TABLE packages (id TEXT PRIMARY KEY COLLATE NOCASE, repository_id INTEGER NOT NULL REFERENCES repositories(id), metadata TEXT NOT NULL);
+CREATE TABLE submissions (id TEXT PRIMARY KEY, package_id TEXT NOT NULL, repository_id INTEGER NOT NULL REFERENCES repositories(id), publisher_id INTEGER REFERENCES publishers(id), release_id INTEGER NOT NULL, asset_id INTEGER NOT NULL, version TEXT NOT NULL, metadata TEXT NOT NULL, status TEXT NOT NULL CHECK(status IN ('queued','validating','review','approved','rejected','withdrawn','failed')), sha256 TEXT, size INTEGER, object_key TEXT, report TEXT, created_at INTEGER NOT NULL, updated_at INTEGER NOT NULL);
+CREATE UNIQUE INDEX submission_asset ON submissions(repository_id,asset_id);
+CREATE UNIQUE INDEX approved_version ON submissions(package_id COLLATE NOCASE,version) WHERE status IN ('approved','withdrawn');
+CREATE INDEX public_versions ON submissions(package_id,status,created_at);
+CREATE TABLE sessions (token_hash TEXT PRIMARY KEY, publisher_id INTEGER NOT NULL REFERENCES publishers(id), github_token TEXT NOT NULL, expires_at INTEGER NOT NULL);
+CREATE TABLE auth_transactions (state TEXT PRIMARY KEY, browser_challenge TEXT NOT NULL, github_verifier TEXT NOT NULL, cookie_hash TEXT NOT NULL, expires_at INTEGER NOT NULL);
+CREATE TABLE auth_codes (code_hash TEXT PRIMARY KEY, browser_challenge TEXT NOT NULL, publisher_id INTEGER NOT NULL REFERENCES publishers(id), github_token TEXT NOT NULL, expires_at INTEGER NOT NULL);
+CREATE TABLE webhook_deliveries (id TEXT PRIMARY KEY, received_at INTEGER NOT NULL);
+CREATE TABLE release_events (repository_id INTEGER NOT NULL, release_id INTEGER NOT NULL, status TEXT NOT NULL DEFAULT 'pending', message TEXT, PRIMARY KEY(repository_id,release_id));
+CREATE TABLE audit (id INTEGER PRIMARY KEY AUTOINCREMENT, actor TEXT NOT NULL, action TEXT NOT NULL, subject TEXT NOT NULL, created_at INTEGER NOT NULL);

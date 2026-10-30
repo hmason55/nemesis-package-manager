@@ -1,0 +1,20 @@
+{
+  "name": "nemesis-cloud",
+  "private": true,
+  "type": "module",
+  "workspaces": [
+    "registry",
+    "website"
+  ],
+  "scripts": {
+    "check": "npm run check --workspaces",
+    "test": "npm run test --workspaces",
+    "build": "npm run build --workspace website"
+  },
+  "engines": {
+    "node": ">=22.12"
+  },
+  "devDependencies": {
+    "prettier": "^3.9.10"
+  }
+}

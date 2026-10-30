@@ -22,6 +22,7 @@ public final class PackageScanner {
     public static final String RAW = "raw";
     public static final String BROKEN = "invalid";
     public static class Item {
+        public PackageRecord remote;
         public File folder;
         public File target;
         public File customDataDir;

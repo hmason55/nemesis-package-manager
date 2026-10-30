@@ -1,0 +1,11 @@
+[
+  {"candidate":"1.2","installed":"1.1","result":1},
+  {"candidate":"v1.2.0","installed":"1.2","result":0},
+  {"candidate":"1.1","installed":"1.2","result":-1},
+  {"candidate":"0.2.0-build.12","installed":"0.2.0-build.9","result":1},
+  {"candidate":"999999999999999999999.1","installed":"999999999999999999998.2","result":1},
+  {"candidate":"release-blue","installed":"release-red","result":null},
+  {"candidate":"release-blue","installed":"release-blue","result":0},
+  {"candidate":"","installed":"1","result":null},
+  {"candidate":"1.0-rc.1","installed":"1.0","result":null}
+]
