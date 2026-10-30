@@ -441,6 +441,45 @@ class CompanionHttpTests(CompanionFixture):
         connection.close()
         return result
 
+    def test_registry_configuration_is_authenticated_and_manual_import_stays_offline(
+        self,
+    ):
+        options = json.dumps({"url": "https://registry.test"})
+        self.assertEqual(
+            self.request("GET", "/api/cloud/config", headers={"X-Companion-Token": ""})[
+                0
+            ],
+            403,
+        )
+        self.assertEqual(
+            self.request(
+                "POST",
+                "/api/cloud/config",
+                options,
+                {"Origin": "https://other.test"},
+                headers_only=True,
+            )[0],
+            403,
+        )
+        self.assertEqual(self.request("POST", "/api/cloud/config", options)[0], 202)
+        self.assertEqual(
+            json.loads(self.request("GET", "/api/cloud/config")[1])["url"],
+            "https://registry.test",
+        )
+        self.assertEqual(
+            self.request(
+                "POST", "/api/cloud/config", json.dumps({"url": "http://invalid.test"})
+            )[0],
+            400,
+        )
+        self.assertEqual(self.server.cloud.client.base, "https://registry.test")
+        self.request("POST", "/api/select", json.dumps({"path": str(self.usb)}))
+        status, body = self.request(
+            "POST", "/api/package?name=Example", self.release.read_bytes()
+        )
+        self.assertEqual(status, 200, body)
+        self.assertTrue((self.usb / "packages/Example").is_dir())
+
     def test_stale_tab_and_missing_binding_cannot_write_either_drive(self):
         self.request("POST", "/api/select", json.dumps({"path": str(self.usb)}))
         stale = self.server.selection_id

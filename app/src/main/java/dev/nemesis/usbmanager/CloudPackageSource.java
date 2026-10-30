@@ -51,10 +51,21 @@ public final class CloudPackageSource implements PackageSource {
         PackageRecord record = new PackageRecord(); record.id = value.getString("package_id"); record.version = value.getString("version");
         record.name = value.optString("name", record.id); record.description = value.optString("description"); record.releaseNotes = value.optString("release_notes");
         JSONObject compatibility = value.optJSONObject("compatibility"); record.compatibility = compatibility == null ? "Compatibility not specified" : "Vehicles: " + compatibility.optJSONArray("vehicles") + "\nFirmware: " + compatibility.optJSONArray("firmware") + "\nNEMESIS: " + compatibility.optString("nemesis");
+        if (compatibility != null) {
+            record.vehicles = declarations(compatibility.optJSONArray("vehicles"));
+            record.firmware = declarations(compatibility.optJSONArray("firmware"));
+            record.nemesisSupport = compatibility.optString("nemesis", "");
+        }
         record.sha256 = value.getString("sha256"); record.size = value.getLong("size"); record.downloadUrl = value.getString("download_url");
         String expected = base + "/v1/packages/" + escape(record.id) + "/versions/" + escape(record.version) + "/download";
         if (!PackageScanner.validId(record.id) || !record.sha256.matches("[a-f0-9]{64}") || record.size <= 0 || record.size > CloudArchive.MAX_BYTES || !expected.equals(record.downloadUrl)) throw new IOException("Invalid registry package metadata");
         return record;
+    }
+    private String[] declarations(JSONArray values) throws Exception {
+        if (values == null) return new String[0];
+        String[] result = new String[values.length()];
+        for (int i = 0; i < result.length; i++) result[i] = values.getString(i);
+        return result;
     }
     public List<PackageRecord> list(String query) throws Exception {
         ArrayList<PackageRecord> result = new ArrayList<PackageRecord>(); int page = 1;

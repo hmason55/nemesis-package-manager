@@ -7,6 +7,8 @@ the synchronous HTTP server and publication rechecks its selection capability.
 
 import json
 from urllib.parse import parse_qs
+from tools.companion_compatibility import annotate
+from tools.registry_client import RegistryClient
 
 
 def cloud_get(handler, route):
@@ -15,18 +17,27 @@ def cloud_get(handler, route):
         return False
     query = parse_qs(route.query)
     jobs = handler.server.cloud
-    if route.path == "/api/cloud/packages":
+    profile = {
+        field: query.get(field, [""])[0][:160]
+        for field in ("vehicle", "firmware", "nemesis")
+    }
+    if route.path == "/api/cloud/config":
+        result = {"url": jobs.client.base if jobs.client else ""}
+    elif route.path == "/api/cloud/packages":
         result = jobs.registry().packages(
             query.get("q", [""])[0],
             query.get("category", [""])[0],
             int(query.get("page", ["1"])[0]),
         )
     elif route.path == "/api/cloud/package":
-        result = jobs.registry().package(query.get("id", [""])[0])
+        result = annotate(jobs.registry().package(query.get("id", [""])[0]), profile)
     elif route.path == "/api/cloud/job":
         result = jobs.snapshot()
     elif route.path == "/api/cloud/updates":
         result = jobs.updates()
+        result["updates"] = [
+            annotate(package, profile) for package in result["updates"]
+        ]
     else:
         handler.respond(404, {"error": "Not found."})
         return True
@@ -41,7 +52,7 @@ def cloud_post(handler, route, length):
     than terminating a thread in the middle of a data-preserving directory swap.
     """
     jobs = handler.server.cloud
-    if route.path not in ("/api/cloud/start", "/api/cloud/cancel"):
+    if route.path not in ("/api/cloud/start", "/api/cloud/cancel", "/api/cloud/config"):
         state = jobs.snapshot()
         if state and state["status"] == "running":
             raise ValueError(
@@ -53,7 +64,18 @@ def cloud_post(handler, route, length):
     data = json.loads(handler.rfile.read(length))
     if not isinstance(data, dict):
         raise ValueError("Supply a cloud request object.")
-    if route.path.endswith("cancel"):
+    if route.path.endswith("config"):
+        state = jobs.snapshot()
+        if state and state["status"] == "running":
+            raise ValueError(
+                "Finish or cancel cloud preparation before changing the registry."
+            )
+        url = data.get("url", "")
+        if not isinstance(url, str):
+            raise ValueError("Supply an HTTPS registry URL.")
+        jobs.client = RegistryClient(url) if url else None
+        result = {"url": jobs.client.base if jobs.client else ""}
+    elif route.path.endswith("cancel"):
         jobs.cancelled.set()
         result = jobs.snapshot()
     else:

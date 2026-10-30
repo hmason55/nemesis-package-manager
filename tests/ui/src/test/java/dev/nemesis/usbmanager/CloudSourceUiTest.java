@@ -34,12 +34,24 @@ public class CloudSourceUiTest {
         fields.get(0).setText("https://registry.test");set("busy",true);dialog.getButton(-1).performClick();assertTrue(dialog.isShowing());set("busy",false);
         // Keep this UI test offline; refresh is separately covered by command shadows.
         set("destroyed",true);dialog.getButton(-1).performClick();assertEquals("cloud",activity.getPreferences(0).getString("source",""));assertTrue((Boolean)get("cloudSelected"));set("destroyed",false);
-        dialog=picker();for(View v:views(dialog.getWindow().getDecorView())){if(v instanceof RadioGroup)((RadioGroup)v).check(1002);if(v instanceof CheckBox)((CheckBox)v).setChecked(false);}set("destroyed",true);dialog.getButton(-1).performClick();assertFalse(activity.getPreferences(0).contains("source"));assertFalse((Boolean)get("cloudSelected"));set("destroyed",false);
+        dialog=picker();for(View v:views(dialog.getWindow().getDecorView())){if(v instanceof RadioGroup)((RadioGroup)v).check(1002);if(v instanceof CheckBox)((CheckBox)v).setChecked(false);}set("destroyed",true);dialog.getButton(-1).performClick();assertEquals("usb",activity.getPreferences(0).getString("source",""));assertTrue(activity.getPreferences(0).getBoolean("show_source_prompt",false));assertFalse((Boolean)get("cloudSelected"));set("destroyed",false);
     }
     @Test public void installedCloudVersionsAreDeduplicatedAndScriptsExplainUsb()throws Exception{
         set("cloudSelected",true);ArrayList<PackageScanner.Item> all=(ArrayList<PackageScanner.Item>)get("allItems");for(int i=0;i<2;i++){PackageScanner.Item item=new PackageScanner.Item();item.id="example.app";item.title="Example";item.installed=true;item.kind=PackageScanner.INSTALL;item.version="1."+i;all.add(item);}
         Method filter=MainActivity.class.getDeclaredMethod("filterItems",String.class);filter.setAccessible(true);filter.invoke(activity,new Object[]{null});assertEquals(1,((ArrayList<?>)get("items")).size());
-        set("category",PackagePresentation.SCRIPTS);filter.invoke(activity,new Object[]{null});assertTrue(((TextView)get("empty")).getText().toString().contains("Change Source"));
+        set("category",PackagePresentation.SCRIPTS);filter.invoke(activity,new Object[]{null});assertTrue(((TextView)get("empty")).getText().toString().contains("Settings"));
         all.clear();for(int category:new int[]{PackagePresentation.UPDATES,PackagePresentation.NOT_INSTALLED,PackagePresentation.INSTALLED}){set("category",category);filter.invoke(activity,new Object[]{null});assertFalse(((TextView)get("empty")).getText().toString().isEmpty());}
+    }
+    @Test public void settingsButtonSavesProfileAndCanRestoreStartupPrompt()throws Exception{
+        TextView settings=null;for(View view:views(activity.getWindow().getDecorView()))if(view instanceof TextView && "Settings".contentEquals(((TextView)view).getText()))settings=(TextView)view;
+        assertNotNull(settings);settings.performClick();AlertDialog dialog=(AlertDialog)ShadowDialog.getLatestDialog();assertTrue(dialog.isShowing());
+        for(View view:views(dialog.getWindow().getDecorView())){
+            if(view instanceof EditText){String label=String.valueOf(view.getContentDescription());if(label.startsWith("Vehicle model"))((EditText)view).setText("IONIQ 5");if(label.startsWith("Firmware version"))((EditText)view).setText("260507");if(label.startsWith("NEMESIS version"))((EditText)view).setText("1.0");}
+            if(view instanceof CheckBox)((CheckBox)view).setChecked(true);
+        }
+        set("destroyed",true);dialog.getButton(-1).performClick();set("destroyed",false);
+        assertEquals("IONIQ 5",activity.getPreferences(0).getString("device_vehicle",""));assertEquals("260507",activity.getPreferences(0).getString("device_firmware",""));assertEquals("1.0",activity.getPreferences(0).getString("device_nemesis",""));assertFalse(activity.getPreferences(0).getBoolean("show_source_prompt",true));
+        dialog=picker();for(View view:views(dialog.getWindow().getDecorView()))if(view instanceof CheckBox)((CheckBox)view).setChecked(false);
+        set("destroyed",true);dialog.getButton(-1).performClick();set("destroyed",false);assertTrue(activity.getPreferences(0).getBoolean("show_source_prompt",false));
     }
 }

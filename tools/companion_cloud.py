@@ -31,7 +31,7 @@ class CloudJobs:
         """Fail cloud requests clearly while leaving manual imports usable."""
         if not self.client:
             raise ValueError(
-                "Cloud registry is not configured. Start with --registry-url HTTPS_URL."
+                "Cloud registry is not configured. Enter its HTTPS address in Registry connection, or start with --registry-url HTTPS_URL."
             )
         return self.client
 

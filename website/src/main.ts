@@ -1,3 +1,4 @@
+import { renderGuides } from "./guides";
 import { API, api, setToken } from "./client";
 import { parseRoute, catalogLink } from "./routes";
 import { el, action, link, external, heading } from "./ui";
@@ -68,6 +69,7 @@ async function renderRoute() {
     if (
       (route.page === "package" && id === "browse") ||
       (route.page === "packages" && id === "browse") ||
+      (route.page === "guides" && id === "help") ||
       route.page === id
     )
       node.setAttribute("aria-current", "page");
@@ -196,45 +198,25 @@ async function renderRoute() {
         target.append(card);
       }
     } else {
-      heading(
-        target,
-        "Using NEMESIS packages",
-        "Choose the workflow that fits your vehicle’s connection. Browsing and downloading never requires an account.",
-      );
-      const sections = [
-        [
-          "Prepare a USB drive",
-          "Open the USB companion on your computer. Set up your drive if needed, then browse Cloud Registry or import a downloaded ZIP. The companion keeps package data when replacing an installer. In the parked vehicle, open Package Manager, select USB Storage, and confirm installation.",
-        ],
-        [
-          "Install from the vehicle",
-          "With NEMESIS already installed, open Package Manager and select Cloud Registry. Choose a package and version, read its vehicle and firmware requirements, then download it. Package Manager verifies the download and asks you to confirm before running NEMESIS.",
-        ],
-        [
-          "Check compatibility",
-          "Requirements are supplied by package publishers. Read the supported vehicles, firmware, and NEMESIS versions for the release you choose. Unknown compatibility and mismatches are advisory; they are not a guarantee of support.",
-        ],
-        [
-          "Publish your own package",
-          "Sign in with GitHub, connect a public repository you can manage, and select a GitHub Release installer ZIP. Review its package identity, version, and requirements before submitting it. Every version passes validation and maintainer review before publication.",
-        ],
-      ];
-      for (const [title, body] of sections) {
-        const section = el("section", "", "guide-section");
-        section.append(el("h2", title), el("p", body));
-        target.append(section);
-      }
-      target.append(
-        external(
-          "Full user guide",
-          "https://github.com/hmason55/nemesis-package-manager/blob/main/docs/USER-GUIDE.md",
-        ),
-        link("Browse packages", catalogLink(), "button-link primary"),
-      );
+      renderGuides(target, route.page === "guides" ? route.id : "");
     }
     if (token !== generation) return;
     root.replaceChildren(target);
     root.focus({ preventScroll: true });
+    if (
+      route.page === "guides" &&
+      Number.isSafeInteger(route.section) &&
+      route.section > 0
+    ) {
+      const section = root.querySelector<HTMLElement>(
+        "#guide-section-" + route.section,
+      );
+      if (section) {
+        section.tabIndex = -1;
+        section.focus();
+        section.scrollIntoView();
+      }
+    }
   } catch (error) {
     if (token !== generation) return;
     root.replaceChildren(

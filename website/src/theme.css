@@ -1,15 +1,19 @@
 :root {
-  font-family: "Segoe UI", Arial, sans-serif;
+  font-family:
+    system-ui,
+    -apple-system,
+    "Segoe UI",
+    sans-serif;
   color-scheme: light;
   --bg: #fff;
   --fg: #24292f;
   --muted: #536372;
-  --panel: #f5f7f9;
+  --panel: #edf2f8;
   --border: #c7d0d9;
-  --blue: #005a9e;
-  --button: #005a9e;
+  --blue: #245d91;
+  --button: #245d91;
   --button-text: #fff;
-  --header: #003b68;
+  --header: #141a23;
   --focus: #b05b00;
   --callout: #eef5fb;
   --error: #9b1c22;
@@ -21,31 +25,33 @@
 @media (prefers-color-scheme: dark) {
   :root:not([data-theme="light"]) {
     color-scheme: dark;
-    --bg: #202020;
-    --fg: #f1f1f1;
-    --muted: #c0c7ce;
-    --panel: #292929;
-    --border: #616a73;
-    --blue: #8abaff;
-    --button: #1261bc;
-    --header: #171717;
-    --focus: #ffd274;
-    --callout: #263745;
+    --bg: #090c11;
+    --fg: #edf1f7;
+    --muted: #9ca8b9;
+    --panel: #141a23;
+    --border: #2b3441;
+    --blue: #92c5ff;
+    --button: #92c5ff;
+    --button-text: #081624;
+    --header: #141a23;
+    --focus: #92c5ff;
+    --callout: #202c3d;
     --error: #ffb4b9;
   }
 }
 :root[data-theme="dark"] {
   color-scheme: dark;
-  --bg: #202020;
-  --fg: #f1f1f1;
-  --muted: #c0c7ce;
-  --panel: #292929;
-  --border: #616a73;
-  --blue: #8abaff;
-  --button: #1261bc;
-  --header: #171717;
-  --focus: #ffd274;
-  --callout: #263745;
+  --bg: #090c11;
+  --fg: #edf1f7;
+  --muted: #9ca8b9;
+  --panel: #141a23;
+  --border: #2b3441;
+  --blue: #92c5ff;
+  --button: #92c5ff;
+  --button-text: #081624;
+  --header: #141a23;
+  --focus: #92c5ff;
+  --callout: #202c3d;
   --error: #ffb4b9;
 }
 * {
@@ -75,7 +81,7 @@ button,
   min-height: 44px;
   padding: 8px 18px;
   border: 1px solid var(--border);
-  border-radius: 3px;
+  border-radius: 6px;
   background: var(--panel);
   color: var(--fg);
   cursor: pointer;
@@ -207,7 +213,7 @@ summary:focus-visible,
 #search input {
   flex: 1;
   min-width: 0;
-  border-radius: 3px 0 0 3px;
+  border-radius: 6px 0 0 3px;
   border-right: 0;
   font-size: 18px;
   min-height: 48px;
@@ -222,7 +228,7 @@ select {
   background: var(--bg);
   color: var(--fg);
   border: 1px solid var(--border);
-  border-radius: 3px;
+  border-radius: 6px;
   padding: 9px 11px;
   min-height: 44px;
   max-width: 100%;
@@ -400,7 +406,7 @@ h3 {
   font-size: 13px;
   background: var(--callout);
   border: 1px solid var(--border);
-  border-radius: 3px;
+  border-radius: 6px;
 }
 .description {
   overflow-wrap: anywhere;
@@ -618,7 +624,7 @@ td {
   background: var(--callout);
   border: 1px solid var(--border);
   font-size: 13px;
-  border-radius: 3px;
+  border-radius: 6px;
 }
 .review-card pre {
   max-height: 380px;

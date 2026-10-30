@@ -100,10 +100,13 @@ export function metadata(value: any): Metadata {
     );
     return v;
   };
-  const c = value.compatibility;
+  const c = value.compatibility ?? {};
   requireValue(
-    c && typeof c.nemesis === "string" && c.nemesis.length <= 160,
-    "Supply compatibility requirements",
+    typeof c === "object" &&
+      !Array.isArray(c) &&
+      (c.nemesis === undefined ||
+        (typeof c.nemesis === "string" && c.nemesis.length <= 160)),
+    "Invalid compatibility declarations",
   );
   requireValue(
     typeof value.release_notes === "string" &&
@@ -115,9 +118,9 @@ export function metadata(value: any): Metadata {
     description: value.description,
     categories: list(value.categories),
     compatibility: {
-      vehicles: list(c.vehicles),
-      firmware: list(c.firmware),
-      nemesis: c.nemesis,
+      vehicles: list(c.vehicles === undefined ? [] : c.vehicles),
+      firmware: list(c.firmware === undefined ? [] : c.firmware),
+      nemesis: c.nemesis || "",
     },
     release_notes: value.release_notes,
   };

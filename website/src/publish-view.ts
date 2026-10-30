@@ -193,7 +193,7 @@ export async function renderPublish(
         "vehicles",
         "text",
         "",
-        "Separate vehicle names with commas.",
+        "Optional exact model names separated by commas, or * for any model. Matching is case-insensitive.",
       ),
       firmware = inputField(
         requirements,
@@ -201,7 +201,7 @@ export async function renderPublish(
         "firmware",
         "text",
         "",
-        "Separate requirements with commas.",
+        "Optional exact firmware identifiers separated by commas, or *. Prose/ranges remain informational and may show as unknown.",
       ),
       nemesis = inputField(
         requirements,
@@ -209,7 +209,7 @@ export async function renderPublish(
         "nemesis",
         "text",
         "",
-        "Specify the supported NEMESIS version or other requirements.",
+        "Optional exact NEMESIS version or *. Free-form requirements are allowed but are not enforced as version ranges. Compatibility never blocks publication or installation.",
       );
     sections[1].append(requirements);
     const notes = inputField(

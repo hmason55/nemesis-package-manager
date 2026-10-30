@@ -135,3 +135,5 @@ dialog h2 { margin-bottom: 18px; }
 dialog .hint { margin-top: 14px; }
 
 dialog p { overflow-wrap: anywhere; }
+
+.cloud-package { padding: 18px; margin: 14px 0; border: 1px solid var(--border); border-radius: 8px; background: #141a23; } .cloud-package h3 { margin-top: 0; } .cloud-package select { margin: 8px 12px 12px 0; max-width: 100%; } .cloud-package .hint { white-space: pre-line; } .compatibility-warning { border-color: #d7a84d; } .cloud-profile { margin: 16px 0; padding: 14px; border: 1px solid var(--border); } #cloud-meter { width: 100%; margin-top: 12px; } #cloud-progress { white-space: pre-wrap; overflow-wrap: anywhere; }

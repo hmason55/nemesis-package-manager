@@ -179,3 +179,7 @@ On **Packages**, choose **Remove**, then decide whether to also delete USB data.
 
 Installed versions come from NEMESIS manifests when readable. After a successful installation through Package Manager, it also stores the installed release in private app settings. Details marks a saved fallback version; it can be stale after changes made outside Package Manager. It is cleared after a confirmed uninstall or a successful registry scan that no longer lists that package. Missing metadata for packages never installed through this manager remains Unknown.
 
+
+## Illustrated online guides
+
+Open [NEMESIS user and publisher guides](https://hmason55.github.io/nemesis-package-manager/#guides) for vehicle Settings/source choice, manual and registry USB preparation, compatibility warnings, and GitHub publisher onboarding. The hosted guides include labeled example illustrations and recovery steps. Package Manager itself retains its dedicated update workflow.
