@@ -88,7 +88,7 @@ Replacement requires matching package IDs. If a release has no readable ID
 installer and its data remain intact. A drive selection changed in another tab
 blocks copying until you refresh and select the intended drive again.
 
-The tabs support arrow keys, Home, and End. Loose ZIP installers remain view-only;
+The tabs support arrow keys, Home, and End. Loose ZIP installers can be removed but cannot be replaced in place;
 update selectors contain only folders supported by the directory importer.
 Hover over a control or focus it with Tab for a short tooltip; Escape dismisses it.
 **Quick guide** explains the steps on touchscreens too. After copying, the status
@@ -193,3 +193,14 @@ python -m ruff format --check tools/companion_*.py tools/usb_companion.py tests/
 ```
 
 Tests use temporary directories and a loopback HTTP server, never real USB media.
+
+
+## Manager release check, automatic launch, and removal
+
+**Drive setup** shows the Package Manager installer version on USB. It can check public GitHub release metadata (including development prereleases) and link to a newer comparable release. This uses an internet connection only for release metadata; copying and browsing USB files continue offline. No automatic downloads or head-unit updates occur.
+
+Use **Run Package Manager when this USB is inserted** to control its execution descriptor. Enabling also keeps automatic launch enabled after subsequent successful launches. Only a recognized manager launcher is changed; foreign root descriptors and custom launchers are rejected. Existing disabled backups are preserved. NEMESIS may still require confirmation.
+
+Use **Remove** on a package row to open a confirmation. **Also delete this package's USB data** is unchecked by default. Keeping data leaves it in the original package folder; importing the same folder later reuses it. Loose ZIP removal keeps shared data and sibling installers. This changes only USB files, never installed head-unit apps.
+
+See the [illustrated companion controls](USER-GUIDE.md#manage-the-usb-drive-on-your-computer).

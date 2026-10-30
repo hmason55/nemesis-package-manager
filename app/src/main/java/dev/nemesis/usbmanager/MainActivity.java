@@ -52,6 +52,7 @@ public final class MainActivity extends Activity {
     private ProgressBar progress;
     private View operationOverlay;
     private TextView operationStatus;
+    private TextView operationInstruction;
     private boolean destroyed;
     private static final OperationCoordinator operations = new OperationCoordinator();
     private final Handler handler = new Handler();
@@ -118,6 +119,7 @@ public final class MainActivity extends Activity {
     private GradientDrawable rounded(int color) {
         GradientDrawable background = new GradientDrawable();
         background.setColor(color); background.setCornerRadius(dp(6));
+        background.setStroke(dp(1), Color.rgb(91, 116, 143));
         return background;
     }
     private LinearLayout.LayoutParams spaced(int width, int height, float weight, int gap) {
@@ -193,9 +195,10 @@ public final class MainActivity extends Activity {
         bar.setPadding(0, dp(6), 0, 0);
         action = button("Install"); launch = button("Launch"); uninstall = button("Uninstall"); details = button("Details");
         action.setBackground(buttonBackground(Color.rgb(25, 99, 137)));
+        uninstall.setBackground(buttonBackground(Color.rgb(156, 111, 26)));
+        bar.addView(uninstall, spaced(0, 48, 1.4f, 0));
         bar.addView(action, spaced(0, 48, 1.4f, 0));
         bar.addView(launch, spaced(0, 48, 1, 8));
-        bar.addView(uninstall, spaced(0, 48, 1, 8));
         bar.addView(details, spaced(0, 48, 1, 8));
         root.addView(bar);
         FrameLayout screen = new FrameLayout(this);
@@ -222,19 +225,24 @@ public final class MainActivity extends Activity {
         progress.setContentDescription("Package operation in progress");
         panel.addView(progress, new LinearLayout.LayoutParams(dp(48), dp(48)));
         operationStatus = text("", 20, TEXT); operationStatus.setGravity(Gravity.CENTER);
+        operationStatus.setMaxLines(2); operationStatus.setEllipsize(TextUtils.TruncateAt.END);
         operationStatus.setPadding(0, dp(12), 0, 0);
         operationStatus.setAccessibilityLiveRegion(View.ACCESSIBILITY_LIVE_REGION_POLITE);
         panel.addView(operationStatus, new LinearLayout.LayoutParams(-1, -2));
-        TextView instruction = text("Keep USB connected until the action finishes.", 16, MUTED);
+        TextView instruction = text("Keep USB plugged in until installation finishes.", 16, MUTED);
+        operationInstruction = instruction;
         instruction.setGravity(Gravity.CENTER); instruction.setPadding(0, dp(8), 0, 0);
         panel.addView(instruction, new LinearLayout.LayoutParams(-1, -2));
         Button operationDetails = button("Details");
         operationDetails.setOnClickListener(new View.OnClickListener() {
             public void onClick(View view) { message("Operation details", operations.progressDetails()); }
         });
-        panel.addView(operationDetails, new LinearLayout.LayoutParams(-1, dp(48)));
-        FrameLayout.LayoutParams size = new FrameLayout.LayoutParams(-1, -2, Gravity.CENTER);
-        size.leftMargin = dp(40); size.rightMargin = dp(40);
+        operationDetails.setBackground(buttonBackground(Color.rgb(25, 99, 137)));
+        LinearLayout.LayoutParams detailsSize = new LinearLayout.LayoutParams(dp(180), dp(48));
+        detailsSize.topMargin = dp(16);
+        panel.addView(operationDetails, detailsSize);
+        FrameLayout.LayoutParams size = new FrameLayout.LayoutParams(Math.min(getResources().getDisplayMetrics().widthPixels - dp(48), dp(620)), -2, Gravity.CENTER);
+        size.leftMargin = dp(24); size.rightMargin = dp(24);
         overlay.addView(panel, size);
         operationOverlay = overlay; overlay.setVisibility(View.GONE);
         screen.addView(overlay, new FrameLayout.LayoutParams(-1, -1));
@@ -274,17 +282,23 @@ public final class MainActivity extends Activity {
     private boolean unavailable() { return busy || operations.isRunning(); }
     private void updateButtons() {
         boolean running = operations.isRunning();
-        operationStatus.setText(running ? operations.progressText() : "");
+        String statusText = running ? operations.progressText() : "";
+        if (!statusText.contentEquals(operationStatus.getText())) operationStatus.setText(statusText);
+        operationInstruction.setVisibility(running && operations.needsUsb() ? View.VISIBLE : View.GONE);
         operationOverlay.setVisibility(running ? View.VISIBLE : View.GONE);
         progress.setVisibility(running ? View.VISIBLE : View.GONE);
         for (Button tab : tabs) tab.setEnabled(!running);
         list.setEnabled(!running);
         PackageScanner.Item item = selection();
         boolean ready = !unavailable() && item != null;
-        action.setText(PackagePresentation.action(item));
-        action.setEnabled(ready && PackagePresentation.canInstall(item));
-        launch.setEnabled(ready && PackagePresentation.canLaunch(item));
-        uninstall.setEnabled(ready && PackagePresentation.canUninstall(item));
+        boolean installedTab = category == PackagePresentation.INSTALLED;
+        action.setVisibility(installedTab ? View.GONE : View.VISIBLE);
+        uninstall.setVisibility(installedTab ? View.VISIBLE : View.GONE);
+        launch.setVisibility(installedTab ? View.VISIBLE : View.GONE);
+        action.setText(category == PackagePresentation.UPDATES ? "Update" : category == PackagePresentation.SCRIPTS ? "Run script" : "Install");
+        action.setEnabled(ready && !installedTab && PackagePresentation.canInstall(item));
+        launch.setEnabled(ready && installedTab && PackagePresentation.canLaunch(item));
+        uninstall.setEnabled(ready && installedTab && PackagePresentation.canUninstall(item));
         details.setEnabled(ready);
         refreshButton.setEnabled(!unavailable());
         for (Button button : new Button[] { action, launch, uninstall, details, refreshButton })
@@ -308,12 +322,14 @@ public final class MainActivity extends Activity {
                         NemesisCli.Result versions = NemesisCli.query("root", "-c", registry.versionQuery());
                         registry.readVersions(versions.rc, versions.out);
                     }
+                    InstalledVersionStore.apply(getApplicationContext(), registry);
                     Set<String> seen = new HashSet<String>();
                     for (PackageScanner.Item item : next) {
                         item.installedStateKnown = registry.available();
                         item.installed = item.id != null && registry.names.containsKey(item.id);
                         item.locked = item.id != null && registry.locked.contains(item.id);
                         item.installedVersion = registry.versions.get(item.id);
+                        item.installedVersionSaved = registry.savedVersions.contains(item.id);
                         if (item.installed) item.types = registry.types.get(item.id);
                         if (item.id != null) seen.add(item.id);
                     }
@@ -324,6 +340,7 @@ public final class MainActivity extends Activity {
                         item.locked = registry.locked.contains(id); item.types = registry.types.get(id);
                         item.title = registry.names.get(id);
                         item.installedVersion = registry.versions.get(id);
+                        item.installedVersionSaved = registry.savedVersions.contains(id);
                         next.add(item);
                     }
                     for (java.util.Iterator<PackageScanner.Item> iterator = next.iterator(); iterator.hasNext(); )
@@ -399,7 +416,7 @@ public final class MainActivity extends Activity {
     }
     private void chooseAction() {
         final PackageScanner.Item item = selection();
-        if (unavailable() || !PackagePresentation.canInstall(item)) return;
+        if (category == PackagePresentation.INSTALLED || unavailable() || !PackagePresentation.canInstall(item)) return;
         String action = PackagePresentation.action(item);
         confirm(action + " " + PackagePresentation.name(item) + "?",
             PackagePresentation.confirmation(item), action, new Runnable() {
@@ -428,8 +445,8 @@ public final class MainActivity extends Activity {
         }
         if (command == null && !PackagePresentation.canInstall(item)) return;
         String description = (command == null ? (PackageScanner.EXECUTE.equals(item.kind) ? "Running script" : item.installed ? "Updating" : "Installing") :
-            ("uninstall".equals(command) ? "Uninstalling" : "Launching")) + " | " + PackagePresentation.name(item);
-        if (unavailable() || !operations.start(description, new PackageTask(getApplicationContext(), item, command))) {
+            ("uninstall".equals(command) ? "Uninstalling" : "Launching")) + "\n" + PackagePresentation.name(item);
+        if (unavailable() || !operations.start(description, "install".equals(PackagePresentation.operation(item, command)) || "update".equals(PackagePresentation.operation(item, command)), new PackageTask(getApplicationContext(), item, command))) {
             message("Please wait", "Let the current action finish, then try again.");
             return;
         }
@@ -450,6 +467,8 @@ public final class MainActivity extends Activity {
                     (PackageScanner.EXECUTE.equals(item.kind) ? NemesisCli.execute(item) : NemesisCli.install(context, item));
             } catch (Exception error) { result = new NemesisCli.Result(1, error.toString()); }
             if (result.operation != null) operation = result.operation;
+            if (result.rc == 0 && ("install".equals(operation) || "update".equals(operation) || "uninstall".equals(operation)))
+                InstalledVersionStore.record(context, item.id, item.version, "uninstall".equals(operation));
             OperationCoordinator.Completion completion = PackagePresentation.completion(item, operation, result.rc, result.out);
             String logError = writeActionLog(item, completion.details);
             if (logError != null) return new OperationCoordinator.Completion(completion.success, completion.title,
@@ -465,18 +484,18 @@ public final class MainActivity extends Activity {
         message("Help", "Getting started\n" +
             "1. Insert your USB drive and tap Refresh.\n" +
             "2. Choose a tab, then select a package.\n" +
-            "3. Tap Install, Update, Run script, or Launch.\n\n" +
+            "3. Use the actions shown for that tab.\n\n" +
             "Tabs\n" +
-            "Installed: packages on the head unit.\n" +
+            "Installed: uninstall or launch packages on the head unit.\n" +
             "Updates: newer versions found on USB.\n" +
             "Available: USB packages ready to install.\n" +
             "Scripts: tasks to run on the head unit; check their instructions first.\n\n" +
             "Adding or updating packages\n" +
             "Use the USB companion on your computer to copy releases to USB. Back here, tap Refresh, select the package, and confirm Install or Update.\n\n" +
             "Need more information?\n" +
-            "Details shows versions, file locations, and errors. Install version means the versions could not be compared; check the release before continuing.\n" +
+            "Details shows versions, file locations, and errors. Versions saved after successful manager installs are marked in Details. To update, copy a newer installer to USB and use Updates.\n" +
             "Uninstall removes the package from the head unit and keeps its USB files. To remove Package Manager itself, use NEMESIS Manager > Packages.\n\n" +
-            "Use trusted releases that support your vehicle. Keep USB connected until the action finishes, and finish one action before using NEMESIS Manager.");
+            "Use trusted releases that support your vehicle. Keep USB plugged in during installs and updates. Finish one action before using NEMESIS Manager.");
     }
     private static String writeActionLog(PackageScanner.Item item, String result) {
         File dir = item.dataDir();

@@ -1,6 +1,9 @@
 package dev.nemesis.usbmanager;
 
 import android.app.Activity;
+import android.text.SpannableString;
+import android.text.Spanned;
+import android.text.style.StyleSpan;
 import android.app.Dialog;
 import android.graphics.Color;
 import android.graphics.Typeface;
@@ -45,7 +48,12 @@ final class ManagerDialogs {
         };
         scroll.setBackgroundColor(BACKGROUND);
         TextView text = new TextView(activity);
-        text.setText(body == null || body.trim().length() == 0 ? "No additional information." : body);
+        String content = body == null || body.trim().length() == 0 ? "No additional information." : body;
+        SpannableString formatted = new SpannableString(content);
+        java.util.regex.Matcher headings = java.util.regex.Pattern.compile("(?m)^(Getting started|Tabs|Adding or updating packages|Need more information\\?|Status|Versions|USB source:|USB folder:|Data and history:|Package ID:|Installed version[^:]*:|USB version:|Operation:|Exit code:)").matcher(content);
+        while (headings.find()) formatted.setSpan(new StyleSpan(Typeface.BOLD), headings.start(), headings.end(), Spanned.SPAN_EXCLUSIVE_EXCLUSIVE);
+        text.setText(formatted);
+        text.setLineSpacing(dp(activity, 4), 1.1f);
         text.setTextColor(TEXT); text.setBackgroundColor(BACKGROUND); text.setTextSize(17);
         text.setTextIsSelectable(true); text.setPadding(0, 0, 0, dp(activity, 16));
         scroll.addView(text);

@@ -46,7 +46,8 @@
       </section>
       <section id="panel-setup" class="panel" role="tabpanel" aria-labelledby="tab-setup" tabindex="0" hidden>
         <div class="section-title"><h2>Package Manager</h2><span id="manager-version" class="badge">No drive selected</span></div>
-        <div class="setup-grid"><div><p id="manager-detail">Select a drive to check its setup.</p><p class="hint">NEMESIS must already be installed on your head unit.</p></div><form id="manager-form"><label for="manager-file">Manager release bundle</label><input id="manager-file" type="file" accept=".zip" required><p class="hint">Choose usb-package-manager-ready.zip from a trusted release.</p><div class="actions"><button id="setup" type="submit" value="setup">Set up drive</button><button id="update-manager" type="submit" value="update-manager" hidden>Update manager</button></div></form></div>
+        <div class="setup-grid"><div><p id="manager-detail">Select a drive to check its setup.</p><p class="hint">NEMESIS must already be installed on your head unit.</p><p id="release-status" role="status">Latest release not checked.</p><a id="manager-release-link" href="https://github.com/hmason55/nemesis-package-manager/releases" target="_blank" rel="noopener noreferrer" hidden>View latest release</a><button id="check-release" class="secondary" type="button">Check for updates</button></div><form id="manager-form"><label for="manager-file">Manager release bundle</label><input id="manager-file" type="file" accept=".zip" required><p class="hint">Choose usb-package-manager-ready.zip from a trusted release.</p><div class="actions"><button id="setup" type="submit" value="setup">Set up drive</button><button id="update-manager" type="submit" value="update-manager" hidden>Update manager</button></div></form></div>
+        <div class="launcher-option"><label class="check-label" for="auto-launch"><input id="auto-launch" type="checkbox"> Run Package Manager when this USB is inserted</label><p class="hint">First setup launches once by default. Turning this on afterward keeps automatic launch enabled. NEMESIS may still ask for execution approval. Turn off to open through NEMESIS Manager instead.</p></div>
         <details id="manager-update-guide" class="quick-guide manager-update-guide">
           <summary>Install or update Package Manager through NEMESIS</summary>
           <p>Updating or repairing the installer on this drive does not update the installed app. Package Manager cannot install or update itself. These instructions are available offline.</p>
@@ -64,6 +65,7 @@ path=usb.package.manager.zip</code></pre>
         </details>
       </section>
     </fieldset>
+    <dialog id="remove-dialog" aria-labelledby="remove-title"><form id="remove-form"><h2 id="remove-title">Remove package from USB?</h2><p id="remove-description"></p><label class="check-label"><input id="delete-data" type="checkbox"> Also delete this package's USB data</label><p id="remove-data-note" class="hint"></p><div class="actions"><button id="cancel-remove" class="secondary" type="button">Cancel</button><button class="danger" type="submit">Remove from USB</button></div></form></dialog>
     <footer>Only import trusted releases. Keep the drive connected until copying finishes.</footer>
   </main>
 </body>

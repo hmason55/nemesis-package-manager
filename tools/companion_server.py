@@ -19,6 +19,8 @@ from urllib.parse import urlsplit
 from tools.companion_drives import drive_candidates, drive_root
 from tools.companion_metadata import scan_drive
 from tools.companion_uploads import UPLOAD_ROUTES, handle_upload
+from tools.companion_actions import handle_action
+from tools.companion_releases import latest_release
 
 ASSETS = Path(__file__).with_name("companion_ui")
 EXPECTED_ERRORS = (
@@ -83,11 +85,16 @@ class CompanionHandler(CompanionTransport):
 
         API reads require the same session token as writes. HTML and its two
         static assets contain no secret and cannot select or modify a drive.
+        The release endpoint fetches metadata from a fixed public repository;
+        executable downloads remain explicit browser actions.
         """
         path = urlsplit(self.path).path
         if not self.authorized(api=path.startswith("/api/")):
             return
         try:
+            if path == "/api/manager-release":
+                self.respond(200, latest_release())
+                return
             if path == "/api/state":
                 self.respond(
                     200,
@@ -114,13 +121,19 @@ class CompanionHandler(CompanionTransport):
         """Authenticate before reading uploads or changing the selected drive.
 
         Selection is committed only after the new path scans successfully.
-        Every other allowed POST streams a ZIP through the upload dispatcher.
+        Bounded JSON control actions use the same drive-generation binding as
+        imports, before reading their bodies. The three upload routes stream ZIPs
+        through the upload dispatcher; no action executes head-unit code here.
+        A single server thread keeps drive mutations serialized with imports.
         """
         if not self.authorized():
             return
         try:
             length = int(self.headers.get("Content-Length", "0"))
             route = urlsplit(self.path)
+            if route.path in ("/api/remove", "/api/launcher"):
+                self.respond(200, handle_action(self, route.path, length))
+                return
             if route.path == "/api/select":
                 if not 0 < length <= 8192:
                     raise ValueError("Invalid selection request size.")

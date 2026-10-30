@@ -4,7 +4,7 @@ Descriptors take precedence over loose ZIP files in a package folder. A folder
 without a descriptor contributes one row per immediate ZIP, while raw ZIPs are
 also accepted directly under packages/. Data-only and hidden folders are ignored.
 Loose archives can be inspected but are not directory replacement destinations;
-the UI keeps them read-only so importing an update cannot overwrite a ZIP path
+the UI allows removal only, so importing an update cannot overwrite a ZIP path
 with a directory or silently leave the old installer alongside a managed copy.
 """
 

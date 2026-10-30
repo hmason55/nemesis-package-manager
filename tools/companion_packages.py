@@ -48,15 +48,23 @@ def _publish_package(staged, destination, backup):
 
 
 def add_package(root, archive, name, overwrite=False):
+    """Import installers while permitting reuse of a data-only removed package.
+
+    The data-only exception preserves saved recordings on re-add; a directory
+    containing any installer still requires explicit replacement and identity checks.
+    """
     if not re.fullmatch(r"[A-Za-z0-9][A-Za-z0-9._-]{0,63}", name):
         raise ValueError(
-            "Use 1–64 letters, numbers, dots, hyphens or underscores for the folder."
+            "Use 1-64 letters, numbers, dots, hyphens or underscores for the folder."
         )
     packages = checked_path(root, "packages")
     packages.mkdir(exist_ok=True)
     destination = checked_path(root, "packages/" + name)
     if destination.exists():
-        if not overwrite:
+        data_only = destination.is_dir() and all(
+            is_data_name(p.name) for p in destination.iterdir()
+        )
+        if not overwrite and not data_only:
             raise ValueError(
                 "That folder exists. Select Replace installer to update it."
             )
@@ -73,7 +81,8 @@ def add_package(root, archive, name, overwrite=False):
         if info["error"]:
             raise ValueError(info["error"])
         if destination.exists():
-            check_replacement(describe_package(root, name), info)
+            if not data_only:
+                check_replacement(describe_package(root, name), info)
             _publish_package(staged, destination, work / "previous")
         else:
             staged.rename(destination)

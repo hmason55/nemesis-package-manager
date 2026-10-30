@@ -42,7 +42,7 @@ On later visits, open **NEMESIS Manager > Packages > Package Manager > Launch**.
 
 ## Find your way around
 
-**Installed** opens first. **Refresh** reloads the drive and installed packages; **Help** explains the tabs and common actions; **Close** exits the screen. Tap a row to select it, then use the action bar at the bottom. Actions that do not apply are dimmed.
+**Installed** opens first. **Refresh** reloads the drive and installed packages; **Help** explains the tabs and common actions; **Close** exits the screen. Tap a row to select it, then use the action bar at the bottom. Each tab shows only its applicable actions; unavailable actions within that tab are dimmed.
 
 ![Installed tab mockup showing installed versions and Example Player selected with an update available](images/manager-installed.svg)
 
@@ -54,6 +54,8 @@ On later visits, open **NEMESIS Manager > Packages > Package Manager > Launch**.
 | **Scripts** | USB tasks you can choose to run | USB version, or Unknown |
 
 A package with an update appears in both **Installed** and **Updates**. **Available** contains packages you have not installed; scripts have their own tab. If the app cannot load installed packages, read the error and tap **Refresh** to retry.
+
+![Help mockup with short sections and contextual action descriptions](images/manager-help.svg)
 
 ## Install a package
 
@@ -88,11 +90,10 @@ In the parked vehicle:
 
 | First action | Meaning |
 | --- | --- |
-| **Update** | The USB release is confirmed newer than the installed release |
-| **Up to date** (disabled) | Installed and USB versions match |
-| **Older installer** (disabled) | The comparable USB version is older |
-| **Install version** | Version metadata is missing or cannot be ordered; inspect Details and the release instructions before confirming |
-| **Install** | That installer package ID was not reported as installed; check that you selected the intended release |
+| **Uninstall** | Main action on Installed; removes the head-unit package and keeps its USB files |
+| **Update** | Main action on Updates, only for a confirmed newer USB installer |
+| **Install** | Main action on Available, for packages not installed on the head unit |
+| **Run script** | Main action on Scripts |
 
 If a package is installed but its installer is missing from USB, add the release to the drive first. Copying files in the companion does not update the installed app. See [full update instructions](UPDATING.md#update-another-package) for manual copying and help with failures.
 
@@ -103,7 +104,7 @@ Package Manager itself is hidden from these lists. The companion's **Update mana
 1. Read the script author's instructions; scripts can change the head unit with root privileges.
 2. Tap **Scripts**, select the task, and check **Details**.
 3. Tap **Run script**, review the confirmation, and confirm.
-4. Keep USB connected and wait for the result. Running a script does not install an app.
+4. Wait for the result. Running a script does not install an app.
 
 ![Scripts tab mockup showing Example Diagnostic with an Unknown version and the Run script action](images/manager-scripts.svg)
 
@@ -129,7 +130,7 @@ Read the confirmation. For an update, it shows both versions. Tap **Cancel** to 
 
 ### 2. Wait with USB connected
 
-The spinner means the app is working; it is not a percentage. Keep USB connected until the action finishes. Tap **Details** if you need more information about the operation.
+The busy overlay contains a spinner, the operation and package name, and a blue **Details** button. Installs and updates also say **Keep USB plugged in**. Elapsed time and slow-operation guidance are in Details. Other actions remain blocked until the result is known.
 
 ![Progress mockup showing Updating, an activity spinner, and a reminder to keep USB connected](images/manager-progress.svg)
 
@@ -162,3 +163,19 @@ To remove Package Manager itself, use **NEMESIS Manager > Packages > Package Man
 | The execution prompt keeps returning | Check that the launcher successfully disabled its own root descriptor; see [Windows setup](SETUP-WINDOWS.md#data-and-troubleshooting) |
 
 For interrupted computer copies, follow [companion files and recovery](USB-COMPANION.md#files-and-recovery). For installation/update failures, use the [update troubleshooting table](UPDATING.md#when-an-update-cannot-proceed).
+
+
+## Manage the USB drive on your computer
+
+In **Drive setup**, the companion reads the manager version from the installer on USB and checks published manager releases, including prereleases. A newer comparable release offers a link; nothing is downloaded or installed automatically. **Check for updates** retries a failed/offline check.
+
+![Drive setup mockup with the USB manager version, a newer release link, and automatic launch setting](images/companion-setup.svg)
+
+Toggle **Run Package Manager when this USB is inserted** to enable or disable its root execution descriptor. NEMESIS may still ask for execution approval. Enabled launch remains enabled on subsequent insertions. The default first-launch setup still disables itself unless this option is enabled.
+
+On **Packages**, choose **Remove**, then decide whether to also delete USB data. Keeping data is the default; adding the same package folder later preserves it. Loose ZIP removal deletes only that ZIP and always keeps shared data. Removal on USB never uninstalls the head-unit package.
+
+![USB removal confirmation with optional data deletion unchecked](images/companion-remove.svg)
+
+Installed versions come from NEMESIS manifests when readable. After a successful installation through Package Manager, it also stores the installed release in private app settings. Details marks a saved fallback version; it can be stale after changes made outside Package Manager. It is cleared after a confirmed uninstall or a successful registry scan that no longer lists that package. Missing metadata for packages never installed through this manager remains Unknown.
+

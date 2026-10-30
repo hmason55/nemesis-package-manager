@@ -48,7 +48,7 @@ Download the Windows or Linux x86-64 companion from the [releases page](https://
 
 ## Everyday use
 
-Start in **Installed**, or choose **Updates**, **Available**, or **Scripts**. Select a row to see its actions. Keep USB connected until the result popup, and finish one operation before starting another in either manager UI. The [user guide](docs/USER-GUIDE.md#find-your-way-around) explains each screen and action.
+Start in **Installed**, or choose **Updates**, **Available**, or **Scripts**. Installed offers Uninstall, Launch, and Details; Updates offers Update; Available offers Install; Scripts offers Run script. Keep USB plugged in during installs and updates, and finish one operation before starting another in either manager UI. The [user guide](docs/USER-GUIDE.md#find-your-way-around) explains each screen and action.
 
 ## Updates
 

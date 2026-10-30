@@ -30,6 +30,7 @@ public final class PackageScanner {
         public String id;
         public String version;
         public String installedVersion;
+        boolean installedVersionSaved;
         public String types;
         public String error;
         public String detail;

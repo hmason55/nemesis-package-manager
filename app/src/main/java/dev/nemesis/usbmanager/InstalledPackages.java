@@ -11,6 +11,7 @@ final class InstalledPackages {
     final Set<String> locked = new HashSet<String>();
     final Map<String, String> types = new HashMap<String, String>();
     final Map<String, String> versions = new HashMap<String, String>();
+    final Set<String> savedVersions = new HashSet<String>();
     final String error;
     private InstalledPackages(String error) { this.error = error; }
     boolean available() { return error == null; }
@@ -35,7 +36,7 @@ final class InstalledPackages {
                 metadata = "[nemesis]".equalsIgnoreCase(line.replace("\uFEFF", ""));
             } else if (metadata && id != null && names.containsKey(id)) {
                 int equals = line.indexOf('=');
-                if (equals > 0 && "version".equalsIgnoreCase(line.substring(0, equals).trim()))
+                if (equals > 0 && line.substring(equals + 1).trim().length() > 0 && "version".equalsIgnoreCase(line.substring(0, equals).trim()))
                     versions.put(id, line.substring(equals + 1).trim());
             }
         }

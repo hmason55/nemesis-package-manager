@@ -1,6 +1,59 @@
 <svg xmlns="http://www.w3.org/2000/svg" width="1024" height="612" viewBox="0 0 1024 612" role="img" aria-labelledby="title desc">
-<title id="title">USB companion: packages on USB</title>
-<desc id="desc">A local companion browser view with the drive selector, drive summary, three tabs and an example installer on USB at version 1.5. This view does not show the head-unit installed version.</desc>
-<g font-family="Arial, Helvetica, sans-serif"><rect x="0" y="0" width="1024" height="612" rx="0" fill="#14181e" /><rect x="0" y="0" width="1024" height="568" rx="0" fill="#090c11" /><text x="32" y="45" font-size="24" fill="#edf1f7" font-weight="600" >USB companion</text><text x="992" y="43" font-size="14" fill="#9ca8b9" font-weight="400" text-anchor="end">● Local</text><text x="32" y="78" font-size="15" fill="#b2c8e5" font-weight="400" >▸ Quick guide</text><rect x="32" y="98" width="960" height="100" rx="10" fill="#141a23" stroke="#2b3441"/><text x="48" y="121" font-size="13" fill="#b8c3d3" font-weight="400" >USB drive</text><rect x="48" y="133" width="588" height="48" rx="6" fill="#0d121a" stroke="#3a485a"/><text x="64" y="163" font-size="17" fill="#ebeef4" font-weight="400" >E:\ — Example USB</text><text x="612" y="162" font-size="16" fill="#b8c3d3" font-weight="400" >▾</text><g><rect x="652" y="133" width="118" height="48" rx="6" fill="#262d37" /><text x="711" y="163" font-size="18" fill="#ebeef4" font-weight="400" text-anchor="middle">Refresh</text></g><text x="792" y="163" font-size="15" fill="#b2c8e5" font-weight="400" >Drive not listed?</text><text x="48" y="224" font-size="13" fill="#9ca8b9" font-weight="400" >Available space</text><text x="48" y="247" font-size="16" fill="#ebeef4" font-weight="400" >12.4 GB</text><text x="308" y="224" font-size="13" fill="#9ca8b9" font-weight="400" >Package Manager</text><text x="308" y="247" font-size="16" fill="#ebeef4" font-weight="400" >0.2.0</text><text x="568" y="224" font-size="13" fill="#9ca8b9" font-weight="400" >Launcher</text><text x="568" y="247" font-size="16" fill="#ebeef4" font-weight="400" >Disabled</text><text x="32" y="276" font-size="15" fill="#a7bad1" font-weight="400" >Drive checked. Ready to add or update packages.</text><text x="32" y="313" font-size="16" fill="#92c5ff" font-weight="400" >Packages  1</text><text x="185" y="313" font-size="16" fill="#9ca8b9" font-weight="400" >Add / update</text><text x="348" y="313" font-size="16" fill="#9ca8b9" font-weight="400" >Drive setup</text><path d="M32 329H992" stroke="#2b3441"/><path d="M32 329H144" stroke="#92c5ff" stroke-width="2"/><text x="32" y="370" font-size="19" fill="#edf1f7" font-weight="600" >Packages on USB</text><rect x="650" y="342" width="176" height="44" rx="6" fill="#0d121a" stroke="#3a485a"/><text x="666" y="370" font-size="15" fill="#ebeef4" font-weight="400" >All packages   ▾</text><rect x="842" y="342" width="150" height="44" rx="6" fill="#92c5ff" /><text x="917" y="370" font-size="16" fill="#081624" font-weight="600" text-anchor="middle">Add package</text><rect x="32" y="404" width="960" height="128" rx="9" fill="#121821" stroke="#2b3441"/><rect x="33" y="405" width="958" height="38" rx="0" fill="#181f2a" /><text x="48" y="430" font-size="14" fill="#a6b3c7" font-weight="400" >Package</text><text x="412" y="430" font-size="14" fill="#a6b3c7" font-weight="400" >On USB</text><text x="540" y="430" font-size="14" fill="#a6b3c7" font-weight="400" >Type</text><text x="660" y="430" font-size="14" fill="#a6b3c7" font-weight="400" >Status</text><text x="48" y="475" font-size="18" fill="#edf1f7" font-weight="600" >Example Player</text><text x="48" y="507" font-size="14" fill="#b2c8e5" font-weight="400" >▸ Details</text><text x="412" y="475" font-size="17" fill="#d5e7ff" font-weight="400" >1.5</text><text x="540" y="475" font-size="16" fill="#ebeef4" font-weight="400" >Installer</text><rect x="660" y="455" width="62" height="28" rx="4" fill="#233144" /><text x="691" y="474" font-size="13" fill="#c3d3e8" font-weight="400" text-anchor="middle">Ready</text><rect x="814" y="458" width="162" height="44" rx="6" fill="#202c3d" stroke="#3b506c"/><text x="895" y="486" font-size="16" fill="#d4e6ff" font-weight="600" text-anchor="middle">Replace on USB</text><text x="32" y="553" font-size="14" fill="#9ca8b9" font-weight="400" >Install these packages through Package Manager in the vehicle.</text>
-<path d="M0 568H1024" stroke="#35404e"/><text x="20" y="595" font-size="14" fill="#a5b2c5" font-weight="400" >Illustrative mockup · Example packages and versions · Not a vehicle screenshot</text></g>
+  <title id="title">USB companion: packages on USB</title>
+  <desc id="desc">A local companion browser view with the drive selector, drive summary, three tabs and an example installer on USB at version 1.5. This view does not show the head-unit installed version.</desc>
+  <g font-family="Arial, Helvetica, sans-serif">
+    <rect x="0" y="0" width="1024" height="612" rx="0" fill="#14181e" />
+    <rect x="0" y="0" width="1024" height="568" rx="0" fill="#090c11" />
+    <text x="32" y="45" font-size="24" fill="#edf1f7" font-weight="600">USB companion</text>
+    <text x="992" y="43" font-size="14" fill="#9ca8b9" font-weight="400" text-anchor="end">● Local</text>
+    <text x="32" y="78" font-size="15" fill="#b2c8e5" font-weight="400">▸ Quick guide</text>
+    <rect x="32" y="98" width="960" height="100" rx="10" fill="#141a23" stroke="#2b3441" />
+    <text x="48" y="121" font-size="13" fill="#b8c3d3" font-weight="400">USB drive</text>
+    <rect x="48" y="133" width="588" height="48" rx="6" fill="#0d121a" stroke="#3a485a" />
+    <text x="64" y="163" font-size="17" fill="#ebeef4" font-weight="400">E:\ — Example USB</text>
+    <text x="612" y="162" font-size="16" fill="#b8c3d3" font-weight="400">▾</text>
+    <g>
+      <rect x="652" y="133" width="118" height="48" rx="6" fill="#262d37" />
+      <text x="711" y="163" font-size="18" fill="#ebeef4" font-weight="400" text-anchor="middle">Refresh</text>
+    </g>
+    <text x="792" y="163" font-size="15" fill="#b2c8e5" font-weight="400">Drive not listed?</text>
+    <text x="48" y="224" font-size="13" fill="#9ca8b9" font-weight="400">Available space</text>
+    <text x="48" y="247" font-size="16" fill="#ebeef4" font-weight="400">12.4 GB</text>
+    <text x="308" y="224" font-size="13" fill="#9ca8b9" font-weight="400">Package Manager</text>
+    <text x="308" y="247" font-size="16" fill="#ebeef4" font-weight="400">0.2.0</text>
+    <text x="568" y="224" font-size="13" fill="#9ca8b9" font-weight="400">Launcher</text>
+    <text x="568" y="247" font-size="16" fill="#ebeef4" font-weight="400">Disabled</text>
+    <text x="32" y="276" font-size="15" fill="#a7bad1" font-weight="400">Drive checked. Ready to add or update packages.</text>
+    <text x="32" y="313" font-size="16" fill="#92c5ff" font-weight="400">Packages  1</text>
+    <text x="185" y="313" font-size="16" fill="#9ca8b9" font-weight="400">Add / update</text>
+    <text x="348" y="313" font-size="16" fill="#9ca8b9" font-weight="400">Drive setup</text>
+    <path d="M32 329H992" stroke="#2b3441" />
+    <path d="M32 329H144" stroke="#92c5ff" stroke-width="2" />
+    <text x="32" y="370" font-size="19" fill="#edf1f7" font-weight="600">Packages on USB</text>
+    <rect x="650" y="342" width="176" height="44" rx="6" fill="#0d121a" stroke="#3a485a" />
+    <text x="666" y="370" font-size="15" fill="#ebeef4" font-weight="400">All packages   ▾</text>
+    <rect x="842" y="342" width="150" height="44" rx="6" fill="#92c5ff" />
+    <text x="917" y="370" font-size="16" fill="#081624" font-weight="600" text-anchor="middle">Add package</text>
+    <rect x="32" y="404" width="960" height="128" rx="9" fill="#121821" stroke="#2b3441" />
+    <rect x="33" y="405" width="958" height="38" rx="0" fill="#181f2a" />
+    <text x="48" y="430" font-size="14" fill="#a6b3c7" font-weight="400">Package</text>
+    <text x="412" y="430" font-size="14" fill="#a6b3c7" font-weight="400">On USB</text>
+    <text x="540" y="430" font-size="14" fill="#a6b3c7" font-weight="400">Type</text>
+    <text x="660" y="430" font-size="14" fill="#a6b3c7" font-weight="400">Status</text>
+    <text x="48" y="475" font-size="18" fill="#edf1f7" font-weight="600">Example Player</text>
+    <text x="48" y="507" font-size="14" fill="#b2c8e5" font-weight="400">▸ Details</text>
+    <text x="412" y="475" font-size="17" fill="#d5e7ff" font-weight="400">1.5</text>
+    <text x="540" y="475" font-size="16" fill="#ebeef4" font-weight="400">Installer</text>
+    <rect x="660" y="455" width="62" height="28" rx="4" fill="#233144" />
+    <text x="691" y="474" font-size="13" fill="#c3d3e8" font-weight="400" text-anchor="middle">Ready</text>
+    <rect x="788" y="449" width="184" height="34" rx="6" fill="#202c3d" stroke="#3b506c" />
+    <text x="880" y="472" font-size="15" fill="#d4e6ff" font-weight="600" text-anchor="middle">Replace on USB</text>
+    <text x="32" y="553" font-size="14" fill="#9ca8b9" font-weight="400">Install these packages through Package Manager in the vehicle.</text>
+    <path d="M0 568H1024" stroke="#35404e" />
+    <text x="20" y="595" font-size="14" fill="#a5b2c5" font-weight="400">Illustrative mockup · Example packages and versions · Not a vehicle screenshot</text>
+    <g>
+      <rect x="788" y="491" width="184" height="34" rx="6" fill="#49351a" stroke="#5b748f" />
+      <text x="880" y="514" font-size="15" fill="#ebeef4" text-anchor="middle">Remove</text>
+    </g>
+  </g>
 </svg>
