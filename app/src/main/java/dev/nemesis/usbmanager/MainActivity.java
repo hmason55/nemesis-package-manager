@@ -332,7 +332,7 @@ public final class MainActivity extends Activity {
                     String loadError = null;
                     try {
                         PackageSource source = cloudSelected ? cloudSource() : new UsbPackageSource(usb);
-                        for (PackageRecord record : source.list(cloudQuery)) next.add(record.local != null ? record.local : CloudPackageSource.item(record, null));
+                        for (PackageRecord record : source.list(cloudSelected ? cloudQuery : "")) next.add(record.local != null ? record.local : CloudPackageSource.item(record, null));
                     } catch (Exception error) { loadError = "Cloud registry unavailable: " + error.getMessage(); }
                     final String sourceError = loadError;
                     NemesisCli.Result query = NemesisCli.run("pkg-list");

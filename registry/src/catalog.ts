@@ -1,4 +1,9 @@
 import { Env, Submission, requireValue } from "./types";
+const component = (value: string) =>
+  encodeURIComponent(value).replace(
+    /[!'()*]/g,
+    (c) => "%" + c.charCodeAt(0).toString(16).toUpperCase(),
+  );
 export function publicVersion(row: Submission, origin: string) {
   return {
     ...JSON.parse(row.metadata),
@@ -11,9 +16,9 @@ export function publicVersion(row: Submission, origin: string) {
     download_url:
       origin +
       "/v1/packages/" +
-      encodeURIComponent(row.package_id) +
+      component(row.package_id) +
       "/versions/" +
-      encodeURIComponent(row.version) +
+      component(row.version) +
       "/download",
   };
 }

@@ -3,6 +3,10 @@ import { beforeAll, beforeEach, describe, it, expect, vi } from "vitest";
 import worker from "../src/index";
 import { hash, seal, challenge } from "../src/security";
 import { Env, now } from "../src/types";
+import { publicVersion } from "../src/catalog";
+import { synchronize } from "../src/webhooks";
+import { github } from "../src/github";
+import urlFixtures from "../../contracts/fixtures/url-components.json";
 vi.mock("../src/github", () => ({
   github: vi.fn(async (path: string) =>
     path === "/user"
@@ -88,6 +92,82 @@ beforeEach(async () => {
   await bindings.PACKAGES.put("sha256/" + sha + ".zip", "zip");
 });
 describe("public catalog and moderation", () => {
+  it("uses canonical URL components shared by the Python and vehicle clients", () => {
+    for (const fixture of urlFixtures) {
+      const value = publicVersion(
+        {
+          package_id: "example.app",
+          version: fixture.value,
+          metadata: JSON.stringify(metadata),
+        } as any,
+        "https://registry.test",
+      );
+      expect(value.download_url).toBe(
+        "https://registry.test/v1/packages/example.app/versions/" +
+          fixture.encoded +
+          "/download",
+      );
+    }
+  });
+  it("does not approve concurrent initial claims with different ID casing", async () => {
+    bindings.ADMIN_IDS = "1";
+    await bindings.DB.prepare("DELETE FROM packages").run();
+    await bindings.DB.prepare(
+      "INSERT INTO submissions(id,package_id,repository_id,publisher_id,release_id,asset_id,version,metadata,status,sha256,size,object_key,report,created_at,updated_at) SELECT ?,'Example.App',repository_id,publisher_id,release_id,41,'2.0',metadata,status,sha256,size,object_key,report,created_at,updated_at FROM submissions WHERE id=?",
+    )
+      .bind("12".repeat(32), submission)
+      .run();
+    const responses = await Promise.all(
+      [submission, "12".repeat(32)].map((id) =>
+        call("/v1/admin/submissions/" + id + "/approve", "POST", {}, token),
+      ),
+    );
+    expect(responses.map((r) => r.status).sort()).toEqual([200, 409]);
+    const pkg = await bindings.DB.prepare(
+      "SELECT id FROM packages",
+    ).first<any>();
+    const approved = await bindings.DB.prepare(
+      "SELECT package_id FROM submissions WHERE status='approved'",
+    ).all<any>();
+    expect(approved.results).toHaveLength(1);
+    expect(approved.results[0].package_id).toBe(pkg.id);
+  });
+  it("retires published and terminal release events while preserving transient retries", async () => {
+    await bindings.DB.prepare("UPDATE submissions SET status='approved'").run();
+    for (const id of [30, 31, 32])
+      await bindings.DB.prepare(
+        "INSERT INTO release_events(repository_id,release_id) VALUES(10,?)",
+      )
+        .bind(id)
+        .run();
+    vi.mocked(github).mockImplementation(async (path: string) => {
+      if (path.endsWith("/32")) throw new Error("Temporary GitHub outage");
+      const id = Number(path.split("/").pop());
+      return {
+        id,
+        tag_name: "v1.2",
+        body: "",
+        assets: [{ id: id === 30 ? 40 : 41, name: "example.zip" }],
+      };
+    });
+    try {
+      await synchronize(bindings);
+      const rows = await bindings.DB.prepare(
+        "SELECT release_id,status FROM release_events ORDER BY release_id",
+      ).all<any>();
+      expect(rows.results.map((r) => r.status)).toEqual([
+        "submitted",
+        "selection_required",
+        "pending",
+      ]);
+    } finally {
+      vi.mocked(github).mockImplementation(async (path: string) =>
+        path === "/user"
+          ? { id: 1, login: "publisher" }
+          : { id: 10, owner: { id: 1 }, private: false },
+      );
+    }
+  });
   it("provides category facets and counts independently of the active filter", async () => {
     await bindings.DB.prepare("UPDATE submissions SET status='approved'").run();
     const result: any = await (await call("/v1/packages?sort=recent")).json();

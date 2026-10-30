@@ -275,7 +275,7 @@ export async function admin(request: Request, env: Env) {
       409,
     );
     const claim = await env.DB.prepare(
-      "SELECT repository_id FROM packages WHERE id=?",
+      "SELECT id,repository_id FROM packages WHERE id=?",
     )
       .bind(row.package_id)
       .first<any>();
@@ -284,12 +284,17 @@ export async function admin(request: Request, env: Env) {
       "Package ID already reserved",
       409,
     );
+    requireValue(
+      !claim || claim.id === row.package_id,
+      "Use the exact case of the registered package ID",
+      409,
+    );
     const result = await env.DB.batch([
       env.DB.prepare(
         "INSERT INTO packages VALUES(?,?,?) ON CONFLICT(id) DO NOTHING",
       ).bind(row.package_id, row.repository_id, row.metadata),
       env.DB.prepare(
-        "UPDATE submissions SET status='approved',updated_at=? WHERE id=? AND status='review' AND EXISTS(SELECT 1 FROM packages WHERE id=? AND repository_id=?) AND NOT EXISTS(SELECT 1 FROM submissions WHERE package_id=? COLLATE NOCASE AND version=? AND status IN ('approved','withdrawn') AND id<>?)",
+        "UPDATE submissions SET status='approved',updated_at=? WHERE id=? AND status='review' AND EXISTS(SELECT 1 FROM packages WHERE id=? COLLATE BINARY AND repository_id=?) AND NOT EXISTS(SELECT 1 FROM submissions WHERE package_id=? COLLATE NOCASE AND version=? AND status IN ('approved','withdrawn') AND id<>?)",
       ).bind(
         now(),
         row.id,

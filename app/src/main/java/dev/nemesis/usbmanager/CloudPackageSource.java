@@ -28,7 +28,7 @@ public final class CloudPackageSource implements PackageSource {
         if (!"https".equals(url.getProtocol()) || url.getUserInfo() != null || url.getQuery() != null || url.getRef() != null) throw new IOException("Configure an HTTPS registry URL");
         this.base = base.replaceAll("/+$", ""); this.cache = new File(cache, "cloud-installers"); this.connections = connections;
     }
-    private String escape(String text) throws Exception { return URLEncoder.encode(text, "UTF-8").replace("+", "%20"); }
+    private String escape(String text) throws Exception { return URLEncoder.encode(text, "UTF-8").replace("+", "%20").replace("*", "%2A").replace("%7E", "~"); }
     private HttpsURLConnection connect(String address) throws Exception {
         if (!address.startsWith(base + "/")) throw new IOException("Unexpected registry host");
         HttpsURLConnection connection = connections.open(address);

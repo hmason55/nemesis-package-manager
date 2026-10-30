@@ -36,10 +36,20 @@ import static org.junit.Assert.*;
 
 @RunWith(RobolectricTestRunner.class)
 @Config(sdk = 19, manifest = Config.NONE, shadows = {
-    ActivityOperationsTest.UsbLocation.class, ActivityOperationsTest.Commands.class
+    ActivityOperationsTest.UsbLocation.class, ActivityOperationsTest.Commands.class, ActivityOperationsTest.CloudListing.class
 })
 @LooperMode(LooperMode.Mode.PAUSED)
 public class ActivityOperationsTest {
+    @Implements(value = CloudPackageSource.class, isInAndroidSdk = false)
+    public static class CloudListing {
+        static String lastQuery;
+        @Implementation protected List<PackageRecord> list(String query) throws Exception {
+            lastQuery=query;
+            if ("offline".equals(query)) throw new java.io.IOException("Registry offline");
+            PackageRecord record=new PackageRecord();record.id="demo.app";record.name="Cloud Demo";record.version="2.0";
+            return Collections.singletonList(record);
+        }
+    }
     @Rule public TemporaryFolder temporary = new TemporaryFolder();
     private ActivityController<MainActivity> controller;
     private MainActivity activity;
@@ -227,6 +237,24 @@ public class ActivityOperationsTest {
         dialogClick("Launch");
         awaitCompletion();
         assertTrue(Commands.calls.contains(Arrays.asList("pkg-launch", "demo.app")));
+    }
+    @Test public void usbDiscoveryIgnoresAPreviousCloudSearch() throws Exception {
+        usbInstaller(); open();
+        Field search=MainActivity.class.getDeclaredField("cloudQuery");search.setAccessible(true);search.set(activity,"no-local-title-matches-this");
+        click("refreshButton");await(() -> !((Boolean)field("busy")));
+        assertTrue(((ArrayList<PackageScanner.Item>)field("allItems")).stream().anyMatch(item -> "demo.app".equals(item.id) && item.target != null));
+    }
+    @Test public void cloudRefreshUsesItsSearchAndKeepsInstalledStateDuringAnOutage() throws Exception {
+        open();
+        activity.getPreferences(0).edit().putString("registry_url","https://registry.test").apply();
+        Field source=MainActivity.class.getDeclaredField("cloudSelected");source.setAccessible(true);source.set(activity,true);
+        Field search=MainActivity.class.getDeclaredField("cloudQuery");search.setAccessible(true);search.set(activity,"demo");
+        click("refreshButton");await(() -> !((Boolean)field("busy")));
+        assertEquals("demo",CloudListing.lastQuery);
+        assertTrue(((ArrayList<PackageScanner.Item>)field("allItems")).stream().anyMatch(item -> item.remote != null && item.installed && "1.0".equals(item.installedVersion)));
+        search.set(activity,"offline");click("refreshButton");await(() -> !((Boolean)field("busy")));
+        assertTrue(((ArrayList<PackageScanner.Item>)field("allItems")).stream().anyMatch(item -> "demo.app".equals(item.id) && item.installed && item.installedStateKnown));
+        assertTrue(((String)field("scanError")).contains("Registry offline"));
     }
 
     @Test public void registryFailureIsVisibleAndRefreshRecovers() throws Exception {

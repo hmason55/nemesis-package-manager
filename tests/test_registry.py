@@ -31,6 +31,46 @@ def installer(path, version="1.2", extra=None):
 
 
 class RegistryTests(unittest.TestCase):
+    def test_url_components_match_shared_registry_and_vehicle_fixtures(self):
+        fixtures = json.loads(
+            (
+                Path(__file__).parents[1] / "contracts/fixtures/url-components.json"
+            ).read_text(encoding="utf-8")
+        )
+        client = RegistryClient("https://registry.test")
+        for fixture in fixtures:
+            with self.subTest(version=fixture["value"]):
+                value = {
+                    "package_id": "example.app",
+                    "version": fixture["value"],
+                    "sha256": "a" * 64,
+                    "size": 1,
+                    "download_url": client.base
+                    + "/v1/packages/example.app/versions/"
+                    + fixture["encoded"]
+                    + "/download",
+                }
+                client.json = lambda path: value
+                self.assertEqual(client.version("example.app", fixture["value"]), value)
+
+    def test_new_usb_folders_support_every_accepted_id_shape(self):
+        for package_id in ("_example", "-example", "_" + "a" * 63, "CON", "example."):
+            with (
+                self.subTest(package_id=package_id),
+                tempfile.TemporaryDirectory() as directory,
+            ):
+                root = Path(directory)
+                archive = root / "package.zip"
+                with zipfile.ZipFile(archive, "w") as package:
+                    package.writestr(
+                        "NEMESIS.data", f"[nemesis]\nid={package_id}\nversion=1\n"
+                    )
+                    package.writestr("README.txt", "Text-only fixture")
+                folder, overwrite = destination(root, {"package_id": package_id})
+                self.assertLessEqual(len(folder), 64)
+                add_package(root, archive, folder, overwrite=overwrite)
+                self.assertTrue((root / "packages" / folder).is_dir())
+
     def setUp(self):
         self.temp = tempfile.TemporaryDirectory()
         self.addCleanup(self.temp.cleanup)

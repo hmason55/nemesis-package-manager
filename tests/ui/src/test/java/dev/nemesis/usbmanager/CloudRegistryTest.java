@@ -62,6 +62,15 @@ public class CloudRegistryTest {
         PackageScanner.Item item=source.acquire(record,progress(false));assertEquals(record.id,item.id);assertEquals(PackageScanner.INSTALL,item.kind);assertTrue(item.target.isFile());assertEquals(1,downloads);
         source.acquire(record,progress(false));assertEquals("Verified cache avoids downloading again",1,downloads);
     }
+    @Test public void arbitraryVersionsUseSharedCanonicalDownloadUrls()throws Exception{
+        File fixture=new File("../../contracts/fixtures/url-components.json");
+        JSONArray fixtures=new JSONArray(new String(java.nio.file.Files.readAllBytes(fixture.toPath()),"UTF-8"));
+        for(int i=0;i<fixtures.length();i++){
+            JSONObject value=fixtures.getJSONObject(i);record.version=value.getString("value");
+            record.downloadUrl=base+"/v1/packages/example.app/versions/"+value.getString("encoded")+"/download";
+            assertEquals(record.version,source().list("").get(0).version);
+        }
+    }
     @Test public void corruptionCancellationWithdrawalAndRedirectCannotProduceInstaller()throws Exception{
         CloudPackageSource source=source();try{source.acquire(record,progress(true));fail();}catch(IOException expected){}assertEquals(0,sourceCacheCount());
         archive=zip("wrong.app","1.2","install.sh");try{source.acquire(record,progress(false));fail();}catch(IOException expected){}assertEquals(0,sourceCacheCount());

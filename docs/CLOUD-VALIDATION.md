@@ -13,19 +13,19 @@ changes, and manual imports. Network downloads remain outside that lock.
 
 | Check | Current main baseline | Cloud PR |
 | --- | --- | --- |
-| Python tests | 77, one capability skip | 96, same skip |
-| Python line coverage | 94.19% | 93.85% |
-| Python branch coverage | 91.67% | 89.96% |
+| Python tests | 77, one capability skip | 98, same skip |
+| Python line coverage | 94.19% | 93.93% |
+| Python branch coverage | 91.67% | 90.17% |
 | Minimum Python maintainability index | 60.33 | 60.56 |
-| Java/API 19 tests | 47 | 61 |
+| Java/API 19 tests | 47 | 64 |
 | Java line coverage | 94.07% | 93.91% |
-| Java branch coverage | 87.53% | 85.09% |
+| Java branch coverage | 87.53% | 85.30% |
 
 All production Python modules in `tools` and `.github/scripts` are measured;
 JaCoCo measures all production Java classes without new exclusions. Both 85%
 coverage gates pass. Java maintainability remains unmeasured.
 
-The combined candidate also passed TypeScript/OpenAPI checks, 23 Worker tests,
+The combined candidate also passed TypeScript/OpenAPI checks, 26 Worker tests,
 one private-key conversion test, ten website tests, website production build,
 dependency audit (zero vulnerabilities), Python formatting, 22 release/workflow
 Node tests, APK compilation, and Windows PyInstaller build/authenticated smoke.
@@ -105,3 +105,8 @@ Still required before production rollout:
 
 The initial validation did not publish a release. Cloud provisioning and PR
 validation are recorded separately above and in CLOUD-DEPLOYMENT.md.
+
+Review follow-up regression checks cover canonical URL encoding shared by all
+three clients, concurrent package-ID casing claims, terminal release-sync events,
+USB folder defaults for every supported ID shape, and source-specific search.
+The cloud outage test also verifies installed state remains available.

@@ -18,7 +18,7 @@ def destination(root, item):
     ]
     folder = item.get("folder")
     if not matches:
-        return folder or item["package_id"], False
+        return folder or "pkg-" + item["package_id"][:60].rstrip("."), False
     eligible = [p for p in matches if p.get("replaceable") and p["kind"] != "execute"]
     if len(matches) != 1 and not folder:
         raise ValueError(

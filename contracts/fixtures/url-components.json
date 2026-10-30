@@ -1,0 +1,5 @@
+[
+  { "value": "1.0(test)!'*~", "encoded": "1.0%28test%29%21%27%2A~" },
+  { "value": "release + #?%", "encoded": "release%20%2B%20%23%3F%25" },
+  { "value": "版本-1", "encoded": "%E7%89%88%E6%9C%AC-1" }
+]

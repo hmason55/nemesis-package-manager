@@ -1,4 +1,4 @@
-import { Env, now, requireValue } from "./types";
+import { Env, HttpError, now, requireValue } from "./types";
 import { hex, audit, limitedText } from "./security";
 import { github, installationToken } from "./github";
 import { createSubmission } from "./publishing";
@@ -106,28 +106,55 @@ export async function synchronize(env: Env) {
       const pkg = packages.results[0];
       const details = JSON.parse(pkg.metadata);
       details.release_notes = String(release.body || "").slice(0, 20000);
-      await createSubmission(
-        env,
-        {
-          id: event.repository_id,
-          full_name: event.full_name,
-          installation_id: event.installation_id,
-        },
-        null,
-        {
-          package_id: pkg.id,
-          version: release.tag_name.replace(/^v(?=\d)/, ""),
-          metadata: details,
-          release_id: release.id,
-          asset_id: assets[0].id,
-        },
-      );
+      const existing = await env.DB.prepare(
+        "SELECT id FROM submissions WHERE repository_id=? AND asset_id=?",
+      )
+        .bind(event.repository_id, assets[0].id)
+        .first();
+      if (!existing)
+        await createSubmission(
+          env,
+          {
+            id: event.repository_id,
+            full_name: event.full_name,
+            installation_id: event.installation_id,
+          },
+          null,
+          {
+            package_id: pkg.id,
+            version: release.tag_name.replace(/^v(?=\d)/, ""),
+            metadata: details,
+            release_id: release.id,
+            asset_id: assets[0].id,
+          },
+        );
       await env.DB.prepare(
         "UPDATE release_events SET status='submitted' WHERE repository_id=? AND release_id=?",
       )
         .bind(event.repository_id, event.release_id)
         .run();
-    } catch {
+    } catch (error) {
+      if (
+        error instanceof HttpError &&
+        [400, 403, 409, 422].includes(error.status)
+      ) {
+        await env.DB.prepare(
+          "UPDATE release_events SET status='selection_required',message=? WHERE repository_id=? AND release_id=?",
+        )
+          .bind(
+            error.message.slice(0, 500),
+            event.repository_id,
+            event.release_id,
+          )
+          .run();
+        await audit(
+          env,
+          "webhook",
+          "release_sync_selection_required",
+          String(event.release_id),
+        );
+        continue;
+      }
       await audit(
         env,
         "webhook",
