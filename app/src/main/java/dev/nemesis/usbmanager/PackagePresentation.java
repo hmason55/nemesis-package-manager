@@ -38,7 +38,7 @@ final class PackagePresentation {
         if (PackageScanner.EXECUTE.equals(item.kind)) return true;
         if (!item.installedStateKnown) return false;
         Integer comparison = compareVersions(item.version, item.installedVersion);
-        return !item.installed || comparison == null || comparison > 0;
+        return !item.installed || comparison != null && comparison > 0;
     }
     static boolean inCategory(PackageScanner.Item item, int category) {
         if (isManager(item)) return false;
@@ -104,7 +104,7 @@ final class PackagePresentation {
         if (PackageScanner.EXECUTE.equals(item.kind)) return "Run script";
         if (!item.installed) return "Install";
         Integer comparison = compareVersions(item.version, item.installedVersion);
-        if (comparison == null) return "Install version";
+        if (comparison == null) return "Update unavailable";
         return comparison == 0 ? "Up to date" : comparison > 0 ? "Update" : "Older installer";
     }
     static boolean canLaunch(PackageScanner.Item item) {
@@ -136,13 +136,15 @@ final class PackagePresentation {
             (item.folder != null ? item.folder.getAbsolutePath() : "installed:" + item.id);
     }
     static String details(PackageScanner.Item item) {
-        StringBuilder text = new StringBuilder(state(item));
+        StringBuilder text = new StringBuilder("Status\n" + state(item));
         if (isManager(item)) text.append("\n\nManage Package Manager itself through NEMESIS Manager > Packages.");
         if (item.id != null && item.id.length() > 0) text.append("\nPackage ID: ").append(item.id);
+        text.append("\n\nVersions");
         if (item.version != null && item.version.length() > 0) text.append("\nUSB version: ").append(item.version);
-        if (item.installed) text.append("\nInstalled version: ").append(item.installedVersion == null ? "Unknown" : item.installedVersion);
+        if (item.installed) text.append(item.installedVersionSaved ? "\nInstalled version (saved): " : "\nInstalled version: ").append(item.installedVersion == null ? "Unknown" : item.installedVersion);
+        if (item.installedVersionSaved) text.append("\nSaved after a successful manager installation; external changes may differ.");
         if (item.installed && compareVersions(item.version, item.installedVersion) == null)
-            text.append("\nVersions could not be compared. Install version uses the release on USB; check its instructions first.");
+            text.append("\nVersions could not be compared. Check the package metadata and release instructions.");
         if (item.error != null) text.append("\n\nProblem: ").append(item.error);
         if (item.target != null) text.append("\n\nUSB source:\n").append(item.target.getAbsolutePath());
         else if (item.folder != null) text.append("\n\nUSB folder:\n").append(item.folder.getAbsolutePath());

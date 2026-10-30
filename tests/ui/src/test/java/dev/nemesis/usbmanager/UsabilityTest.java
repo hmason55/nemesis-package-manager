@@ -63,7 +63,7 @@ public class UsabilityTest {
             if (view.getText().toString().startsWith("Getting started")) body = view;
         assertNotNull(body);
         assertTrue(body.getParent() instanceof ScrollView);
-        for (String instruction : new String[] { "Installed:", "Updates:", "Available:", "Scripts:", "USB companion", "Install version", "Uninstall", "Keep USB connected" })
+        for (String instruction : new String[] { "Installed:", "Updates:", "Available:", "Scripts:", "USB companion", "Versions saved", "Uninstall", "Keep USB plugged in" })
             assertTrue("Help explains " + instruction, body.getText().toString().contains(instruction));
         find(dialog, "OK").performClick();
         assertFalse(dialog.isShowing());
@@ -122,7 +122,7 @@ public class UsabilityTest {
         for (TextView text : texts(root)) {
             if ("Example App".equals(text.getText().toString())) names++;
             assertFalse("Full USB paths belong in Details", text.getText().toString().contains("/storage/usb0"));
-            if ("Update".equals(text.getText().toString())) update = text;
+            if ("Uninstall".equals(text.getText().toString())) update = text;
         }
         assertEquals(1, names); assertNotNull(update); assertTrue(update.isEnabled());
         ((View) field(activity, "details")).performClick();

@@ -70,6 +70,12 @@ class BuildReleaseTests(unittest.TestCase):
         with zipfile.ZipFile(output / "usb-package-manager-ready.zip") as archive:
             self.assertIn("docs/SETUP-WINDOWS.md", archive.namelist())
             self.assertIn("docs/USER-GUIDE.md", archive.namelist())
+            for image in (
+                "companion-setup.svg",
+                "companion-remove.svg",
+                "manager-help.svg",
+            ):
+                self.assertIn("docs/images/" + image, archive.namelist())
             image = (
                 Path(__file__).resolve().parent.parent
                 / "docs/images/manager-installed.svg"

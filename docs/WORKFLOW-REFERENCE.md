@@ -35,16 +35,16 @@ flowchart TB
     summary["Drive summary and status<br/>Available space, Package Manager, launcher"]
     tabs["Tabs: Packages | Add / update | Drive setup"]
     header --- drive --- summary --- tabs
-    tabs --> packages["Packages<br/>Filter installers, scripts, or issues<br/>Package | On USB | Type | Status<br/>Details / View issue<br/>Replace on USB | Add package"]
+    tabs --> packages["Packages<br/>Filter installers, scripts, or issues<br/>Package | On USB | Type | Status<br/>Details / View issue<br/>Replace on USB | Remove | Add package"]
     tabs --> edit["Add / update<br/>Add a new package or<br/>Update an existing package<br/>Choose release ZIP and destination<br/>Add package or Update package"]
-    tabs --> setup["Drive setup<br/>Choose manager release bundle<br/>Set up drive, Update manager, or Repair manager"]
+    tabs --> setup["Drive setup<br/>Choose manager release bundle<br/>USB version and newer-release link<br/>Automatic USB launch toggle<br/>Set up drive, Update manager, or Repair manager"]
 ```
 
 - **Packages** answers “what is on this drive?” **On USB** is the installer's version, not the version installed in the vehicle. **Needs attention** helps find layout errors; expand **View issue** to read them, or **Details** for other package information. **Replace on USB** opens the update form for a managed package.
 - **Add / update** imports a downloaded release ZIP into a package folder. When adding, review the suggested folder name. When updating, choose the existing package so its old installer is replaced and its USB `data/` is kept.
 - **Drive setup** takes `usb-package-manager-ready.zip`. A new drive offers **Set up drive**; an existing setup offers **Update manager**, or **Repair manager** if the installer is missing and the setup can be repaired. These actions prepare the USB copy; they do not update the app installed in the vehicle.
 
-Loose installer ZIPs can be inspected but are view-only in the companion. Import a release into a managed folder for future companion updates. The companion does not format the drive, run package scripts, remove packages, or connect to the vehicle. See the [companion guide](USB-COMPANION.md#use-the-ui) for the full steps and supported downloads.
+Loose installer ZIPs can be inspected and removed, but not replaced in place. Import a release into a managed folder for future companion updates. The companion does not format the drive, run package scripts or connect to the vehicle. See the [companion guide](USB-COMPANION.md#use-the-ui) for the full steps and supported downloads.
 
 ## Package Manager screen
 
@@ -55,7 +55,7 @@ flowchart TB
     header["Package Manager<br/>Refresh | Help | Close"]
     tabs["Tabs with counts<br/>Installed | Updates | Available | Scripts"]
     list["Package list<br/>Name | Version<br/>Tap a row to select it"]
-    actions["Actions for the selected row<br/>Install / Update / Install version / Run script<br/>Launch | Uninstall | Details"]
+    actions["Actions for the selected row<br/>Installed: Uninstall | Launch | Details<br/>Updates: Update | Details<br/>Available: Install | Details<br/>Scripts: Run script | Details"]
     header --- tabs --- list --- actions
     actions --> info["Details<br/>Versions, source paths,<br/>data and history paths, errors"]
     actions --> confirm["Choose an available action<br/>Review and confirm"]
@@ -72,9 +72,9 @@ flowchart TB
 
 A package with a confirmed update appears in both **Installed** and **Updates**, not **Available**. **Updates** checks the files on your drive; it does not search online. If installed-state detection fails, read the error and tap **Refresh** to retry before interpreting the categories.
 
-The first action changes with the selected row: **Install** for a new package, **Update** for a confirmed newer release, **Run script** for a script, or **Install version** when installed and USB versions cannot be ordered. Identical releases show disabled **Up to date**; older comparable installers show disabled **Older installer**. **Launch** and **Uninstall** are enabled only when supported for that package. An installed package without a USB installer needs one added before it can be updated.
+Only the actions for the active tab are shown. Installed leads with a yellow **Uninstall** button plus **Launch** and **Details**; Updates has **Update**, Available has **Install**, and Scripts has **Run script**, each with Details. Missing or unorderable versions do not enable a blind installation from Installed.
 
-The overlay indicates activity, not percentage complete. Keep USB connected and wait for the result. Finish one operation before starting another in either Package Manager or NEMESIS Manager. Package Manager itself is excluded from these lists; see [its separate update path](#package-manager-updates).
+The overlay indicates activity, not percentage complete. Keep USB plugged in during installs and updates; wait for every action's result. Finish one operation before starting another in either Package Manager or NEMESIS Manager. Package Manager itself is excluded from these lists; see [its separate update path](#package-manager-updates).
 
 ## USB drive layout
 
@@ -83,9 +83,10 @@ Keep the manager's launcher at the root and each community release in its own fo
 ```mermaid
 flowchart LR
     usb["USB root"]
-    usb --> descriptor["NEMESIS.data<br/>First-launch prompt<br/>Becomes NEMESIS.data.disabled after successful launch"]
+    usb --> descriptor["NEMESIS.data<br/>First-launch prompt<br/>Becomes NEMESIS.data.disabled unless automatic launch is enabled"]
     usb --> launcher["NEMESIS.sh<br/>Opens Package Manager; installs it if missing"]
     usb --> manager["manager/"]
+    manager --> auto["auto-launch.enabled<br/>Present only when repeated automatic launch is enabled"]
     manager --> managerzip["usb.package.manager.zip<br/>Keep compressed"]
     usb --> packages["packages/"]
     packages --> example["Example/ - community installer bundle"]
@@ -116,7 +117,7 @@ flowchart LR
         direction TB
         vehicle["Head unit fully booted<br/>Insert USB and approve NEMESIS execution prompt"]
         vehicle --> open["Launcher installs Package Manager if missing<br/>and opens it"]
-        open --> disable["After successful launch<br/>Root descriptor is backed up and disabled"]
+        open --> disable["After successful launch<br/>Root descriptor is backed up and disabled unless automatic launch is enabled"]
         disable --> install["Package Manager: Refresh, then Available<br/>Select a package, review Details, confirm Install"]
         install --> result["Keep USB connected until the result popup<br/>On success, find the package in Installed"]
     end
@@ -153,7 +154,7 @@ sequenceDiagram
     PM-->>User: Result popup and diagnostic Details
 ```
 
-This diagram follows a compatible release with a confirmed newer version. If you see **Install version**, ordering is unknown; check **Details** and the release instructions before proceeding. If you see **Install**, check that you chose the correct package ID. A successful copy in the companion is not evidence of a successful head-unit update.
+This diagram follows a compatible release with a confirmed newer version. Missing or unorderable versions do not appear in Updates; check **Details** and the release instructions. If you see **Install**, check that you chose the correct package ID. A successful copy in the companion is not evidence of a successful head-unit update.
 
 There is normally no need to uninstall first. Follow the author's backup and restart instructions, and inspect result **Details** if an update fails. See [Updating packages](UPDATING.md#update-another-package) for manual/command-line preparation, version rules, and recovery steps.
 
@@ -194,4 +195,25 @@ If copying is interrupted, do not delete leftover hidden `.companion-*` director
 
 ## Version comparison notes
 
-Package Manager reads installed versions from `/data/nemesis/apps/<id>/NEMESIS.data` through NEMESIS using a fixed-length command that fits its command buffer regardless of package count. Numeric versions display without a leading `v`. Numeric dotted releases and numeric `-build.N` suffixes are compared numerically; older installers are disabled. Identical custom version strings are recognized as equal. Missing metadata or custom strings with unknown ordering use **Install version** rather than claiming an update is available.
+Package Manager reads installed versions from `/data/nemesis/apps/<id>/NEMESIS.data` through NEMESIS using a fixed-length command that fits its command buffer regardless of package count. Numeric versions display without a leading `v`. Numeric dotted releases and numeric `-build.N` suffixes are compared numerically; older installers are disabled. Identical custom version strings are recognized as equal. A successful install also saves a fallback version in private app settings. Manifest metadata takes precedence; saved fallbacks are labeled in Details and may be stale after external changes. Missing or unorderable versions do not claim an update is available.
+
+
+## Companion removal and launch preference
+
+```mermaid
+flowchart TD
+    selected["Select USB and package"] --> remove["Remove from USB"]
+    remove --> choice{"Delete this package's USB data too?"}
+    choice -->|"No - default"| keep["Remove installer; keep data folder"]
+    choice -->|"Yes - managed folder only"| all["Remove installer and data"]
+    remove --> cancel["Cancel: no files changed"]
+    keep --> vehicle["Head-unit installation stays unchanged"]
+    all --> vehicle
+    setup["Drive setup"] --> versions["Read USB manager version; check public releases"]
+    versions --> newer{"Newer comparable release?"}
+    newer -->|Yes| link["Open release page; download explicitly"]
+    newer -->|"Offline or unknown"| retry["Keep USB management available; retry later"]
+    setup --> toggle{"Run on USB insertion?"}
+    toggle -->|On| active["Enable NEMESIS.data and persistent launch setting"]
+    toggle -->|Off| disabled["Back up as NEMESIS.data.disabled; remove launch setting"]
+```

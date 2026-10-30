@@ -211,6 +211,7 @@ public class ActivityOperationsTest {
     @Test public void updateUsesMetadataAndRefreshPreservesSelectedInstaller() throws Exception {
         usbInstaller();
         open();
+        ((android.widget.Button[]) field("tabs"))[PackagePresentation.UPDATES].performClick();
         select("demo.app");
         click("refreshButton");
         await(() -> !((Boolean) field("busy")));
@@ -300,7 +301,7 @@ public class ActivityOperationsTest {
         ScannerTest.zip(new File(root, "packages/Demo/demo.zip"), "[nemesis]\nid=demo.app\nname=Demo\nversion=1.0\n", false);
         open();
         select("demo.app");
-        assertEquals("Up to date", ((TextView) field("action")).getText().toString());
+        assertEquals(View.GONE, ((View) field("action")).getVisibility());
         assertFalse(((View) field("action")).isEnabled());
         android.widget.Button[] tabs = (android.widget.Button[]) field("tabs");
         assertEquals(4, tabs.length);
@@ -315,7 +316,7 @@ public class ActivityOperationsTest {
         select("demo.app");
         click("refreshButton");
         await(() -> !((Boolean) field("busy")));
-        assertEquals("Up to date", ((TextView) field("action")).getText().toString());
+        assertEquals(View.GONE, ((View) field("action")).getVisibility());
         tabs[PackagePresentation.SCRIPTS].performClick();
         assertEquals(0, ((BaseAdapter) field("adapter")).getCount());
         tabs[PackagePresentation.INSTALLED].performClick();
@@ -331,7 +332,8 @@ public class ActivityOperationsTest {
         BaseAdapter adapter = (BaseAdapter) field("adapter");
         assertEquals(3, adapter.getCount());
         select("demo.app");
-        assertTrue(((View) field("action")).isEnabled());
+        assertFalse(((View) field("action")).isEnabled());
+        assertEquals(View.VISIBLE, ((View) field("uninstall")).getVisibility());
         tabs[PackagePresentation.UPDATES].performClick();
         assertEquals(1, adapter.getCount());
         assertEquals("demo.app", ((PackageScanner.Item) adapter.getItem(0)).id);
@@ -361,7 +363,7 @@ public class ActivityOperationsTest {
         BaseAdapter adapter = (BaseAdapter) field("adapter");
         assertEquals(23, adapter.getCount());
         select("demo.app");
-        assertEquals("Update", ((TextView) field("action")).getText().toString());
+        assertEquals(View.GONE, ((View) field("action")).getVisibility());
         for (android.widget.Button tab : (android.widget.Button[]) field("tabs")) {
             tab.performClick();
             for (int i = 0; i < adapter.getCount(); i++)
@@ -379,7 +381,7 @@ public class ActivityOperationsTest {
         open();
         Field owner = MainActivity.class.getDeclaredField("operations"); owner.setAccessible(true);
         OperationCoordinator operations = (OperationCoordinator) owner.get(null);
-        for (String description : new String[] {"Installing | Demo", "Uninstalling | Demo", "Updating | Demo", "Running script | Demo"}) {
+        for (String description : new String[] {"Installing\nDemo", "Uninstalling\nDemo", "Updating\nDemo", "Running script\nDemo"}) {
             final CountDownLatch finish = new CountDownLatch(1);
             try {
                 assertTrue(operations.start(description, () -> {
@@ -391,6 +393,9 @@ public class ActivityOperationsTest {
                 activity = controller.get();
                 assertEquals(View.VISIBLE, ((View) field("operationOverlay")).getVisibility());
                 assertEquals(View.VISIBLE, ((View) field("progress")).getVisibility());
+                assertEquals(description.startsWith("Installing") || description.startsWith("Updating") ? View.VISIBLE : View.GONE,
+                    ((View) field("operationInstruction")).getVisibility());
+                assertFalse(((TextView) field("operationStatus")).getText().toString().contains("|"));
                 assertTrue(((TextView) field("operationStatus")).getText().toString().startsWith(description));
                 assertTrue(((View) field("operationOverlay")).isClickable());
                 for (android.widget.Button tab : (android.widget.Button[]) field("tabs")) assertFalse(tab.isEnabled());

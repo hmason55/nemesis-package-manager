@@ -121,3 +121,17 @@ footer { color: var(--muted); font-size: 12px; padding-top: 22px; }
   h2 { font-size: 15px; }
 }
 @media (max-width: 380px) { .drive-bar { grid-template-columns: 1fr; } .drive-bar > button { justify-self: start; } }
+
+button.danger { background: #49351a; color: #ffe1a1; border: 1px solid #bd8c3d; }
+.row-action button { margin: 3px 0 3px 6px; white-space: normal; }
+th:first-child { width: 32%; } th:last-child { width: 23%; }
+.launcher-option { margin-top: 20px; padding: 18px; border: 1px solid var(--border); border-radius: 8px; }
+.check-label { display: flex; gap: 12px; align-items: center; font-size: 14px; color: #edf1f7; }
+input[type=checkbox] { width: 20px; height: 20px; min-height: 20px; flex: 0 0 20px; }
+#manager-release-link { display: block; color: var(--accent); margin: 8px 0 16px; }
+dialog { max-width: min(520px, calc(100vw - 32px)); border: 1px solid #53677f; border-radius: 10px; background: #141a23; color: #edf1f7; padding: 24px; }
+dialog::backdrop { background: #000b; }
+dialog h2 { margin-bottom: 18px; }
+dialog .hint { margin-top: 14px; }
+
+dialog p { overflow-wrap: anywhere; }

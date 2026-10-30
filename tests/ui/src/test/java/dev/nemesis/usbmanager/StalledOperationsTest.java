@@ -74,8 +74,8 @@ public class StalledOperationsTest {
         assertTrue(owner.start("Updating Package Manager", () -> new OperationCoordinator.Completion(UpdateHandoff.awaitResult(marker) == 0, "done")));
         try {
             assertTrue(owner.isRunning());
-            assertTrue(owner.progressText().contains("Taking longer than usual"));
-            assertTrue(owner.progressDetails().contains("package-manager-update.log"));
+            assertTrue(owner.progressDetails().contains("Taking longer than usual"));
+            assertTrue(owner.progressDetails().contains("NEMESIS logs"));
             assertTrue(owner.progressDetails().contains("other actions remain blocked"));
             assertFalse(owner.start(() -> new OperationCoordinator.Completion(true, "wrong")));
             assertNull(owner.takeCompletion());
@@ -93,8 +93,8 @@ public class StalledOperationsTest {
         CountDownLatch release = new CountDownLatch(1);
         assertTrue(owner.start("Installing Example", () -> { release.await(); return new OperationCoordinator.Completion(true, "done"); }));
         try {
-            assertTrue(owner.progressText().contains("Keep USB connected"));
-            assertFalse(owner.progressText().contains("Taking longer than usual"));
+            assertTrue(owner.needsUsb());
+            assertFalse(owner.progressDetails().contains("Taking longer than usual"));
         } finally { release.countDown(); }
     }
 }

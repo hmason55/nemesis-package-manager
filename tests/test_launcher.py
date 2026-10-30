@@ -16,10 +16,11 @@ class LauncherTests(unittest.TestCase):
             if os.name == "nt"
             else shutil.which("bash")
         )
-        for descriptor, backup, disabled in [
-            (USB_MANIFEST, False, True),
-            ("[nemesis]\ntype=install\npath=other.zip\n", False, False),
-            (USB_MANIFEST, True, True),
+        for descriptor, backup, disabled, persistent in [
+            (USB_MANIFEST, False, True, False),
+            (USB_MANIFEST, False, False, True),
+            ("[nemesis]\ntype=install\npath=other.zip\n", False, False, False),
+            (USB_MANIFEST, True, True, False),
         ]:
             with (
                 self.subTest(descriptor=descriptor, backup=backup),
@@ -31,6 +32,8 @@ class LauncherTests(unittest.TestCase):
                 (root / "NEMESIS.data").write_text(
                     descriptor, encoding="utf-8", newline="\n"
                 )
+                if persistent:
+                    (root / "manager/auto-launch.enabled").write_text("enabled")
                 if backup:
                     (root / "NEMESIS.data.disabled").write_text("existing backup")
                 script = LAUNCHER.replace("$(getprop sys.boot_completed)", "1")

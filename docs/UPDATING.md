@@ -4,7 +4,7 @@ Package Manager installs the files you put on the drive. It does not check onlin
 
 For a walkthrough with screen examples, follow [Update a community package](USER-GUIDE.md#update-a-community-package). To update Package Manager itself, use [the separate instructions below](#update-package-manager).
 
-The Version column shows the installed release in Installed, the USB release in Available and Scripts, and both versions in Updates. The [action label table](USER-GUIDE.md#update-a-community-package) explains **Update**, **Up to date**, **Older installer**, and **Install version**. If versions cannot be compared, check Details and the release instructions before confirming.
+The Version column shows the installed release in Installed, the USB release in Available and Scripts, and both versions in Updates. Use **Update** on Updates for a confirmed newer installer. Installed shows **Uninstall**, **Launch**, and **Details**. Missing/unorderable versions do not enable a blind installation; see Details and the package instructions.
 
 ## Update another package
 

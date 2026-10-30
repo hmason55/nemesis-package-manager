@@ -11,6 +11,7 @@ from tools.companion_identity import validate_package_id
 from tools.release_metadata import read_config
 from tools.companion_drives import checked_path
 from tools.companion_scan import package_locations
+from tools.companion_launcher import launcher_state
 
 from tools.companion_installers import (
     METADATA_ERRORS,
@@ -82,8 +83,13 @@ def scan_drive(root):
         manager["present"] = payload.is_file()
         if manager["present"]:
             manager.update(package_metadata(payload))
+            if manager.get("id") != "usb.package.manager":
+                raise ValueError(
+                    "The manager installer contains a different package ID."
+                )
     except METADATA_ERRORS as error:
         manager["error"] = str(error)
+        manager["version"] = ""
     active = checked_path(root, "NEMESIS.data").exists()
     manager["repairable"] = (
         active
@@ -99,6 +105,7 @@ def scan_drive(root):
         "total": usage.total,
         "manager": manager,
         "launcher": "Active" if active else "Disabled or absent",
+        "auto_launch": launcher_state(root),
         "packages": [
             describe_package(root, path.removeprefix("packages/"))
             if descriptor

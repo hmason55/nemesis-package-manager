@@ -1,7 +1,7 @@
 """Inspect raw installer archives without extracting files or inferring versions.
 
 Both descriptor-based packages and loose ZIPs share the internal manifest reader.
-A loose archive keeps its original source path and a read-only UI row, because a
+A loose archive keeps its original source path and an inspection/removal UI row, because a
 file cannot safely serve as a directory-based importer's replacement destination.
 Corrupt archives are represented as rows with errors instead of disappearing.
 """

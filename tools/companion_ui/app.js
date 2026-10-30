@@ -6,6 +6,9 @@ const tabNames = ["packages", "import", "setup"];
 let selected = null;
 let drives = [];
 let busy = false;
+let managerRelease = null;
+let releaseChecking = false;
+let removal = null;
 
 // One shared tooltip also covers package actions created after each drive scan.
 const tooltip = document.createElement("div");
@@ -89,7 +92,7 @@ function message(text, error = false) {
 }
 async function api(path, body, json = false) {
   const headers = { "X-Companion-Token": token };
-  if (body !== undefined && !json) headers["X-Companion-Drive"] = selected?.selection_id || "";
+  if (body !== undefined) headers["X-Companion-Drive"] = selected?.selection_id || "";
   if (json) headers["Content-Type"] = "application/json";
   const response = await fetch(path, { method: body === undefined ? "GET" : "POST", headers, body: json ? JSON.stringify(body) : body });
   const result = await response.json();
@@ -214,6 +217,17 @@ function renderPackages() {
     const badge = textElement("span", pkg.error ? "Needs attention" : "Ready", pkg.error ? "badge attention" : "badge");
     status.append(badge);
     const action = textElement("td", "", "row-action");
+    const remove = textElement("button", "Remove", "danger");
+    remove.type = "button";
+    remove.setAttribute("aria-label", `Remove ${pkg.name} from USB`);
+    remove.addEventListener("click", () => {
+      removal = pkg;
+      $("delete-data").checked = false;
+      $("delete-data").disabled = pkg.replaceable === false;
+      $("remove-description").textContent = `Remove ${pkg.name} from ${selected.path}?`;
+      $("remove-data-note").textContent = pkg.replaceable === false ? "Only this ZIP is removed. Shared data and other installers are kept. Nothing is uninstalled from the head unit." : "Leave unchecked to keep recordings and saved data. This does not uninstall anything from the head unit.";
+      $("remove-dialog").showModal();
+    });
     if (managedPackages().some(item => item.folder === pkg.folder)) {
       const update = textElement("button", "Replace on USB", "secondary");
       update.type = "button";
@@ -221,7 +235,8 @@ function renderPackages() {
       update.dataset.tooltip = "Choose a release ZIP to replace this package on USB. Its data folder is kept. This does not check for newer versions.";
       update.addEventListener("click", () => beginImport(pkg.folder));
       action.append(update);
-    } else action.append(textElement("span", "View only", "hint"));
+    }
+    action.append(remove);
     row.append(name, version, type, status, action);
     $("packages").append(row);
   }
@@ -234,6 +249,8 @@ function render(drive) {
     $("drive-path").value = drive.path;
     $("space").textContent = `${(drive.free / 1024 ** 3).toFixed(1)} GiB of ${(drive.total / 1024 ** 3).toFixed(1)} GiB`;
     $("launcher").textContent = drive.launcher;
+    $("auto-launch").checked = drive.auto_launch.enabled;
+    $("auto-launch").disabled = !drive.auto_launch.available;
     const manager = drive.manager;
     $("manager-summary").textContent = manager.error ? "Needs attention" : manager.present ? manager.version || "Version unknown" : "Setup needed";
     $("manager-version").textContent = manager.present ? `On USB: ${manager.version || "Unknown"}` : "Setup needed";
@@ -246,6 +263,8 @@ function render(drive) {
   }
   renderTargets();
   renderPackages();
+  renderManagerRelease();
+  if (drive && !managerRelease && !releaseChecking) checkManagerRelease();
 }
 async function refresh() {
   const firstDrive = !selected;
@@ -349,6 +368,56 @@ $("manager-form").addEventListener("submit", (event) => {
     showTab(action === "setup" ? "packages" : "setup", true);
     message(action === "setup" ? "Drive prepared. Add packages, then safely eject and approve the NEMESIS prompt in the vehicle for first installation." : "Manager installer copied to USB. This does not update the installed app. Follow the separate-drive NEMESIS instructions below to install it.");
     if (guide.open) guide.querySelector("summary").focus();
+  });
+});
+
+
+function numericVersion(value) {
+  const match = (value || "").match(/^v?(\d+(?:\.\d+)*)(?:-build\.(\d+))?$/);
+  if (!match) return null;
+  const parts = match[1].split(".").map(Number);
+  while (parts.length < 3) parts.push(0);
+  return [...parts, Number(match[2] || 0)];
+}
+function renderManagerRelease() {
+  const link = $("manager-release-link");
+  link.hidden = true;
+  if (!managerRelease) return;
+  if (managerRelease.error) { $("release-status").textContent = managerRelease.error; return; }
+  const current = numericVersion(selected?.manager?.version);
+  const latest = numericVersion(managerRelease.version);
+  const newer = current && latest && latest.some((n, i) => n !== (current[i] || 0) && latest.slice(0, i).every((v, j) => v === (current[j] || 0)) && n > (current[i] || 0));
+  $("release-status").textContent = newer ? `Update available: ${managerRelease.version}${managerRelease.prerelease ? " (prerelease)" : ""}` : !current ? `Latest release: ${managerRelease.version}. USB version could not be compared.` : `Latest release: ${managerRelease.version}. No newer release found.`;
+  link.textContent = newer ? "Get the newer manager release" : "View release";
+  link.href = managerRelease.url;
+  link.hidden = !newer && !!current;
+}
+async function checkManagerRelease() {
+  if (releaseChecking) return;
+  releaseChecking = true;
+  $("check-release").disabled = true;
+  $("release-status").textContent = "Checking published releases…";
+  try { managerRelease = await api("/api/manager-release"); }
+  catch (_) { managerRelease = {error: "Release check unavailable. USB management works offline."}; }
+  finally { releaseChecking = false; $("check-release").disabled = false; renderManagerRelease(); }
+}
+$("check-release").addEventListener("click", checkManagerRelease);
+$("auto-launch").addEventListener("change", () => {
+  const enabled = $("auto-launch").checked;
+  operation("Changing USB launch setting…", async () => {
+    try { render(await api("/api/launcher", {enabled}, true)); message(enabled ? "Automatic USB launch enabled." : "Automatic USB launch disabled."); }
+    catch (error) { $("auto-launch").checked = selected.auto_launch.enabled; throw error; }
+  });
+});
+$("cancel-remove").addEventListener("click", () => $("remove-dialog").close());
+$("remove-form").addEventListener("submit", event => {
+  event.preventDefault();
+  const pkg = removal;
+  const deleteData = $("delete-data").checked;
+  $("remove-dialog").close();
+  operation("Removing package from USB…", async () => {
+    render(await api("/api/remove", {path: pkg.path.replace(/\/$/, ""), delete_data: deleteData}, true));
+    message(deleteData ? "Package and its USB data removed." : "Package removed. USB data was kept.");
   });
 });
 if (token) operation("Checking local drives…", refresh);

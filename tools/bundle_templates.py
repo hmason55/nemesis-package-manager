@@ -52,7 +52,7 @@ if ! /system/xbin/nemesis pkg-list | grep -q '^usb.package.manager|'; then
 fi
 /system/bin/am start -n dev.nemesis.usbmanager/.MainActivity || exit 1
 # Keep the original descriptor as a backup; never touch another installer type.
-if grep -q '^type=execute$' "$ROOT/NEMESIS.data" && grep -q '^path=NEMESIS.sh$' "$ROOT/NEMESIS.data"; then
+if [ ! -f "$ROOT/manager/auto-launch.enabled" ] && grep -q '^type=execute$' "$ROOT/NEMESIS.data" && grep -q '^path=NEMESIS.sh$' "$ROOT/NEMESIS.data"; then
     BACKUP="$ROOT/NEMESIS.data.disabled"
     NUMBER=0
     while [ -e "$BACKUP" ]; do
