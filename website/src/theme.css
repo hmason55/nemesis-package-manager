@@ -1007,5 +1007,5 @@ td {
 }
 @media (max-width: 600px) {
   .site-header nav { gap: 2px; }
-  .site-header nav a { padding: 8px 6px; }
+  .site-header nav a { padding: 8px 2px; }
 }
