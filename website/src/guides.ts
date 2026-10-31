@@ -16,155 +16,204 @@ export const guides: Guide[] = [
     title: "Start here",
     audience: "Everyone",
     intro:
-      "Choose how packages reach your parked vehicle. NEMESIS must already be installed on a compatible head unit; Package Manager delegates installation to NEMESIS.",
+      "New to NEMESIS packages? Set up Package Manager first, then choose USB or an internet download.",
     figure: "workflow.svg",
     alt: "Two paths: registry directly to the vehicle, or manual/registry packages through Companion and USB to the vehicle.",
     sections: [
       {
-        title: "Choose your path",
+        title: "Before you start",
         steps: [
-          "Have a working vehicle internet connection? Use Cloud Registry in the vehicle to browse and download published packages.",
-          "Prefer USB or need offline access? Run [USB Companion](#guides/companion-manual) on your computer, select your drive, and prepare installers manually or from the registry.",
-          "Downloading or copying an installer does not install it. Read its requirements and confirm installation in the parked vehicle.",
+          "NEMESIS must already be installed and working on your vehicle’s screen (the head unit). Check your vehicle and firmware against the [user guide](https://github.com/hmason55/nemesis-package-manager/blob/main/docs/USER-GUIDE.md).",
+          "Use a computer and a USB drive for first-time setup. Park the vehicle before installing packages.",
         ],
-        note: "Trusted validation and a matching SHA-256 identify the published bytes. They do not guarantee that a community package is safe or compatible with your vehicle.",
+        note: "Package Manager helps you install and manage community apps. Each app has its own vehicle and firmware requirements.",
       },
       {
-        title: "Install Package Manager itself",
+        title: "Set up Package Manager",
         steps: [
-          "Download a tested Package Manager release from the [repository’s Releases page](https://github.com/hmason55/nemesis-package-manager/releases). Choose the [latest USB-ready bundle](https://github.com/hmason55/nemesis-package-manager/releases/latest/download/usb-package-manager-ready.zip) for initial drive setup, not the source-code archive.",
-          "Open Companion, select the USB drive, then open Drive setup. Choose [usb-package-manager-ready.zip](https://github.com/hmason55/nemesis-package-manager/releases/latest/download/usb-package-manager-ready.zip) and Set up drive. Preserve any other drive files you need.",
-          "Safely eject the drive. In the parked vehicle, insert it after the head unit boots and approve the NEMESIS execution prompt. The launcher installs Package Manager if missing and opens it. An existing manager needs the [separate NEMESIS update procedure](https://github.com/hmason55/nemesis-package-manager/blob/main/docs/UPDATING.md#update-package-manager); copying a ZIP does not update the installed app.",
+          "Download USB Companion for [Windows](https://github.com/hmason55/nemesis-package-manager/releases/latest/download/nemesis-usb-companion-windows-x86_64.zip) or [Linux x86-64](https://github.com/hmason55/nemesis-package-manager/releases/latest/download/nemesis-usb-companion-linux-x86_64.tar.gz). Extract the download and open Companion.",
+          "Download [usb-package-manager-ready.zip](https://github.com/hmason55/nemesis-package-manager/releases/latest/download/usb-package-manager-ready.zip) from the [repository’s Releases page](https://github.com/hmason55/nemesis-package-manager/releases).",
+          "In Companion, select your USB drive and open Drive setup. Choose usb-package-manager-ready.zip, then select Set up drive.",
+          "Wait for setup to finish, then safely eject the drive.",
+          "In the parked vehicle, wait for the screen to finish starting. Insert the drive and approve the NEMESIS execution prompt. Package Manager installs if needed and opens.",
         ],
-        note: "Package Manager self-update stays separate from ordinary community package updates. Follow the release’s signing and firmware instructions; never bypass certificate verification.",
+        note: "Already have Package Manager? Follow the [update instructions](https://github.com/hmason55/nemesis-package-manager/blob/main/docs/UPDATING.md#update-package-manager). Copying a newer ZIP to USB does not update the installed app.",
+      },
+      {
+        title: "Add your first package",
+        steps: [
+          "Have internet in the vehicle? Follow [Install packages in your vehicle](#guides/vehicle) and choose Cloud Registry.",
+          "Prefer USB? Follow [Copy downloaded packages to USB](#guides/companion-manual). You can also [choose packages inside Companion](#guides/companion-registry).",
+          "Read the package’s requirements before you install. Downloading or copying a ZIP only prepares it; confirm Install in the vehicle to finish.",
+        ],
+        note: "If a package’s requirements are unclear, check with its publisher before installing.",
       },
     ],
   },
   {
     id: "vehicle",
-    title: "Use Package Manager in the vehicle",
+    title: "Install packages in your vehicle",
     audience: "Vehicle users",
     intro:
-      "Manage installed packages and choose Cloud Registry or USB Storage as your source for new installers.",
+      "Use Package Manager on your vehicle’s screen. NEMESIS and Package Manager must already be installed.",
     figure: "vehicle-settings.svg",
     alt: "Illustrative Settings controls for source selection, registry address, device profile and startup prompting.",
     sections: [
       {
-        title: "Choose a source",
+        title: "Choose where to get packages",
         steps: [
-          "On startup, choose Cloud Registry or USB Storage and press Continue. The initial scan starts after the prompt closes; Cancel loads the current source. Use Don't show again on startup only if you want the saved source to open automatically.",
-          "Open Settings near Help/Refresh to change your source, registry address, startup preference, or known vehicle/firmware/NEMESIS information.",
-          "For USB Storage, connect the prepared drive and press Refresh. Search packages filters the current tab; Clear removes the search. Filters contains package type and sort order. Press Back or Done/OK to hide the search keyboard without losing the query; submitting a search also closes it. In Settings, Back, Done/OK, or Hide keyboard closes the keyboard and keeps edits; Save applies settings. Dialogs keep a readable dark theme in head-unit light mode.",
+          "Open Package Manager. Choose Cloud Registry for internet downloads or USB Storage for a prepared USB drive.",
+          "Press Continue. The scan starts after the prompt closes.",
+          "For USB Storage, keep your prepared drive connected and press Refresh.",
         ],
-        note: "Cloud is optional. Keep a prepared USB drive for offline use. Installed packages remain manageable independently of the selected discovery source.",
+        note: "To change the source later, open Settings. Cloud downloads need internet; prepared USB packages work offline.",
       },
       {
-        title: "Browse, download, and install",
+        title: "Install or update a package",
         steps: [
-          "Choose Available for new packages or Updates for confirmed newer versions. Select a package and read Details, supported versions, and release notes.",
-          "Each package ID has one row. Install or Update opens a version picker when multiple releases exist; Details → Choose version also exposes them. In cloud mode, select the release and wait for download and integrity checks before the final confirmation. A cancelled or failed download does not start installation.",
-          "Review the final installation confirmation, including compatibility warnings. Confirm only after checking the publisher’s instructions; wait for the NEMESIS result and refresh installed state.",
+          "Open Available to find new packages, or Updates to find newer versions.",
+          "Select a package and open Details. Read its vehicle requirements and release notes.",
+          "Press Install or Update. If a version list appears, choose the version you want.",
+          "For Cloud Registry, wait for the download and checks to finish.",
+          "Read the confirmation and any compatibility warnings. Confirm installation when you are ready.",
+          "Keep USB connected until the result appears. Press Refresh to update the lists.",
         ],
-        note: "A mismatch is advisory and does not remove your ability to confirm. Unknown compatibility is not a statement of support. An incomparable version is a manual selection, not a confirmed upgrade.",
+        note: "A compatibility warning does not prove a package will work. Ask the publisher if you are unsure. A failed or cancelled download does not start installation.",
       },
       {
-        title: "Installed packages and scripts",
+        title: "Open or remove an installed package",
         steps: [
-          "Use Installed to inspect, launch, or uninstall eligible packages. Locked packages and Package Manager itself retain their protections.",
-          "Check the confirmation before uninstalling. Removing a package in the vehicle is different from removing its installer from USB.",
-          "Scripts are a USB workflow. In cloud mode follow the switch-to-USB action in Scripts, and read the script’s instructions before running it.",
-          "If installed-state lookup fails, use Refresh and inspect Details rather than treating the list as successfully empty.",
+          "Open Installed and select a package.",
+          "Choose Launch to open it, Details to read more, or Uninstall to remove it.",
+          "Read and confirm any removal prompt. Uninstalling from the vehicle does not remove the installer from USB.",
+          "To run a script, switch to USB Storage and open Scripts. Read the script’s instructions first.",
         ],
+        note: "Package Manager itself and locked packages cannot be removed here. Follow their own removal instructions.",
+      },
+      {
+        title: "Search and change settings",
+        steps: [
+          "Use Search packages to filter the current tab. Clear removes the search.",
+          "Press Back or Done/OK to hide the keyboard without clearing your text.",
+          "Open Settings to change the source, registry address, or vehicle information. Save applies settings.",
+        ],
+        note: "If a list fails to load, press Refresh and read the error in Details. A failed scan does not mean your installed packages are gone.",
       },
     ],
   },
   {
     id: "companion-manual",
-    title: "Prepare USB packages manually",
+    title: "Copy downloaded packages to USB",
     audience: "Computer users",
     intro:
-      "Use ZIPs you already downloaded. Manual import and drive preparation work without a configured registry or internet connection.",
+      "Use USB Companion on your computer to copy package ZIPs to your drive. Install them later in the vehicle.",
     figure: "companion-packages.svg",
     alt: "Illustrative Companion package list showing USB versions and per-package actions.",
     sections: [
       {
-        title: "Select and prepare a drive",
+        title: "Open Companion and select your drive",
         steps: [
-          "Download the standalone Companion for [Windows](https://github.com/hmason55/nemesis-package-manager/releases/latest/download/nemesis-usb-companion-windows-x86_64.zip) or [Linux x86-64](https://github.com/hmason55/nemesis-package-manager/releases/latest/download/nemesis-usb-companion-linux-x86_64.tar.gz), extract it, and launch it. For source-checkout instructions, see the [companion guide](https://github.com/hmason55/nemesis-package-manager/blob/main/docs/USB-COMPANION.md#run-from-this-repository). Keep its local server window open.",
-          "Choose your USB drive. Use Settings → Drive not listed? to select its existing mount path, then confirm the displayed drive and free space.",
-          "For first-time Package Manager setup, open Drive setup and choose the manager USB-ready release bundle. For community installers, use Packages → Add package.",
+          "Download Companion for [Windows](https://github.com/hmason55/nemesis-package-manager/releases/latest/download/nemesis-usb-companion-windows-x86_64.zip) or [Linux x86-64](https://github.com/hmason55/nemesis-package-manager/releases/latest/download/nemesis-usb-companion-linux-x86_64.tar.gz). Extract it and open the app.",
+          "Keep Companion’s server window open while you use its browser page.",
+          "Connect your USB drive and select it in Companion. Check that the displayed drive and free space are correct.",
+          "If the drive is missing, open Settings → Drive not listed? and select its location.",
         ],
-        note: "Companion prepares USB files on your computer. It does not install packages on the vehicle, and it never formats a drive as part of ordinary package import.",
+        note: "First time setting up Package Manager? Follow [Start here](#guides/start) before adding community packages. Companion does not format the drive.",
       },
       {
-        title: "Add or update an installer",
+        title: "Copy a package",
         steps: [
-          "Choose a trusted release ZIP, not GitHub’s generated source archive. Existing local workflows also support their [documented wrapper bundles and scripts](https://github.com/hmason55/nemesis-package-manager/blob/main/docs/RELEASE-LAYOUTS.md).",
-          "For a new package, review the suggested destination folder. To update, choose the matching existing package and confirm its destination.",
-          "Wait for copying to finish. The importer keeps existing data/ directories when replacing an installer. If import fails, inspect the error and retain any reported recovery files.",
-          "Safely eject the drive. In the vehicle choose USB Storage → Refresh, select the package, and confirm Install or Update.",
+          "Download the package’s installer ZIP from its release page. Choose the installer, not GitHub’s source-code download.",
+          "In Companion, open Packages → Add package and choose the ZIP.",
+          "Check the suggested folder. For an update, choose the existing folder for that package.",
+          "Confirm and wait for copying to finish. Existing data/ folders are kept when an installer is replaced.",
+          "Safely eject the drive.",
         ],
-        note: "The internal package ID is the identity; a folder name is only a location. If multiple folders contain the same ID, explicitly choose the destination. Loose installer ZIPs can be inspected and removed, but cannot be replaced in place.",
+        note: "If copying fails, read the error and keep any recovery files it mentions. You can import downloaded ZIPs without internet.",
+      },
+      {
+        title: "Install in the vehicle",
+        steps: [
+          "In the parked vehicle, connect the prepared USB drive and open Package Manager.",
+          "Choose USB Storage, press Continue, then Refresh.",
+          "Open Available for a new package or Updates for an update. Select the package.",
+          "Read Details, choose Install or Update, and confirm.",
+          "Keep USB connected until the result appears.",
+        ],
+        note: "Companion shows versions on USB. Package Manager also checks what is installed in the vehicle.",
       },
     ],
   },
   {
     id: "companion-registry",
-    title: "Prepare USB packages from the registry",
+    title: "Choose packages in USB Companion",
     audience: "Computer users",
     intro:
-      "Browse published packages inside Companion and copy verified installers to USB without a separate browser download/import step.",
+      "Find packages inside Companion and copy them straight to USB. This needs internet on your computer.",
     figure: "companion-registry.svg",
     alt: "Illustrative Companion registry connection, search, version selection, preparation, and results.",
     sections: [
       {
-        title: "Connect and choose packages",
+        title: "Find and copy packages",
         steps: [
-          "Select your USB drive, then scroll to Cloud registry below the USB tabs. The built-in staging registry address is ready to use. Public browsing and downloads need no GitHub account. Manual imports remain available offline.",
-          "Type in Search registry packages. Results update after a short pause; Enter searches immediately. Filter results contains category, publisher, maximum download size and sort order. Reset filters clears the search and filters.",
-          "Select a package to reveal its version and destination controls. Choose the exact version, read release notes, and expand Version details for requirements. Check USB updates compares installers on the drive, not versions installed in the vehicle.",
-          "Choose a destination if several managed folders match an ID, then confirm Prepare selected versions.",
+          "Open Companion and select your USB drive.",
+          "Scroll to Cloud registry below the USB tabs. The built-in staging registry address is ready to use. No GitHub sign-in is needed.",
+          "Type a package name in Search registry packages. Use Filter results if you need to narrow the list.",
+          "Select a package and choose a version. Read its release notes and expand Version details for requirements.",
+          "Check the destination folder. If more than one folder matches, choose the one you want to update.",
+          "Select Prepare selected versions and wait for each package’s result.",
         ],
-        note: "An arbitrary version string that cannot be ordered is not advertised as a definite upgrade. Select that version manually after reading its release instructions.",
+        note: "Check USB updates compares versions on the drive, not versions installed in the vehicle. Manual imports remain available offline.",
       },
       {
-        title: "Change the connection or optional profile",
+        title: "Change optional settings",
         steps: [
-          "To use another registry, open Settings, enter Registry HTTPS address, and choose Save registry. Clear the address and save to disconnect. This override lasts for the companion session; startup itself does not contact the registry.",
-          "Optionally enter Vehicle, Firmware and NEMESIS version, then choose Apply profile and refresh results. The profile is saved in this browser and supplies advisory comparisons only.",
+          "To use a different registry, open Settings, enter its Registry HTTPS address, and choose Save registry. This change lasts for the current Companion session.",
+          "To check package requirements against your vehicle, enter Vehicle, Firmware and NEMESIS version. Choose Apply profile and refresh results.",
+          "To disconnect the registry, clear its address and save. Downloaded ZIPs can still be added manually.",
         ],
-        note: "Operators can also use --registry-url or NEMESIS_REGISTRY_URL. An explicitly empty override disables the default connection. USB browsing and manual ZIP imports continue offline.",
+        note: "Vehicle details are optional. A match compares the publisher’s requirements with your saved details; it does not guarantee compatibility.",
       },
       {
-        title: "Follow progress and recover safely",
+        title: "Finish and install",
         steps: [
-          "Watch download/verification progress and each package’s result. Companion checks byte size, SHA-256, archive safety, and exact internal ID/version before the importer writes to USB.",
-          "Cancel downloads if needed. A directory replacement already in progress finishes safely; cancellation is not a command to kill a filesystem swap.",
-          "Keep the same drive connected until preparation finishes. A removed or changed drive invalidates the job’s destination; refresh and select the drive again before retrying.",
-          "Read each batch result. Successful packages may be ready even if another failed. Existing data and installers for failed packages are retained; retry only after resolving the reported problem.",
-          "Safely eject and use USB Storage in the vehicle. Vehicle installation remains a separate confirmation.",
+          "Keep the same USB drive connected until preparation finishes. Companion checks downloads before copying them.",
+          "Read each result. If one package fails, others may have copied successfully. Fix the reported problem before retrying.",
+          "If you cancel, wait for Companion to finish any copy already in progress before removing USB.",
+          "Safely eject the drive and follow [Install packages in your vehicle](#guides/vehicle), choosing USB Storage.",
         ],
+        note: "Copying to USB does not install anything in the vehicle. Installation needs a separate confirmation there.",
       },
     ],
   },
   {
     id: "registry",
-    title: "Browse packages and choose versions",
+    title: "Find and download a package",
     audience: "Everyone",
     intro:
-      "The registry lists validated releases from authorized GitHub publishers. Browsing and downloading are public; sign-in is needed to publish or manage the registry.",
+      "Search this website for community packages. You can browse and download without signing in.",
     figure: "registry-package.svg",
     alt: "Example registry package page with exact version selection, download, metadata tabs and integrity information.",
     sections: [
       {
-        title: "Find the right release",
+        title: "Choose a package",
         steps: [
-          "Start typing in [Packages search](#packages) to see results update automatically. Filter by category, publisher, or maximum download size; sort by name, recently published, or smallest download. Recently published does not necessarily mean a newer version.",
-          "Open a package, check publisher and repository links, then select an exact published version. Read Overview, Compatibility, Release notes, and Versions. To compare support declarations with your device, optionally save a device profile in [Settings](#settings); mismatches remain advisory.",
-          "Download the installer ZIP for manual Companion import, browse the same release inside Companion, or use Cloud Registry in the vehicle.",
-          "Check integrity information when sharing a package link. A withdrawn release stops new registry downloads and must not silently redirect you to another version.",
+          "Open [Packages](#packages) and type a name in the search box.",
+          "Use Filter packages to narrow the results if needed. Recently published means recently added to the registry, not necessarily a newer package version.",
+          "Open a package and choose the version you want.",
+          "Read Overview, Compatibility and Release notes. Check that the publisher supports your vehicle and firmware.",
         ],
-        note: "Keep the package release version separate from supported firmware/NEMESIS versions. A hash proves a byte match, not firmware support. Previously downloaded/offline files cannot be recalled by a withdrawal.",
+        note: "You can save your vehicle information in [Settings](#settings) to compare requirements. Missing information or a matching firmware number does not prove support.",
+      },
+      {
+        title: "Download and install",
+        steps: [
+          "Select Download installer ZIP.",
+          "Follow [Copy downloaded packages to USB](#guides/companion-manual) to prepare the ZIP with Companion.",
+          "In the parked vehicle, use Package Manager to install it from USB Storage.",
+          "Prefer an internet download in the vehicle? Follow [Install packages in your vehicle](#guides/vehicle) and choose Cloud Registry instead.",
+        ],
+        note: "A withdrawn version is no longer available for new downloads. Files you already downloaded remain on your computer or USB drive.",
       },
     ],
   },
@@ -173,19 +222,19 @@ export const guides: Guide[] = [
     title: "Publish a package with GitHub",
     audience: "Package publishers",
     intro:
-      "Publishers own their GitHub Releases; the registry validates the selected ZIP and serves validated copies from Cloudflare. Authorized publishers publish automatically after trusted validation, without a maintainer approval step.",
+      "Share a package from a public GitHub repository you can manage. Connect the repository, choose an installer ZIP, and submit it. Successful checks publish it automatically.",
     figure: "publishing.svg",
     alt: "Publisher selects a GitHub release ZIP; trusted validation checks it, ownership and authorization are verified, and validated bytes publish automatically.",
     sections: [
       {
         title: "Connect your GitHub repository",
         steps: [
-          "Choose [Publish → Sign in with GitHub](#publish). Authorize the registry App for your GitHub identity. Your sign-in stays available while navigating and reloading this tab, until you sign out or the one-hour session expires.",
-          "Use Connect repository on GitHub in the [publisher screen](#publish). Select the account and only the public repositories you want to publish. The App requires read-only Contents and Metadata access.",
-          "Return to [Publish](#publish) and register the public owner/repository name. Your signed-in user must have write, maintain, or administrator permission on it.",
-          "If the repository was transferred, App access removed, or permissions changed, restore the intended App installation/access and re-register to reauthorize publishing.",
+          "Open [Publish](#publish) and choose Sign in with GitHub.",
+          "Select Connect repository on GitHub. Give the NEMESIS GitHub App access to the public repository you want to publish.",
+          "Return to [Publish](#publish). Enter the repository as owner/repository, confirm your permission to share its releases, and choose Register repository.",
+          "If the repository is missing, check that it is public and that your GitHub account has write, maintain, or administrator access.",
         ],
-        note: "Never put GitHub credentials, private keys, or registry tokens into a package ZIP, repository source, or the public website. End users do not need the publisher App to download packages.",
+        note: "Your session lasts one hour. If repository ownership or App access changes, restore access and register the repository again.",
       },
       {
         title: "Build a directly installable ZIP",
@@ -200,14 +249,15 @@ export const guides: Guide[] = [
       {
         title: "Confirm your submission and follow validation",
         steps: [
-          "In [Publish](#publish), choose the registered repository, release, and exact installer asset. When several ZIPs exist, explicitly select the right one.",
-          "Enter the exact internal ID/version and a useful name/description. Expand More package details for optional categories, release notes, and compatibility declarations. An optional icon.png beside NEMESIS.data inside the installer ZIP supplies artwork: still, non-interlaced PNG, at most 512 × 512 pixels and 256 KiB. Otherwise the GitHub publisher avatar is used. Review the ZIP filename and destination release identity.",
-          "Acknowledge that you have permission to redistribute the ZIP through the registry, then submit at the final confirmation step.",
-          "Follow status: Waiting for validation → Validation in progress → Finishing publication → Published. Trusted validation downloads the exact asset, checks all archive bytes/identity, and never runs package scripts or repository code. Successful validation publishes automatically; no administrator approval is required.",
-          "If validation fails, read the report and fix the artifact. Administrators can retry failed jobs. A stopped or corrected submission may require a new release asset and version. A repository or publisher may have up to 20 active queued/validating/finishing jobs; if the queue is full, wait for jobs to finish before submitting more.",
-          "Successful publication reserves ownership of the global package ID for the repository. Later versions and listing metadata changes use the same authorization, trusted validation, and automatic publication path.",
+          "In [Publish](#publish), choose your repository and press Continue.",
+          "Choose a GitHub release and its installer ZIP. If there are several ZIPs, check the filename carefully.",
+          "Enter the package ID and version from NEMESIS.data inside the ZIP. Add a clear package name and description.",
+          "Open More package details if you want to add categories, release notes, or vehicle requirements.",
+          "Press Continue. Check the package details and confirm your permission to share the ZIP, then submit.",
+          "Watch My submissions for the result. The registry checks the ZIP and publishes automatically; no administrator approval is required.",
+          "If validation fails, read the report. Correct the ZIP and use a new version when its contents change.",
         ],
-        note: "Published version bytes are immutable. Use a new version when bytes change. Withdrawal stops new registry discovery/downloads; it does not uninstall packages or erase existing offline copies.",
+        note: "Keep the package ID the same for updates. Published files cannot be replaced with different contents under the same version. An optional icon.png beside NEMESIS.data supplies the package image; use a non-interlaced PNG up to 512 × 512 pixels and 256 KiB.",
       },
       {
         title: "Unpublish your packages",
@@ -243,8 +293,7 @@ export const guides: Guide[] = [
     id: "troubleshooting",
     title: "Troubleshooting and compatibility",
     audience: "Everyone",
-    intro:
-      "Keep failures visible and recoverable. A failed lookup, unknown compatibility, or cancelled transfer is different from a successful empty result.",
+    intro: "Find the problem below and follow the suggested next step.",
     figure: "manager-result.svg",
     alt: "Illustrative readable vehicle operation result with a summary and access to diagnostic details.",
     sections: [
@@ -304,9 +353,17 @@ export function renderGuides(root: HTMLElement, id = "") {
     heading(
       root,
       id ? "Guide not found" : "Guides",
-      "Clear paths for vehicle users, USB users, and package publishers.",
+      "New here? Start with Start here. Then choose the task you want to do.",
     );
     if (id) root.append(el("p", "Choose one of the guides below."));
+    if (!id)
+      root.append(
+        link(
+          "First time? Set up Package Manager",
+          "#guides/start",
+          "button-link primary",
+        ),
+      );
     const cards = el("div", "", "guide-cards");
     for (const guide of guides) {
       const card = el("article", "", "guide-card");
@@ -397,10 +454,11 @@ export function renderGuides(root: HTMLElement, id = "") {
     image,
     el(
       "figcaption",
-      "Illustrative workflow or example screen. Package names and versions shown are examples; follow your actual release’s instructions.",
+      "Example only. Follow the instructions for your package and version.",
     ),
   );
-  article.append(figure);
+  const example = el("details", "", "guide-example");
+  example.append(el("summary", "Show an example screen"), figure);
   chosen.sections.forEach((section, index) => {
     const node = el("section", "", "guide-section");
     node.id = "guide-section-" + (index + 1);
@@ -411,6 +469,7 @@ export function renderGuides(root: HTMLElement, id = "") {
     if (section.note) node.append(guideText("aside", section.note, "callout"));
     article.append(node);
   });
+  article.append(example);
   const related = el("nav", "", "guide-related");
   related.setAttribute("aria-label", "Related guides");
   related.append(el("h2", "Next steps"));

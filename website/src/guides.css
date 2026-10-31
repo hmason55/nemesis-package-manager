@@ -119,3 +119,15 @@ textarea {
   border-radius: 8px;
   border: 1px solid var(--border);
 }
+
+.guide-example {
+  margin-top: 24px;
+}
+.guide-example summary {
+  cursor: pointer;
+  padding: 12px 0;
+  font-weight: 600;
+}
+.guide-example figure {
+  margin-top: 12px;
+}
