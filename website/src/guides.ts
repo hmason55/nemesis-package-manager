@@ -1,4 +1,5 @@
 import { el, link, external, heading } from "./ui";
+import { icon, type IconName } from "./icons";
 
 type Guide = {
   id: string;
@@ -271,6 +272,15 @@ export const guides: Guide[] = [
 ];
 
 const asset = (name: string) => import.meta.env.BASE_URL + "guides/" + name;
+const guideIcons: Record<string, IconName> = {
+  start: "arrow",
+  vehicle: "car",
+  "companion-manual": "usb",
+  "companion-registry": "cloud",
+  registry: "package",
+  publish: "upload",
+  troubleshooting: "guide",
+};
 // Guide copy supports authored inline links, without interpreting HTML.
 function guideText(tag: "li" | "aside", text: string, className = "") {
   const node = el(tag, "", className);
@@ -301,6 +311,7 @@ export function renderGuides(root: HTMLElement, id = "") {
     for (const guide of guides) {
       const card = el("article", "", "guide-card");
       const title = el("h2");
+      title.append(icon(guideIcons[guide.id]));
       title.append(link(guide.title, "#guides/" + guide.id));
       card.append(
         el("p", guide.audience, "eyebrow"),
@@ -364,6 +375,7 @@ export function renderGuides(root: HTMLElement, id = "") {
   }
   root.append(link("← All guides", "#guides", "text-link"));
   heading(root, chosen.title, chosen.intro);
+  root.querySelector("h1")!.prepend(icon(guideIcons[chosen.id]));
   const layout = el("div", "", "guide-layout"),
     nav = el("nav", "", "guide-toc"),
     article = el("article", "", "guide-article");

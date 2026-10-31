@@ -16,7 +16,7 @@
   function compatibility(value) { return "Vehicles: " + (value?.vehicles?.join(", ") || "Not specified") + "; firmware: " + (value?.firmware?.join(", ") || "Not specified") + "; NEMESIS: " + (value?.nemesis || "Not specified"); }
   function row(pkg, versions, folder, saved) {
     const article = textElement("article", "", "cloud-package");
-    article.append(textElement("h3", pkg.name || pkg.id || pkg.package_id), textElement("p", pkg.description || "", "cloud-description"));
+    article.append(labelControl(textElement("h3", ""), pkg.name || pkg.id || pkg.package_id, "package"), textElement("p", pkg.description || "", "cloud-description"));
     if (pkg.publisher || pkg.latest_size) article.append(textElement("p", [pkg.publisher ? "Publisher: " + pkg.publisher : "", pkg.latest_size ? "Latest download: " + NemesisCloudSearch.bytes(pkg.latest_size) : ""].filter(Boolean).join(" · "), "cloud-package-meta"));
     const select = document.createElement("select");
     select.setAttribute("aria-label", "Version for " + (pkg.name || pkg.package_id));
@@ -30,7 +30,7 @@
     if (folder) destination.value = folder;
     if (saved?.folder && matches.some(match => match.folder === saved.folder)) destination.value = saved.folder;
     const disclosure = document.createElement("details"); disclosure.className = "cloud-version-details";
-    disclosure.append(textElement("summary", "Version details and compatibility"));
+    disclosure.append(labelControl(textElement("summary", ""), "Version details and compatibility", "info"));
     const details = textElement("p", "", "hint"), warning = textElement("p", "", "cloud-compatibility-note");
     disclosure.append(details);
     function describe() {
@@ -53,7 +53,7 @@
   }
   function request(next = 1) {
     const active = [$("cloud-category").value, $("cloud-publisher").value, $("cloud-size").value, $("cloud-sort").value !== "name"].filter(Boolean).length;
-    $("cloud-filter-summary").textContent = active ? `Filter results · ${active} active` : "Filter results";
+    labelControl($("cloud-filter-summary"), active ? `Filter results · ${active} active` : "Filter results", "filter");
     const max = $("cloud-size").value;
     return {q: $("cloud-query").value, category: $("cloud-category").value, publisher: $("cloud-publisher").value, sort: $("cloud-sort").value, page: String(next), ...(max ? {max_size: max} : {}), ...profileQuery()};
   }
@@ -84,7 +84,7 @@
       if (!updates) { facets("cloud-category", result.categories, "All categories"); facets("cloud-publisher", result.publishers, "All publishers"); }
       $("cloud-search-status").textContent = updates ? `${NemesisCloudSearch.count(packages.length, "USB package result")}. Select versions manually when ordering is unknown.` : `${NemesisCloudSearch.count(result.total ?? packages.length, "package")} found · page ${page}.`;
       if (!packages.length) $("cloud-packages").append(textElement("p", updates ? "No registry updates found for this USB drive." : "No published packages match. Try clearing the search or resetting filters."));
-      if (!updates) for (const [title, number] of [["Previous", page > 1 ? page - 1 : null], ["Next", result.next_page]]) if (number) { const button = textElement("button", title); button.type = "button"; button.onclick = () => search(number); $("cloud-packages").append(button); }
+      if (!updates) for (const [title, number] of [["Previous", page > 1 ? page - 1 : null], ["Next", result.next_page]]) if (number) { const button = labelControl(textElement("button", ""), title, title === "Previous" ? "back" : "next"); button.type = "button"; button.onclick = () => search(number); $("cloud-packages").append(button); }
       controls();
     },
     error(error) { $("cloud-search-status").textContent = "Could not load registry results: " + error.message + " Existing results remain available; retry when connected."; },

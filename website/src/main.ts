@@ -1,7 +1,7 @@
 import { renderSettings } from "./settings";
 import { renderManagement } from "./management";
 import { searchControl } from "./search-control";
-import { icon } from "./icons";
+import { icon, labelAction } from "./icons";
 import { renderGuides } from "./guides";
 import { API, api, setToken, hasSession } from "./client";
 import { parseRoute, catalogLink } from "./routes";
@@ -230,6 +230,11 @@ const searchBox = searchControl(
 $("search-submit").prepend(icon("search"));
 $("browse").prepend(icon("package"));
 $("help").prepend(icon("guide"));
+labelAction($("publish"), "Publish", "upload");
+labelAction($("settings"), "Settings", "settings");
+labelAction($("moderate"), "Manage registry", "shield");
+for (const id of ["signin", "signout", "search-clear"])
+  labelAction($(id), $(id).textContent!.trim());
 $("signin").onclick = () => void run(signin);
 $("signout").onclick = () =>
   void run(async () => {
@@ -260,7 +265,7 @@ function theme() {
   const dark = choice
     ? choice === "dark"
     : window.matchMedia("(prefers-color-scheme: dark)").matches;
-  $("theme").textContent = dark ? "Use light theme" : "Use dark theme";
+  labelAction($("theme"), dark ? "Use light theme" : "Use dark theme");
   return dark;
 }
 $("theme").onclick = () => {
