@@ -134,11 +134,17 @@ re-register after authorization is verified again. Previously approved R2 copies
 remain available unless withdrawn.
 
 An administrator configured by numeric GitHub ID uses **Manage registry** to
-inspect reports, ownership, hashes and metadata, retry failed validations, reject
-abusive pending submissions, and withdraw published versions. These are operational
+inspect reports, ownership, hashes and metadata, retry failed validations, and republish withdrawn versions. The API also supports rejecting
+abusive pending submissions and withdrawing individual published versions. **Remove package** withdraws all its public versions and stops pending publication. These are operational
 and anti-abuse controls, not a required publication gate. Trusted validation plus
 a hash establishes a byte/integrity match, not a publisher signature or a guarantee
 that package code is safe.
+
+### Restore a withdrawn version
+
+Publishers use **Publish → My submissions → Republish version** for versions they unpublished themselves. Administrators use **Manage registry → Republish version** on a withdrawn row, including historical or administrator withdrawals. Confirm the original ID/version, ZIP and SHA-256 and enter a reason. Restoration runs the same artifact, live repository authorization, ownership and block checks as publication; it does not accept replacement bytes or restart stopped jobs. A changed installer needs a new version. Registry discovery, original download URLs, and retained icons become available again for that version.
+
+Apply `0005_republication.sql` with the other D1 migrations before deploying this code. It records who unpublished each version. Existing withdrawn rows have no recorded withdrawing publisher and can be restored only by an administrator. The unique published/withdrawn version and release-asset constraints remain in place, so duplicate submissions cannot replace retained artifacts.
 
 ## Configure clients
 

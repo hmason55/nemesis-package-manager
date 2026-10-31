@@ -1,4 +1,5 @@
 import { element as el } from "./client";
+import { labelAction } from "./icons";
 export { el };
 export function option(text: string, value: string) {
   const item = el("option", text);
@@ -8,6 +9,7 @@ export function option(text: string, value: string) {
 let sequence = 0;
 export function action(text: string, handler: () => unknown, className = "") {
   const button = el("button", text, className);
+  labelAction(button, text);
   button.type = "button";
   button.onclick = () => void handler();
   return button;
@@ -15,6 +17,7 @@ export function action(text: string, handler: () => unknown, className = "") {
 export function link(text: string, href: string, className = "") {
   const a = el("a", text, className);
   a.href = href;
+  if (className.split(" ").includes("button-link")) labelAction(a, text);
   return a;
 }
 export function external(text: string, href: string) {

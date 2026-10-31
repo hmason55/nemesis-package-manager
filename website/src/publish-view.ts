@@ -1,5 +1,6 @@
 import { api, compatibility } from "./client";
 import { renderPublisherPackages } from "./publisher-packages";
+import { labelAction } from "./icons";
 import {
   el,
   option,
@@ -100,7 +101,9 @@ export async function renderPublish(
     "I have permission to redistribute this repository’s release packages through Cloudflare.",
   );
   consent.required = true;
-  registration.append(el("button", "Register repository", "primary"));
+  registration.append(
+    labelAction(el("button", "", "primary"), "Register repository"),
+  );
   registration.onsubmit = (event) => {
     event.preventDefault();
     void controls.run(async () => {
@@ -262,7 +265,7 @@ export async function renderPublish(
         else item.removeAttribute("aria-current");
       });
       back.hidden = step === 0;
-      next.textContent = step === 2 ? "Submit for validation" : "Continue";
+      labelAction(next, step === 2 ? "Submit for validation" : "Continue");
       if (step === 2) renderReview();
       const legend = sections[step].querySelector("legend")!;
       legend.tabIndex = -1;
@@ -431,6 +434,51 @@ export async function renderPublish(
             "#packages/" + encodeURIComponent(submission.package_id),
           ),
         );
+      if (submission.status === "withdrawn") {
+        if (
+          Number.isSafeInteger(user.id) &&
+          submission.withdrawn_by === user.id
+        )
+          row.append(
+            action(
+              "Republish version",
+              () =>
+                controls.run(async () => {
+                  if (
+                    !confirm(
+                      "Republish " +
+                        submission.package_id +
+                        " " +
+                        submission.version +
+                        " using its original validated ZIP and SHA-256? Registry downloads will become available again.",
+                    )
+                  )
+                    return;
+                  const reason = prompt("Reason for republishing");
+                  if (reason === null) return;
+                  if (!reason.trim())
+                    throw new Error("Enter a reason for republishing.");
+                  await api(
+                    "/v1/publisher/submissions/" + submission.id + "/republish",
+                    { reason: reason.trim() },
+                  );
+                  await controls.refresh();
+                  controls.notify(
+                    "Version republished with its original validated ZIP.",
+                  );
+                }),
+              "quiet",
+            ),
+          );
+        else
+          row.append(
+            el(
+              "p",
+              "Contact a registry administrator to republish this withdrawn version. Its original validated ZIP is retained.",
+              "hint",
+            ),
+          );
+      }
       rows.append(row);
     }
   }

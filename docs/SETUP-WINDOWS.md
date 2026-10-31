@@ -4,7 +4,7 @@ For a walkthrough with screen examples, start with the [illustrated user guide](
 
 ## A. Download
 
-NEMESIS must already work on your head unit. Download `usb-package-manager-ready.zip` from a release. Alternatively, open **Actions > Build Package Manager**, download the successful run's `nemesis-usb-package-manager` artifact, and extract that wrapper first.
+NEMESIS must already work on your head unit. Download [`usb-package-manager-ready.zip`](https://github.com/hmason55/nemesis-package-manager/releases/latest/download/usb-package-manager-ready.zip) from [Releases](https://github.com/hmason55/nemesis-package-manager/releases). Alternatively, open [**Actions > Build Package Manager**](https://github.com/hmason55/nemesis-package-manager/actions/workflows/build.yml), download the successful run's `nemesis-usb-package-manager` artifact, and extract that wrapper first.
 
 ## B. Prepare the drive
 

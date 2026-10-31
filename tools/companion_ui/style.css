@@ -48,7 +48,7 @@ summary { color: #b2c8e5; cursor: pointer; }
 fieldset { border: 0; padding: 0; margin: 0; min-width: 0; }
 .panel { padding: 20px 0 0; }
 .section-title { margin-bottom: 18px; }
-.list-controls select { width: auto; font-size: 12px; padding: 8px 28px 8px 10px; }
+.list-controls select { width: auto; min-width: 142px; flex-shrink: 0; font-size: 12px; padding: 8px 28px 8px 10px; }
 .list-controls button { font-size: 12px; padding: 8px 12px; }
 .table-wrap { border: 1px solid var(--border); border-radius: 9px; background: #121821; overflow-x: auto; }
 table { width: 100%; border-collapse: collapse; table-layout: fixed; text-align: left; }
@@ -143,6 +143,9 @@ dialog p { overflow-wrap: anywhere; }
 /* Shared, compact controls keep manual and registry workflows visually related. */
 .control-icon { flex: 0 0 auto; vertical-align: middle; pointer-events: none; }
 button .control-icon { margin-right: 7px; }
+summary .control-icon, .badge .control-icon, a .control-icon { margin-right: 7px; }
+.badge .control-icon { width: 15px; height: 15px; }
+#packages strong .control-icon, .cloud-package h3 .control-icon { margin-right: 8px; color: var(--accent); }
 .companion-brand, .icon-heading { display: flex; align-items: center; gap: 10px; }
 .companion-brand > .control-icon { width: 36px; height: 36px; padding: 6px; border: 1px solid var(--border); border-radius: 9px; background: #182333; color: var(--accent); }
 .brand-subtitle { margin: 2px 0 0; font-size: 12px; }

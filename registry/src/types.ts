@@ -38,6 +38,7 @@ export interface Submission {
   icon_key?: string | null;
   source_actor_id?: number | null;
   release_author_id?: number | null;
+  withdrawn_by?: number | null;
   report: string;
   created_at: number;
 }

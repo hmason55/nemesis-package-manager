@@ -11,6 +11,36 @@ let managerRelease = null;
 let releaseChecking = false;
 let removal = null;
 
+// Local SVGs work offline and remain decorative; visible labels name each action.
+const controlPaths = {
+  package: "m12 3 9 5v9l-9 5-9-5V8l9-5 M3 8l9 5 9-5 M12 13v9",
+  search: "m21 21-5-5 M10 3a7 7 0 1 0 0 14a7 7 0 0 0 0-14",
+  filter: "M4 5h16 M7 12h10 M10 19h4",
+  refresh: "M20 7v5h-5 M4 17v-5h5 M5.5 7a8 8 0 0 1 13-2L20 7 M4 17l1.5 2a8 8 0 0 0 13-2",
+  restore: "M4 4v6h6 M4 10a8 8 0 1 1 1 9",
+  trash: "M3 6h18 M9 6V3h6v3 M5 6l1 15h12l1-15 M10 10v7 M14 10v7",
+  save: "M4 3h13l4 4v14H3V3h1 M7 3v6h10V3 M7 21v-8h10v8",
+  usb: "M7 9h10v12H7z M9 9V3h6v6 M11 5v2 M13 5v2",
+  add: "M12 4v16 M4 12h16",
+  close: "m6 6 12 12 M6 18 18 6",
+  back: "M19 12H5 m6-6-6 6 6 6",
+  next: "M5 12h14 m-6-6 6 6-6 6",
+  info: "M12 11v6 M12 7v1 M22 12a10 10 0 1 0-20 0a10 10 0 0 0 20 0",
+  check: "m5 12 4 4L19 6",
+  warning: "m12 3 10 18H2L12 3 M12 9v5 M12 17v1",
+  guide: "M12 6c-3-3-7-3-10-1v15c3-2 7-2 10 0c3-2 7-2 10 0V5c-3-2-7-2-10 1v14",
+};
+function controlIcon(name) {
+  const svg = document.createElementNS("http://www.w3.org/2000/svg", "svg");
+  for (const [key, value] of Object.entries({ viewBox: "0 0 24 24", width: "20", height: "20", class: "control-icon", fill: "none", stroke: "currentColor", "stroke-width": "1.7", "stroke-linecap": "round", "stroke-linejoin": "round", "aria-hidden": "true", focusable: "false" })) svg.setAttribute(key, value);
+  const path = document.createElementNS(svg.namespaceURI, "path");
+  path.setAttribute("d", controlPaths[name]); svg.append(path); return svg;
+}
+function labelControl(node, label, name) {
+  node.replaceChildren(controlIcon(name), document.createTextNode(label));
+  return node;
+}
+
 // One shared tooltip also covers package actions created after each drive scan.
 const tooltip = document.createElement("div");
 tooltip.id = "control-tooltip";
@@ -166,7 +196,7 @@ function syncImport() {
   const update = $("import-mode").value === "update";
   $("target-group").hidden = !update;
   $("new-folder").hidden = update;
-  $("import-submit").textContent = update ? "Update package" : "Add package";
+  labelControl($("import-submit"), update ? "Update package" : "Add package", update ? "refresh" : "add");
   $("import-note").textContent = update ? "Choose the new release ZIP. Your existing data folder is kept." : "Choose the release ZIP you downloaded. The folder name is filled in for you.";
   $("folder-preview").textContent = $("package-name").value ? `packages/${$("package-name").value}/` : "Choose a ZIP first";
 }
@@ -205,9 +235,9 @@ function renderPackages() {
   for (const pkg of packages) {
     const row = document.createElement("tr");
     const name = document.createElement("td");
-    name.append(textElement("strong", pkg.name));
+    name.append(labelControl(textElement("strong", ""), pkg.name, "package"));
     const details = textElement("details", "", "package-details");
-    details.append(textElement("summary", pkg.error ? "View issue" : "Details"));
+    details.append(labelControl(textElement("summary", ""), pkg.error ? "View issue" : "Details", pkg.error ? "warning" : "info"));
     if (pkg.id) details.append(textElement("code", pkg.id));
     details.append(textElement("code", pkg.path || `packages/${pkg.folder}/`));
     if (pkg.description) details.append(textElement("p", pkg.description));
@@ -218,10 +248,10 @@ function renderPackages() {
     version.dataset.label = "On USB";
     const type = textElement("td", ({ install: "Installer", execute: "Script", source: "Source" })[pkg.kind] || "Unknown", "type-column");
     const status = document.createElement("td");
-    const badge = textElement("span", pkg.error ? "Needs attention" : "Ready", pkg.error ? "badge attention" : "badge");
+    const badge = labelControl(textElement("span", "", pkg.error ? "badge attention" : "badge"), pkg.error ? "Needs attention" : "Ready", pkg.error ? "warning" : "check");
     status.append(badge);
     const action = textElement("td", "", "row-action");
-    const remove = textElement("button", "Remove", "danger");
+    const remove = labelControl(textElement("button", "", "danger"), "Remove", "trash");
     remove.type = "button";
     remove.setAttribute("aria-label", `Remove ${pkg.name} from USB`);
     remove.addEventListener("click", () => {
@@ -233,7 +263,7 @@ function renderPackages() {
       $("remove-dialog").showModal();
     });
     if (managedPackages().some(item => item.folder === pkg.folder)) {
-      const update = textElement("button", "Replace on USB", "secondary");
+      const update = labelControl(textElement("button", "", "secondary"), "Replace on USB", "refresh");
       update.type = "button";
       update.setAttribute("aria-label", `Replace ${pkg.name} on USB`);
       update.dataset.tooltip = "Choose a release ZIP to replace this package on USB. Its data folder is kept. This does not check for newer versions.";
@@ -263,7 +293,7 @@ function render(drive) {
     const repair = !manager.present && manager.repairable;
     $("setup").hidden = manager.present || repair;
     $("update-manager").hidden = !manager.present && !repair;
-    $("update-manager").textContent = repair ? "Repair manager" : "Update manager";
+    labelControl($("update-manager"), repair ? "Repair manager" : "Update manager", repair ? "restore" : "refresh");
     if (repair) $("manager-detail").textContent = "Restore the missing installer on USB. This does not change the installed app. Existing launcher settings are kept.";
   }
   renderTargets();
@@ -395,7 +425,7 @@ function renderManagerRelease() {
   const latest = numericVersion(managerRelease.version);
   const newer = current && latest && latest.some((n, i) => n !== (current[i] || 0) && latest.slice(0, i).every((v, j) => v === (current[j] || 0)) && n > (current[i] || 0));
   $("release-status").textContent = newer ? `Update available: ${managerRelease.version}${managerRelease.prerelease ? " (prerelease)" : ""}` : !current ? `Latest release: ${managerRelease.version}. USB version could not be compared.` : `Latest release: ${managerRelease.version}. No newer release found.`;
-  link.textContent = newer ? "Get the newer manager release" : "View release";
+  labelControl(link, newer ? "Get the newer manager release" : "View release", "next");
   link.href = managerRelease.url;
   link.hidden = !newer && !!current;
 }
@@ -427,5 +457,13 @@ $("remove-form").addEventListener("submit", event => {
     message(deleteData ? "Package and its USB data removed." : "Package removed. USB data was kept.");
   });
 });
+const controlIcons = { "tab-packages": "package", "cancel-import": "back", "check-release": "refresh", "setup": "usb", "update-manager": "refresh", "cancel-remove": "close", "close-settings": "close", "cloud-profile-apply": "save", "cloud-clear": "close", "cloud-reset": "restore" };
+for (const [id, name] of Object.entries(controlIcons)) {
+  const node = $(id);
+  // Preserve tab counts and any other child controls.
+  node.prepend(controlIcon(name));
+}
+for (const [selector, name] of [[".guide-link", "guide"], ["#remove-form button[type=submit]", "trash"], ["#select-form button", "usb"], ["#cloud-config button", "save"], ["#cloud-search button[type=submit]", "search"]]) document.querySelector(selector).prepend(controlIcon(name));
+labelControl($("cloud-filter-summary"), "Filter results", "filter");
 if (token) operation("Checking local drives…", refresh);
 else message("Open the full session URL printed in the companion's terminal window.", true);

@@ -36,13 +36,13 @@ flowchart LR
     package --> read["Overview, Compatibility,<br/>Versions, Release notes, Integrity information"]
     read --> download["Download installer ZIP<br/>Import with companion; confirm in vehicle"]
     publish["Publish: GitHub sign-in<br/>Connect and register public repository"] --> asset["Choose published release and installer ZIP<br/>Confirm ID, version and redistribution permission"]
-    asset --> validate["Queued then Validating<br/>Trusted checks; no package code execution"]
+    asset --> validate["Waiting for validation then Validation in progress<br/>Trusted checks; no package code execution"]
     validate --> outcome{"Validation and authorization pass?"}
     outcome -->|Yes| live["Publish automatically<br/>No separate maintainer approval"]
     outcome -->|No| report["Private failure report<br/>Correct artifact or authorization"]
 ```
 
-Browsing and downloading need no account. Profiles and compatibility declarations are advisory. Published bytes are immutable; changed bytes require a new version. See the [registry guide](REGISTRY-GUIDE.md) for numbered steps.
+Browsing and downloading need no account. Profiles and compatibility declarations are advisory. Published bytes are immutable; changed bytes require a new version. Withdrawal hides a version; it does not release its version identity. To restore the original bytes, publishers use **Publish > My submissions > Republish version** for their own unpublishing, and administrators use **Manage registry > Republish version** for other withdrawals. Confirm the version and original hash and supply a reason; authorization, blocks, ownership, and artifact availability are rechecked. Stopped pending jobs stay stopped. See the [registry guide](REGISTRY-GUIDE.md) for numbered steps.
 
 ## Companion screen
 
@@ -130,7 +130,7 @@ The diagram shows example USB-ready layouts; actual inner filenames vary. Extrac
 
 ## First use
 
-Download the standalone companion for your computer, `usb-package-manager-ready.zip`, and the trusted community releases you want. Check each package's vehicle and firmware requirements. The companion is optional; manual preparation and the source-checkout tools lead to the same in-vehicle steps.
+Download the [standalone companion for your computer](USB-COMPANION.md#run-a-release-download), [`usb-package-manager-ready.zip`](https://github.com/hmason55/nemesis-package-manager/releases/latest/download/usb-package-manager-ready.zip), and the trusted community releases you want from [Packages](https://hmason55.github.io/nemesis-package-manager/#packages). Check each package's vehicle and firmware requirements. The companion is optional; manual preparation and the source-checkout tools lead to the same in-vehicle steps.
 
 ```mermaid
 flowchart LR

@@ -56,6 +56,24 @@ export function renderManagement(
     );
     card.append(report);
     const actions = el("div", "", "actions");
+    if (submission.status === "withdrawn")
+      actions.append(
+        action(
+          "Republish version",
+          () =>
+            controls.run(() =>
+              change(
+                "/v1/admin/submissions/" + submission.id + "/republish",
+                "Republish " +
+                  submission.package_id +
+                  " " +
+                  submission.version +
+                  " using its original validated ZIP and SHA-256? Registry downloads will become available again.",
+              ),
+            ),
+          "quiet",
+        ),
+      );
     if (submission.status === "failed")
       actions.append(
         action(

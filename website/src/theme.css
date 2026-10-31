@@ -842,6 +842,7 @@ td {
   stroke-linejoin: round;
   flex: none;
   margin-right: 8px;
+  pointer-events: none;
 }
 .package-icon .ui-icon {
   width: 30px;
@@ -1003,4 +1004,8 @@ td {
   margin-top: 18px;
   padding-top: 10px;
   border-top: 1px solid var(--border);
+}
+@media (max-width: 600px) {
+  .site-header nav { gap: 2px; }
+  .site-header nav a { padding: 8px 2px; }
 }

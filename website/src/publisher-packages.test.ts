@@ -124,3 +124,87 @@ it("gives an empty-state message without removal controls", () => {
   expect(root.textContent).toContain("no published packages to remove");
   expect(root.querySelector("button")).toBeNull();
 });
+
+it("restores a self-unpublished version from My submissions after confirmation", async () => {
+  vi.mocked(api).mockImplementation(async (path) =>
+    path === "/v1/publisher/submissions"
+      ? [
+          {
+            id: "withdrawn",
+            package_id: "example.app",
+            version: "1.2",
+            status: "withdrawn",
+            withdrawn_by: 7,
+          },
+        ]
+      : [],
+  );
+  vi.stubGlobal(
+    "confirm",
+    vi.fn(() => true),
+  );
+  vi.stubGlobal(
+    "prompt",
+    vi.fn(() => "  Ready again  "),
+  );
+  const tasks: Promise<unknown>[] = [];
+  await renderPublish(
+    root,
+    { id: 7 },
+    {
+      ...controls,
+      active: () => true,
+      signin: vi.fn(),
+      run: (task) => {
+        const result = task();
+        tasks.push(result);
+        return result.then(() => {});
+      },
+    },
+  );
+  const button = [...root.querySelectorAll("button")].find(
+    (node) => node.textContent === "Republish version",
+  )!;
+  button.click();
+  await Promise.all(tasks);
+  expect(api).toHaveBeenCalledWith(
+    "/v1/publisher/submissions/withdrawn/republish",
+    { reason: "Ready again" },
+  );
+  expect(window.confirm).toHaveBeenCalledWith(
+    expect.stringContaining("original validated ZIP and SHA-256"),
+  );
+  expect(controls.refresh).toHaveBeenCalledOnce();
+  vi.mocked(window.confirm).mockReturnValue(false);
+  vi.mocked(api).mockClear();
+  button.click();
+  await Promise.all(tasks);
+  expect(api).not.toHaveBeenCalled();
+});
+
+it("explains administrator recovery for other withdrawals without offering self-service restore", async () => {
+  vi.mocked(api).mockImplementation(async (path) =>
+    path === "/v1/publisher/submissions"
+      ? [
+          {
+            id: "withdrawn",
+            package_id: "example.app",
+            version: "1.2",
+            status: "withdrawn",
+            withdrawn_by: null,
+          },
+        ]
+      : [],
+  );
+  await renderPublish(
+    root,
+    { id: 7 },
+    { ...controls, active: () => true, signin: vi.fn() },
+  );
+  expect(root.textContent).toContain("Contact a registry administrator");
+  expect(
+    [...root.querySelectorAll("button")].some(
+      (node) => node.textContent === "Republish version",
+    ),
+  ).toBe(false);
+});

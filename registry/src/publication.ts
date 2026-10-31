@@ -10,14 +10,20 @@ import { github, installationToken } from "./github";
 import { audit } from "./security";
 import { publishingAllowed } from "./management";
 
-export async function publishValidated(env: Env, row: Submission) {
+export async function publishValidated(
+  env: Env,
+  row: Submission,
+  expectedStatus: "review" | "withdrawn" = "review",
+  restoringPublisher: number | null = null,
+  republishReason = "",
+) {
   requireValue(
     row.package_id.toLowerCase() !== "usb.package.manager",
     "Package Manager uses its dedicated self-update workflow",
     409,
   );
   requireValue(
-    row.status === "review" &&
+    row.status === expectedStatus &&
       /^[a-f0-9]{64}$/.test(row.sha256 || "") &&
       row.object_key === "sha256/" + row.sha256 + ".zip" &&
       row.size > 0 &&
@@ -38,6 +44,7 @@ export async function publishValidated(env: Env, row: Submission) {
   await publishingAllowed(
     env,
     row.publisher_id,
+    restoringPublisher,
     repo.owner_id,
     row.source_actor_id,
     row.release_author_id,
@@ -76,20 +83,27 @@ export async function publishValidated(env: Env, row: Submission) {
   );
   const result = await env.DB.batch([
     env.DB.prepare(
-      "INSERT INTO packages SELECT ?,?,? WHERE EXISTS(SELECT 1 FROM submissions s JOIN repositories r ON r.id=s.repository_id WHERE s.id=? AND s.status='review' AND r.active=1 AND r.consent_at>0 AND r.owner_id=? AND r.installation_id=? AND NOT EXISTS(SELECT 1 FROM blocked_publishers WHERE publisher_id IN (s.publisher_id,r.owner_id,s.source_actor_id,s.release_author_id))) ON CONFLICT(id) DO NOTHING",
+      "INSERT INTO packages SELECT ?,?,? WHERE EXISTS(SELECT 1 FROM submissions s JOIN repositories r ON r.id=s.repository_id WHERE s.id=? AND s.status=? AND r.active=1 AND r.consent_at>0 AND r.owner_id=? AND r.installation_id=? AND NOT EXISTS(SELECT 1 FROM blocked_publishers WHERE publisher_id IN (s.publisher_id,r.owner_id,s.source_actor_id,s.release_author_id))) ON CONFLICT(id) DO NOTHING",
     ).bind(
       row.package_id,
       row.repository_id,
       row.metadata,
       row.id,
+      expectedStatus,
       repo.owner_id,
       repo.installation_id,
     ),
     env.DB.prepare(
-      "UPDATE submissions SET status='approved',updated_at=? WHERE id=? AND status='review' AND EXISTS(SELECT 1 FROM repositories r WHERE r.id=submissions.repository_id AND r.active=1 AND r.consent_at>0 AND r.owner_id=? AND r.installation_id=? AND NOT EXISTS(SELECT 1 FROM blocked_publishers WHERE publisher_id IN (submissions.publisher_id,r.owner_id,submissions.source_actor_id,submissions.release_author_id))) AND EXISTS(SELECT 1 FROM packages WHERE id=? COLLATE BINARY AND repository_id=?) AND NOT EXISTS(SELECT 1 FROM submissions WHERE package_id=? COLLATE NOCASE AND version=? AND status IN ('approved','withdrawn') AND id<>?)",
+      "UPDATE submissions SET status='approved',updated_at=?,report=CASE WHEN ?='withdrawn' THEN ? ELSE report END WHERE id=? AND status=? AND (? IS NULL OR (withdrawn_by=? AND NOT EXISTS(SELECT 1 FROM blocked_publishers WHERE publisher_id=?))) AND EXISTS(SELECT 1 FROM repositories r WHERE r.id=submissions.repository_id AND r.active=1 AND r.consent_at>0 AND r.owner_id=? AND r.installation_id=? AND NOT EXISTS(SELECT 1 FROM blocked_publishers WHERE publisher_id IN (submissions.publisher_id,r.owner_id,submissions.source_actor_id,submissions.release_author_id))) AND EXISTS(SELECT 1 FROM packages WHERE id=? COLLATE BINARY AND repository_id=?) AND NOT EXISTS(SELECT 1 FROM submissions WHERE package_id=? COLLATE NOCASE AND version=? AND status IN ('approved','withdrawn') AND id<>?)",
     ).bind(
       now(),
+      expectedStatus,
+      "Republished original validated ZIP: " + republishReason,
       row.id,
+      expectedStatus,
+      restoringPublisher,
+      restoringPublisher,
+      restoringPublisher,
       repo.owner_id,
       repo.installation_id,
       row.package_id,
@@ -99,7 +113,7 @@ export async function publishValidated(env: Env, row: Submission) {
       row.id,
     ),
     // D1 runs this batch sequentially in one transaction. Only this batch's
-    // successful review -> approved transition may replace listing metadata;
+    // successful publication or restoration transition may replace listing metadata;
     // an older finisher must not restore metadata after a newer publication.
     env.DB.prepare(
       "UPDATE packages SET metadata=? WHERE changes()=1 AND id=? AND repository_id=? AND EXISTS(SELECT 1 FROM submissions WHERE id=? AND status='approved')",

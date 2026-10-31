@@ -28,12 +28,13 @@ export async function removePackage(
 ) {
   requireValue(reason, "Supply a reason for this action");
   const changed = await env.DB.prepare(
-    "UPDATE submissions SET status=CASE WHEN status='approved' THEN 'withdrawn' ELSE 'rejected' END,report=?,updated_at=? WHERE package_id=? AND status IN ('approved','queued','validating','review')" +
+    "UPDATE submissions SET status=CASE WHEN status='approved' THEN 'withdrawn' ELSE 'rejected' END,report=?,updated_at=?,withdrawn_by=? WHERE package_id=? AND status IN ('approved','queued','validating','review')" +
       (repositoryId === undefined ? "" : " AND repository_id=?"),
   )
     .bind(
       "Package removed: " + reason,
       now(),
+      repositoryId === undefined ? null : user.publisher_id,
       id,
       ...(repositoryId === undefined ? [] : [repositoryId]),
     )

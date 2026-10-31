@@ -82,11 +82,17 @@ export async function createSubmission(
     409,
   );
   const approved = await env.DB.prepare(
-    "SELECT id FROM submissions WHERE package_id=? COLLATE NOCASE AND version=? AND status IN ('approved','withdrawn')",
+    "SELECT id,status FROM submissions WHERE package_id=? COLLATE NOCASE AND version=? AND status IN ('approved','withdrawn')",
   )
     .bind(id, version)
     .first();
-  requireValue(!approved, "Published versions cannot be replaced", 409);
+  requireValue(
+    !approved,
+    approved?.status === "withdrawn"
+      ? "This version is withdrawn. Use Republish version in My submissions, or ask a registry administrator to restore its original ZIP."
+      : "Published versions cannot be replaced",
+    409,
+  );
   const token = await installationToken(env, repo.installation_id),
     release = await github(
       "/repos/" + repo.full_name + "/releases/" + Number(input.release_id),
@@ -169,6 +175,29 @@ export async function publisher(request: Request, env: Env) {
     repository(env, user, id),
   );
   if (packages) return packages;
+  const republish = path.match(
+    /^\/v1\/publisher\/submissions\/([a-f0-9]{64})\/republish$/,
+  );
+  if (republish) {
+    requireValue(request.method === "POST", "Method not allowed", 405);
+    const row = await env.DB.prepare("SELECT * FROM submissions WHERE id=?")
+      .bind(republish[1])
+      .first<Submission>();
+    requireValue(
+      row?.status === "withdrawn" && row.withdrawn_by === user.publisher_id,
+      "Only versions you unpublished can be republished; contact an administrator for other withdrawals",
+      403,
+    );
+    await repository(env, user, row.repository_id);
+    const input = await body(request);
+    const reason = String(input.reason || "")
+      .trim()
+      .slice(0, 2000);
+    requireValue(reason, "Supply a reason for this action");
+    await publishValidated(env, row, "withdrawn", user.publisher_id, reason);
+    await audit(env, user.publisher_id, "republish", row.id);
+    return Response.json({ ok: true });
+  }
   if (path === "/v1/publisher/me" && request.method === "GET")
     return Response.json({
       id: user.publisher_id,
@@ -279,7 +308,7 @@ export async function admin(request: Request, env: Env) {
       ).results,
     );
   const route = path.match(
-    /^\/v1\/admin\/submissions\/([a-f0-9]{64})\/(approve|reject|withdraw|retry)$/,
+    /^\/v1\/admin\/submissions\/([a-f0-9]{64})\/(approve|reject|withdraw|retry|republish)$/,
   );
   requireValue(route && request.method === "POST", "Not found", 404);
   const row = await env.DB.prepare("SELECT * FROM submissions WHERE id=?")
@@ -289,8 +318,16 @@ export async function admin(request: Request, env: Env) {
   const action = route[2],
     input = await body(request),
     report = String(input.reason || "").slice(0, 2000);
-  if (action === "approve") {
-    await publishValidated(env, row);
+  if (action === "approve" || action === "republish") {
+    if (action === "republish")
+      requireValue(report.trim(), "Supply a reason for this action");
+    await publishValidated(
+      env,
+      row,
+      action === "republish" ? "withdrawn" : "review",
+      null,
+      report.trim(),
+    );
   } else {
     const allowed =
       action === "withdraw"
@@ -304,7 +341,7 @@ export async function admin(request: Request, env: Env) {
       409,
     );
     await env.DB.prepare(
-      "UPDATE submissions SET status=?,report=?,updated_at=? WHERE id=? AND status=?",
+      "UPDATE submissions SET status=?,report=?,updated_at=?,withdrawn_by=NULL WHERE id=? AND status=?",
     )
       .bind(
         action === "withdraw"

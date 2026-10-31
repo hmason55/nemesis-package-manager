@@ -1,4 +1,5 @@
-import { el, link, heading } from "./ui";
+import { el, link, external, heading } from "./ui";
+import { icon, type IconName } from "./icons";
 
 type Guide = {
   id: string;
@@ -23,7 +24,7 @@ export const guides: Guide[] = [
         title: "Choose your path",
         steps: [
           "Have a working vehicle internet connection? Use Cloud Registry in the vehicle to browse and download published packages.",
-          "Prefer USB or need offline access? Run USB Companion on your computer, select your drive, and prepare installers manually or from the registry.",
+          "Prefer USB or need offline access? Run [USB Companion](#guides/companion-manual) on your computer, select your drive, and prepare installers manually or from the registry.",
           "Downloading or copying an installer does not install it. Read its requirements and confirm installation in the parked vehicle.",
         ],
         note: "Trusted validation and a matching SHA-256 identify the published bytes. They do not guarantee that a community package is safe or compatible with your vehicle.",
@@ -31,9 +32,9 @@ export const guides: Guide[] = [
       {
         title: "Install Package Manager itself",
         steps: [
-          "Download a tested Package Manager release from the repository’s Releases page. Choose the USB-ready bundle for initial drive setup, not the source-code archive.",
-          "Open Companion, select the USB drive, then open Drive setup. Choose usb-package-manager-ready.zip and Set up drive. Preserve any other drive files you need.",
-          "Safely eject the drive. In the parked vehicle, insert it after the head unit boots and approve the NEMESIS execution prompt. The launcher installs Package Manager if missing and opens it. An existing manager needs the separate NEMESIS update procedure; copying a ZIP does not update the installed app.",
+          "Download a tested Package Manager release from the [repository’s Releases page](https://github.com/hmason55/nemesis-package-manager/releases). Choose the [latest USB-ready bundle](https://github.com/hmason55/nemesis-package-manager/releases/latest/download/usb-package-manager-ready.zip) for initial drive setup, not the source-code archive.",
+          "Open Companion, select the USB drive, then open Drive setup. Choose [usb-package-manager-ready.zip](https://github.com/hmason55/nemesis-package-manager/releases/latest/download/usb-package-manager-ready.zip) and Set up drive. Preserve any other drive files you need.",
+          "Safely eject the drive. In the parked vehicle, insert it after the head unit boots and approve the NEMESIS execution prompt. The launcher installs Package Manager if missing and opens it. An existing manager needs the [separate NEMESIS update procedure](https://github.com/hmason55/nemesis-package-manager/blob/main/docs/UPDATING.md#update-package-manager); copying a ZIP does not update the installed app.",
         ],
         note: "Package Manager self-update stays separate from ordinary community package updates. Follow the release’s signing and firmware instructions; never bypass certificate verification.",
       },
@@ -51,9 +52,9 @@ export const guides: Guide[] = [
       {
         title: "Choose a source",
         steps: [
-          "On startup, choose Cloud Registry or USB Storage and press Continue. Use Don't show again on startup only if you want the saved source to open automatically.",
+          "On startup, choose Cloud Registry or USB Storage and press Continue. The initial scan starts after the prompt closes; Cancel loads the current source. Use Don't show again on startup only if you want the saved source to open automatically.",
           "Open Settings near Help/Refresh to change your source, registry address, startup preference, or known vehicle/firmware/NEMESIS information.",
-          "For USB Storage, connect the prepared drive and press Refresh. Search packages filters the current tab; Clear removes the search. Filters contains package type and sort order. Submit the search or use Done/OK to dismiss its keyboard; Settings also has a fixed Hide keyboard button.",
+          "For USB Storage, connect the prepared drive and press Refresh. Search packages filters the current tab; Clear removes the search. Filters contains package type and sort order. Press Back or Done/OK to hide the search keyboard without losing the query; submitting a search also closes it. In Settings, Back, Done/OK, or Hide keyboard closes the keyboard and keeps edits; Save applies settings. Dialogs keep a readable dark theme in head-unit light mode.",
         ],
         note: "Cloud is optional. Keep a prepared USB drive for offline use. Installed packages remain manageable independently of the selected discovery source.",
       },
@@ -89,7 +90,7 @@ export const guides: Guide[] = [
       {
         title: "Select and prepare a drive",
         steps: [
-          "Launch the standalone Companion or run python -m tools.usb_companion from the repository. Keep its local server window open.",
+          "Download the standalone Companion for [Windows](https://github.com/hmason55/nemesis-package-manager/releases/latest/download/nemesis-usb-companion-windows-x86_64.zip) or [Linux x86-64](https://github.com/hmason55/nemesis-package-manager/releases/latest/download/nemesis-usb-companion-linux-x86_64.tar.gz), extract it, and launch it. For source-checkout instructions, see the [companion guide](https://github.com/hmason55/nemesis-package-manager/blob/main/docs/USB-COMPANION.md#run-from-this-repository). Keep its local server window open.",
           "Choose your USB drive. Use Settings → Drive not listed? to select its existing mount path, then confirm the displayed drive and free space.",
           "For first-time Package Manager setup, open Drive setup and choose the manager USB-ready release bundle. For community installers, use Packages → Add package.",
         ],
@@ -98,7 +99,7 @@ export const guides: Guide[] = [
       {
         title: "Add or update an installer",
         steps: [
-          "Choose a trusted release ZIP, not GitHub’s generated source archive. Existing local workflows also support their documented wrapper bundles and scripts.",
+          "Choose a trusted release ZIP, not GitHub’s generated source archive. Existing local workflows also support their [documented wrapper bundles and scripts](https://github.com/hmason55/nemesis-package-manager/blob/main/docs/RELEASE-LAYOUTS.md).",
           "For a new package, review the suggested destination folder. To update, choose the matching existing package and confirm its destination.",
           "Wait for copying to finish. The importer keeps existing data/ directories when replacing an installer. If import fails, inspect the error and retain any reported recovery files.",
           "Safely eject the drive. In the vehicle choose USB Storage → Refresh, select the package, and confirm Install or Update.",
@@ -158,8 +159,8 @@ export const guides: Guide[] = [
       {
         title: "Find the right release",
         steps: [
-          "Start typing in Packages search to see results update automatically. Filter by category, publisher, or maximum download size; sort by name, recently published, or smallest download. Recently published does not necessarily mean a newer version.",
-          "Open a package, check publisher and repository links, then select an exact published version. Read Overview, Compatibility, Release notes, and Versions. To compare support declarations with your device, optionally save a device profile in Settings; mismatches remain advisory.",
+          "Start typing in [Packages search](#packages) to see results update automatically. Filter by category, publisher, or maximum download size; sort by name, recently published, or smallest download. Recently published does not necessarily mean a newer version.",
+          "Open a package, check publisher and repository links, then select an exact published version. Read Overview, Compatibility, Release notes, and Versions. To compare support declarations with your device, optionally save a device profile in [Settings](#settings); mismatches remain advisory.",
           "Download the installer ZIP for manual Companion import, browse the same release inside Companion, or use Cloud Registry in the vehicle.",
           "Check integrity information when sharing a package link. A withdrawn release stops new registry downloads and must not silently redirect you to another version.",
         ],
@@ -179,9 +180,9 @@ export const guides: Guide[] = [
       {
         title: "Connect your GitHub repository",
         steps: [
-          "Choose Publish → Sign in with GitHub. Authorize the registry App for your GitHub identity. Your sign-in stays available while navigating and reloading this tab, until you sign out or the one-hour session expires.",
-          "Use Connect repository on GitHub in the publisher screen. Select the account and only the public repositories you want to publish. The App requires read-only Contents and Metadata access.",
-          "Return to Publish and register the public owner/repository name. Your signed-in user must have write, maintain, or administrator permission on it.",
+          "Choose [Publish → Sign in with GitHub](#publish). Authorize the registry App for your GitHub identity. Your sign-in stays available while navigating and reloading this tab, until you sign out or the one-hour session expires.",
+          "Use Connect repository on GitHub in the [publisher screen](#publish). Select the account and only the public repositories you want to publish. The App requires read-only Contents and Metadata access.",
+          "Return to [Publish](#publish) and register the public owner/repository name. Your signed-in user must have write, maintain, or administrator permission on it.",
           "If the repository was transferred, App access removed, or permissions changed, restore the intended App installation/access and re-register to reauthorize publishing.",
         ],
         note: "Never put GitHub credentials, private keys, or registry tokens into a package ZIP, repository source, or the public website. End users do not need the publisher App to download packages.",
@@ -190,7 +191,7 @@ export const guides: Guide[] = [
         title: "Build a directly installable ZIP",
         steps: [
           "Place the package’s NEMESIS.data manifest at the ZIP root, or inside one enclosing directory, with the exact internal package id and version. Keep that ID stable across versions. The reserved usb.package.manager ID uses the separate Package Manager self-update workflow and cannot be published here.",
-          "Include the files required by the package’s actual NEMESIS installation format. Do not submit a USB wrapper bundle, source folder, source-code ZIP, or standalone script as a cloud installer.",
+          "Include the files required by the package’s [actual NEMESIS installation format](https://github.com/hmason55/nemesis-package-manager/blob/main/docs/RELEASE-LAYOUTS.md). Do not submit a USB wrapper bundle, source folder, source-code ZIP, or standalone script as a cloud installer.",
           "Keep compressed size within 512 MiB and respect archive entry/expansion limits. Unsafe paths, links, duplicate/case-aliased members, corruption, or identity mismatches fail validation.",
           "Create a GitHub Release and upload the finished ZIP as a release asset. Publish the release; drafts are not accepted. A tag can suggest a version, but the manifest is authoritative.",
         ],
@@ -199,10 +200,10 @@ export const guides: Guide[] = [
       {
         title: "Confirm your submission and follow validation",
         steps: [
-          "In Publish, choose the registered repository, release, and exact installer asset. When several ZIPs exist, explicitly select the right one.",
+          "In [Publish](#publish), choose the registered repository, release, and exact installer asset. When several ZIPs exist, explicitly select the right one.",
           "Enter the exact internal ID/version and a useful name/description. Expand More package details for optional categories, release notes, and compatibility declarations. An optional icon.png beside NEMESIS.data inside the installer ZIP supplies artwork: still, non-interlaced PNG, at most 512 × 512 pixels and 256 KiB. Otherwise the GitHub publisher avatar is used. Review the ZIP filename and destination release identity.",
           "Acknowledge that you have permission to redistribute the ZIP through the registry, then submit at the final confirmation step.",
-          "Follow status: Queued → Validating → Finishing publication → Published. Trusted validation downloads the exact asset, checks all archive bytes/identity, and never runs package scripts or repository code. Successful validation publishes automatically; no administrator approval is required.",
+          "Follow status: Waiting for validation → Validation in progress → Finishing publication → Published. Trusted validation downloads the exact asset, checks all archive bytes/identity, and never runs package scripts or repository code. Successful validation publishes automatically; no administrator approval is required.",
           "If validation fails, read the report and fix the artifact. Administrators can retry failed jobs. A stopped or corrected submission may require a new release asset and version. A repository or publisher may have up to 20 active queued/validating/finishing jobs; if the queue is full, wait for jobs to finish before submitting more.",
           "Successful publication reserves ownership of the global package ID for the repository. Later versions and listing metadata changes use the same authorization, trusted validation, and automatic publication path.",
         ],
@@ -211,11 +212,21 @@ export const guides: Guide[] = [
       {
         title: "Unpublish your packages",
         steps: [
-          "Sign in with the GitHub account that successfully published the package. Open Publish → My published packages and choose Unpublish package.",
+          "Sign in with the GitHub account that successfully published the package. Open [Publish → My published packages](#publish) and choose Unpublish package.",
           "Confirm that all published versions will be withdrawn and pending publication stopped, then enter a reason. Only personally published packages are eligible; repository registration or collaboration alone is insufficient. Current GitHub repository permission and authorization are checked again.",
-          "Registry downloads stop, but GitHub releases, stored artifacts, audit history, package ID ownership, and existing offline copies remain. Published version bytes cannot be replaced. A newly published version can make the package visible again.",
+          "Registry downloads stop, but GitHub releases, stored artifacts, audit history, package ID ownership, and existing offline copies remain. Published version bytes cannot be replaced.",
         ],
-        note: "Maintainers can use Manage registry → Remove package for any package. Unpublishing does not uninstall packages from vehicles.",
+        note: "Maintainers can use [Manage registry](#moderate) → Remove package for any package. Unpublishing does not uninstall packages from vehicles.",
+      },
+      {
+        title: "Republish a withdrawn version",
+        steps: [
+          "To restore a version you unpublished, open [Publish → My submissions](#publish), find its Withdrawn row, and choose Republish version.",
+          "Confirm the original package ID/version and ZIP/hash, then enter a reason. Current repository authorization, publishing blocks, ownership, and artifact availability are checked again.",
+          "The original URL and SHA-256 are restored; changed bytes require a new version. Each version is restored separately, including its retained icon. Stopped pending submissions do not restart.",
+          "Administrator and older withdrawals require administrator recovery; contact a registry administrator when My submissions shows that instruction. Maintainers use [Manage registry](#moderate) → Republish version on a Withdrawn row and confirm the same identity and reason.",
+        ],
+        note: "If restoration fails, resolve the displayed authorization, block, or missing-artifact error before retrying. Republishing does not reinstall packages on vehicles or replace existing offline copies.",
       },
       {
         title: "Synchronize and declare support",
@@ -261,6 +272,32 @@ export const guides: Guide[] = [
 ];
 
 const asset = (name: string) => import.meta.env.BASE_URL + "guides/" + name;
+const guideIcons: Record<string, IconName> = {
+  start: "arrow",
+  vehicle: "car",
+  "companion-manual": "usb",
+  "companion-registry": "cloud",
+  registry: "package",
+  publish: "upload",
+  troubleshooting: "guide",
+};
+// Guide copy supports authored inline links, without interpreting HTML.
+function guideText(tag: "li" | "aside", text: string, className = "") {
+  const node = el(tag, "", className);
+  const links = /\[([^\]\n]+)\]\((https:\/\/[^\s)]+|#[^\s)]+)\)/g;
+  let end = 0;
+  for (const match of text.matchAll(links)) {
+    node.append(text.slice(end, match.index));
+    node.append(
+      match[2].startsWith("https://")
+        ? external(match[1], match[2])
+        : link(match[1], match[2]),
+    );
+    end = match.index! + match[0].length;
+  }
+  node.append(text.slice(end));
+  return node;
+}
 export function renderGuides(root: HTMLElement, id = "") {
   const chosen = guides.find((g) => g.id === id);
   if (!chosen) {
@@ -274,6 +311,7 @@ export function renderGuides(root: HTMLElement, id = "") {
     for (const guide of guides) {
       const card = el("article", "", "guide-card");
       const title = el("h2");
+      title.append(icon(guideIcons[guide.id]));
       title.append(link(guide.title, "#guides/" + guide.id));
       card.append(
         el("p", guide.audience, "eyebrow"),
@@ -337,6 +375,7 @@ export function renderGuides(root: HTMLElement, id = "") {
   }
   root.append(link("← All guides", "#guides", "text-link"));
   heading(root, chosen.title, chosen.intro);
+  root.querySelector("h1")!.prepend(icon(guideIcons[chosen.id]));
   const layout = el("div", "", "guide-layout"),
     nav = el("nav", "", "guide-toc"),
     article = el("article", "", "guide-article");
@@ -367,9 +406,9 @@ export function renderGuides(root: HTMLElement, id = "") {
     node.id = "guide-section-" + (index + 1);
     node.append(el("h2", section.title));
     const steps = el("ol");
-    section.steps.forEach((text) => steps.append(el("li", text)));
+    section.steps.forEach((text) => steps.append(guideText("li", text)));
     node.append(steps);
-    if (section.note) node.append(el("aside", section.note, "callout"));
+    if (section.note) node.append(guideText("aside", section.note, "callout"));
     article.append(node);
   });
   const related = el("nav", "", "guide-related");
