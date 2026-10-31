@@ -130,7 +130,7 @@ The diagram shows example USB-ready layouts; actual inner filenames vary. Extrac
 
 ## First use
 
-Download the standalone companion for your computer, `usb-package-manager-ready.zip`, and the trusted community releases you want. Check each package's vehicle and firmware requirements. The companion is optional; manual preparation and the source-checkout tools lead to the same in-vehicle steps.
+Download the [standalone companion for your computer](USB-COMPANION.md#run-a-release-download), [`usb-package-manager-ready.zip`](https://github.com/hmason55/nemesis-package-manager/releases/latest/download/usb-package-manager-ready.zip), and the trusted community releases you want from [Packages](https://hmason55.github.io/nemesis-package-manager/#packages). Check each package's vehicle and firmware requirements. The companion is optional; manual preparation and the source-checkout tools lead to the same in-vehicle steps.
 
 ```mermaid
 flowchart LR

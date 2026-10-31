@@ -8,6 +8,88 @@ import fixtures from "../../contracts/fixtures/compatibility.json";
 import { statusLabels } from "./publish-view";
 
 describe("published task guides", () => {
+  it("links download instructions to Releases and the actual release assets", () => {
+    const start = document.createElement("div");
+    renderGuides(start, "start");
+    const releases = start.querySelector<HTMLAnchorElement>(
+      'a[href="https://github.com/hmason55/nemesis-package-manager/releases"]',
+    )!;
+    expect(releases.textContent).toBe("repository’s Releases page");
+    expect(releases.target).toBe("_blank");
+    expect(releases.rel).toContain("noopener");
+    expect(
+      start.querySelector(
+        'a[href$="/releases/latest/download/usb-package-manager-ready.zip"]',
+      ),
+    ).not.toBeNull();
+    const companion = document.createElement("div");
+    renderGuides(companion, "companion-manual");
+    expect(
+      companion.querySelector(
+        'a[href$="/nemesis-usb-companion-windows-x86_64.zip"]',
+      )?.textContent,
+    ).toBe("Windows");
+    expect(
+      companion.querySelector(
+        'a[href$="/nemesis-usb-companion-linux-x86_64.tar.gz"]',
+      )?.textContent,
+    ).toBe("Linux x86-64");
+    expect(companion.textContent).not.toMatch(/\]\(https:/);
+  });
+
+  it("links website actions to the matching pages and preserves local navigation", () => {
+    const publish = document.createElement("div");
+    renderGuides(publish, "publish");
+    expect(
+      publish.querySelector<HTMLAnchorElement>('a[href="#publish"]')?.target,
+    ).toBe("");
+    expect(publish.querySelector('a[href="#moderate"]')).not.toBeNull();
+    const registry = document.createElement("div");
+    renderGuides(registry, "registry");
+    expect(registry.querySelector('a[href="#packages"]')).not.toBeNull();
+    expect(registry.querySelector('a[href="#settings"]')).not.toBeNull();
+  });
+
+  it("resolves referenced repository documents and section anchors", () => {
+    for (const guide of guides) {
+      const root = document.createElement("div");
+      renderGuides(root, guide.id);
+      for (const link of root.querySelectorAll<HTMLAnchorElement>(
+        'a[href^="https://github.com/hmason55/nemesis-package-manager/blob/main/docs/"]',
+      )) {
+        const url = new URL(link.href);
+        const file = url.pathname.split("/blob/main/")[1];
+        const source = readFileSync(
+          new URL("../../" + file, import.meta.url),
+          "utf8",
+        );
+        const headings = [...source.matchAll(/^#+ (.+)$/gm)].map((match) =>
+          match[1]
+            .trim()
+            .toLowerCase()
+            .replace(/[^\w\s-]/g, "")
+            .replace(/\s+/g, "-"),
+        );
+        if (url.hash) expect(headings).toContain(url.hash.slice(1));
+      }
+    }
+  });
+
+  it("renders unsafe link schemes and HTML as plain text", () => {
+    const steps = guides[0].sections[0].steps;
+    steps.push("[unsafe](javascript:alert) <script>alert(1)</script>");
+    try {
+      const root = document.createElement("div");
+      renderGuides(root, "start");
+      expect(root.querySelector('a[href^="javascript:"]')).toBeNull();
+      expect(root.querySelector("script")).toBeNull();
+      expect(root.textContent).toContain(
+        "[unsafe](javascript:alert) <script>alert(1)</script>",
+      );
+    } finally {
+      steps.pop();
+    }
+  });
   it("keeps repository and site dialog illustrations identical and correctly described", () => {
     for (const [name, title] of [
       ["manager-source", "Package Manager: choose source"],

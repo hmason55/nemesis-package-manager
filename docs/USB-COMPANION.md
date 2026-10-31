@@ -17,10 +17,10 @@ Get the matching archive from [Releases](https://github.com/hmason55/nemesis-pac
 
 | Computer | Download | Run |
 | --- | --- | --- |
-| Windows x86-64 | `nemesis-usb-companion-windows-x86_64.zip` | `nemesis-usb-companion.exe` |
-| Linux x86-64 | `nemesis-usb-companion-linux-x86_64.tar.gz` | `./nemesis-usb-companion` |
+| Windows x86-64 | [`nemesis-usb-companion-windows-x86_64.zip`](https://github.com/hmason55/nemesis-package-manager/releases/latest/download/nemesis-usb-companion-windows-x86_64.zip) | `nemesis-usb-companion.exe` |
+| Linux x86-64 | [`nemesis-usb-companion-linux-x86_64.tar.gz`](https://github.com/hmason55/nemesis-package-manager/releases/latest/download/nemesis-usb-companion-linux-x86_64.tar.gz) | `./nemesis-usb-companion` |
 
-The executable includes Python and the UI assets. No Python, Node, pip packages, or separate web server is needed. Linux needs a glibc distribution compatible with Ubuntu 22.04 or newer; Alpine/musl and ARM are unsupported by these downloads. If needed, run `chmod +x nemesis-usb-companion`. Check the archive against the release's `SHA256SUMS`.
+The executable includes Python and the UI assets. No Python, Node, pip packages, or separate web server is needed. Linux needs a glibc distribution compatible with Ubuntu 22.04 or newer; Alpine/musl and ARM are unsupported by these downloads. If needed, run `chmod +x nemesis-usb-companion`. Check the archive against the release's [`SHA256SUMS`](https://github.com/hmason55/nemesis-package-manager/releases/latest/download/SHA256SUMS).
 
 The companion opens a browser automatically. Keep its terminal window open; Ctrl+C stops the local server. Closing the browser alone does not stop it. Release artifacts for Windows, Linux, and the head unit come from the same commit. Main builds publish signed stable releases with automatic patch increments; manual development checks remain unpublished. Both follow the [release procedures](RELEASING.md).
 

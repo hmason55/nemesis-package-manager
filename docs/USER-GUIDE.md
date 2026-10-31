@@ -21,8 +21,8 @@ Follow the steps beside each screen. The pictures are **illustrative mockups of 
 
 ### Prepare the drive on your computer
 
-1. Download `usb-package-manager-ready.zip` and trusted community releases. Read each package's vehicle, firmware, backup, and setup requirements.
-2. Download the [standalone USB companion](USB-COMPANION.md#run-a-release-download) for Windows or Linux x86-64. Extract it and run the executable; no Python or Node installation is needed.
+1. Download [`usb-package-manager-ready.zip`](https://github.com/hmason55/nemesis-package-manager/releases/latest/download/usb-package-manager-ready.zip) from [Releases](https://github.com/hmason55/nemesis-package-manager/releases) and choose trusted community releases from [Packages](https://hmason55.github.io/nemesis-package-manager/#packages). Read each package's vehicle, firmware, backup, and setup requirements.
+2. Download the [standalone USB companion](USB-COMPANION.md#run-a-release-download) ([Windows download](https://github.com/hmason55/nemesis-package-manager/releases/latest/download/nemesis-usb-companion-windows-x86_64.zip) or [Linux x86-64 download](https://github.com/hmason55/nemesis-package-manager/releases/latest/download/nemesis-usb-companion-linux-x86_64.tar.gz)). Extract it and run the executable; no Python or Node installation is needed.
 3. Select your USB drive and check its path and free space. Under **Drive setup**, choose `usb-package-manager-ready.zip` and confirm **Set up drive**.
 4. Under **Add / update**, choose a community release ZIP, review the folder name, and choose **Add package**. Repeat for other releases.
 5. Review **Packages** for errors, wait for copying to finish, then safely eject the drive.

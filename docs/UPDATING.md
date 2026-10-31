@@ -39,7 +39,7 @@ Package Manager is excluded from its own package list and cannot install, update
 
 The companion's **Drive setup > Update manager** only replaces `manager/usb.package.manager.zip` on your normal package drive. It preserves launcher settings and does not update the app installed on the head unit. Follow the steps below to update the installed app.
 
-Download `usb.package.manager.zip` from the new release and keep it compressed. If you downloaded `usb-package-manager-ready.zip` instead, extract it on your PC and take the ZIP from its `manager/` directory. Prepare a separate update drive with these files at its root:
+Download [`usb.package.manager.zip`](https://github.com/hmason55/nemesis-package-manager/releases/latest/download/usb.package.manager.zip) from the [new release](https://github.com/hmason55/nemesis-package-manager/releases/latest) and keep it compressed. If you downloaded `usb-package-manager-ready.zip` instead, extract it on your PC and take the ZIP from its `manager/` directory. Prepare a separate update drive with these files at its root:
 
 ```text
 NEMESIS.data
