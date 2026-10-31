@@ -67,7 +67,7 @@ export function profileCheck(parent: HTMLElement, declarations: any) {
     ),
     el(
       "p",
-      "Advisory only. Downloads and installation remain available; matching values do not establish hardware support.",
+      "Downloads and installation remain available. Check the publisher’s instructions before installing, even when the values match.",
     ),
     link("Change device profile in Settings", "#settings"),
   );
@@ -77,7 +77,7 @@ export function profileCheck(parent: HTMLElement, declarations: any) {
   const details = el("details");
   details.append(el("summary", "Comparison details"));
   for (const row of result.results)
-    details.append(el("p", row.field + ": " + row.status + " — " + row.detail));
+    details.append(el("p", row.field + ": " + row.status + ". " + row.detail));
   output.append(details);
   parent.append(output);
 }

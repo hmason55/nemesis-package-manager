@@ -8,7 +8,7 @@
 <text x="32" y="78" font-size="15" fill="#a5b2c5" font-weight="400">Prepare packages. Keep your USB data.</text>
 <rect x="130" y="148" width="764" height="380" rx="6" fill="#14181e" stroke="#5b748f"/>
 <text x="156" y="196" font-size="26" fill="#ebeef4" font-weight="700">Remove package from USB?</text>
-<text x="156" y="250" font-size="20" fill="#ebeef4" font-weight="400">Example Player — packages/Example-Player/</text>
+<text x="156" y="250" font-size="20" fill="#ebeef4" font-weight="400">Example Player: packages/Example-Player/</text>
 <text x="156" y="304" font-size="20" fill="#ebeef4" font-weight="400">□ Also delete this package’s USB data</text>
 <text x="156" y="346" font-size="18" fill="#a5b2c5" font-weight="400">Unchecked: keep data in its original folder.</text>
 <text x="156" y="382" font-size="18" fill="#a5b2c5" font-weight="400">The installed vehicle package stays unchanged.</text>

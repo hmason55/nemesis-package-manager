@@ -4,7 +4,6 @@ import { icon, type IconName } from "./icons";
 type Guide = {
   id: string;
   title: string;
-  audience: string;
   intro: string;
   figure: string;
   alt: string;
@@ -14,9 +13,8 @@ export const guides: Guide[] = [
   {
     id: "start",
     title: "Start here",
-    audience: "Everyone",
     intro:
-      "New to NEMESIS packages? Set up Package Manager first, then choose USB or an internet download.",
+      "Set up Package Manager, then install packages from USB or Cloud Registry.",
     figure: "workflow.svg",
     alt: "Two paths: registry directly to the vehicle, or manual/registry packages through Companion and USB to the vehicle.",
     sections: [
@@ -53,11 +51,10 @@ export const guides: Guide[] = [
   {
     id: "vehicle",
     title: "Install packages in your vehicle",
-    audience: "Vehicle users",
     intro:
       "Use Package Manager on your vehicle’s screen. NEMESIS and Package Manager must already be installed.",
     figure: "vehicle-settings.svg",
-    alt: "Illustrative Settings controls for source selection, registry address, device profile and startup prompting.",
+    alt: "Package Manager settings for the package source, registry address, vehicle details, and startup prompt.",
     sections: [
       {
         title: "Choose where to get packages",
@@ -104,11 +101,10 @@ export const guides: Guide[] = [
   {
     id: "companion-manual",
     title: "Copy downloaded packages to USB",
-    audience: "Computer users",
     intro:
       "Use USB Companion on your computer to copy package ZIPs to your drive. Install them later in the vehicle.",
     figure: "companion-packages.svg",
-    alt: "Illustrative Companion package list showing USB versions and per-package actions.",
+    alt: "Companion package list with versions on USB and package actions.",
     sections: [
       {
         title: "Open Companion and select your drive",
@@ -147,11 +143,10 @@ export const guides: Guide[] = [
   {
     id: "companion-registry",
     title: "Choose packages in USB Companion",
-    audience: "Computer users",
     intro:
       "Find packages inside Companion and copy them straight to USB. This needs internet on your computer.",
     figure: "companion-registry.svg",
-    alt: "Illustrative Companion registry connection, search, version selection, preparation, and results.",
+    alt: "Companion registry search, version selection, and USB copy results.",
     sections: [
       {
         title: "Find and copy packages",
@@ -189,7 +184,6 @@ export const guides: Guide[] = [
   {
     id: "registry",
     title: "Find and download a package",
-    audience: "Everyone",
     intro:
       "Search this website for community packages. You can browse and download without signing in.",
     figure: "registry-package.svg",
@@ -220,11 +214,10 @@ export const guides: Guide[] = [
   {
     id: "publish",
     title: "Publish a package with GitHub",
-    audience: "Package publishers",
     intro:
       "Share a package from a public GitHub repository you can manage. Connect the repository, choose an installer ZIP, and submit it. Successful checks publish it automatically.",
     figure: "publishing.svg",
-    alt: "Publisher selects a GitHub release ZIP; trusted validation checks it, ownership and authorization are verified, and validated bytes publish automatically.",
+    alt: "A GitHub release ZIP is checked and published to the registry.",
     sections: [
       {
         title: "Connect your GitHub repository",
@@ -237,17 +230,17 @@ export const guides: Guide[] = [
         note: "Your session lasts one hour. If repository ownership or App access changes, restore access and register the repository again.",
       },
       {
-        title: "Build a directly installable ZIP",
+        title: "Prepare the installer ZIP",
         steps: [
-          "Place the package’s NEMESIS.data manifest at the ZIP root, or inside one enclosing directory, with the exact internal package id and version. Keep that ID stable across versions. The reserved usb.package.manager ID uses the separate Package Manager self-update workflow and cannot be published here.",
-          "Include the files required by the package’s [actual NEMESIS installation format](https://github.com/hmason55/nemesis-package-manager/blob/main/docs/RELEASE-LAYOUTS.md). Do not submit a USB wrapper bundle, source folder, source-code ZIP, or standalone script as a cloud installer.",
-          "Keep compressed size within 512 MiB and respect archive entry/expansion limits. Unsafe paths, links, duplicate/case-aliased members, corruption, or identity mismatches fail validation.",
-          "Create a GitHub Release and upload the finished ZIP as a release asset. Publish the release; drafts are not accepted. A tag can suggest a version, but the manifest is authoritative.",
+          "Put NEMESIS.data at the top level of the ZIP or inside a single folder. Check its id and version. Keep the same ID for future updates.",
+          "Include the files required by the [NEMESIS installer format](https://github.com/hmason55/nemesis-package-manager/blob/main/docs/RELEASE-LAYOUTS.md). Upload the installer ZIP. USB bundles, source-code downloads, and standalone scripts are not accepted.",
+          "Keep the ZIP under 512 MiB. The registry also checks its unpacked size, files, and package details. Read the validation report if it fails.",
+          "Create a GitHub release, upload the installer ZIP, and publish the release. Draft releases cannot be selected. The package version must match NEMESIS.data.",
         ],
-        note: "Minimal identity example only, not a complete vehicle application: [nemesis] with id=example.app, name=Example, and version=1.0. Include the installation metadata and payload required by your package type.",
+        note: "Package Manager itself uses separate update instructions. Its reserved ID, usb.package.manager, cannot be published here.",
       },
       {
-        title: "Confirm your submission and follow validation",
+        title: "Submit your package",
         steps: [
           "In [Publish](#publish), choose your repository and press Continue.",
           "Choose a GitHub release and its installer ZIP. If there are several ZIPs, check the filename carefully.",
@@ -263,8 +256,8 @@ export const guides: Guide[] = [
         title: "Unpublish your packages",
         steps: [
           "Sign in with the GitHub account that successfully published the package. Open [Publish → My published packages](#publish) and choose Unpublish package.",
-          "Confirm that all published versions will be withdrawn and pending publication stopped, then enter a reason. Only personally published packages are eligible; repository registration or collaboration alone is insufficient. Current GitHub repository permission and authorization are checked again.",
-          "Registry downloads stop, but GitHub releases, stored artifacts, audit history, package ID ownership, and existing offline copies remain. Published version bytes cannot be replaced.",
+          "Enter a reason and confirm. This removes all published versions from the registry and stops pending submissions. You must have published the package yourself and still have access to its repository.",
+          "New registry downloads stop. GitHub releases and previously downloaded files remain. The registry keeps its records and your package ID.",
         ],
         note: "Maintainers can use [Manage registry](#moderate) → Remove package for any package. Unpublishing does not uninstall packages from vehicles.",
       },
@@ -272,19 +265,19 @@ export const guides: Guide[] = [
         title: "Republish a withdrawn version",
         steps: [
           "To restore a version you unpublished, open [Publish → My submissions](#publish), find its Withdrawn row, and choose Republish version.",
-          "Confirm the original package ID/version and ZIP/hash, then enter a reason. Current repository authorization, publishing blocks, ownership, and artifact availability are checked again.",
-          "The original URL and SHA-256 are restored; changed bytes require a new version. Each version is restored separately, including its retained icon. Stopped pending submissions do not restart.",
-          "Administrator and older withdrawals require administrator recovery; contact a registry administrator when My submissions shows that instruction. Maintainers use [Manage registry](#moderate) → Republish version on a Withdrawn row and confirm the same identity and reason.",
+          "Check the package ID, version, and ZIP, then enter a reason. The registry checks your access and whether the original file is still available.",
+          "The original URL and SHA-256 are restored. Republish each version separately. To change the file, publish a new version instead.",
+          "Administrator and older withdrawals require administrator recovery. If My submissions tells you to contact an administrator, ask them to use [Manage registry](#moderate) → Republish version.",
         ],
-        note: "If restoration fails, resolve the displayed authorization, block, or missing-artifact error before retrying. Republishing does not reinstall packages on vehicles or replace existing offline copies.",
+        note: "If republishing fails, read the error before trying again. Republishing makes the download available again; it does not reinstall the package in vehicles.",
       },
       {
-        title: "Synchronize and declare support",
+        title: "Publish updates and add requirements",
         steps: [
-          "New release webhooks can create submissions for registered packages. The scheduled synchronization is not instant; use the publisher’s manual synchronization/asset selection when appropriate.",
-          "If several packages or suitable ZIPs exist, select the package and asset manually. Resolve permission failures by reauthorizing, rather than repeatedly uploading the same bytes.",
-          "Supported vehicles and firmware are optional lists; NEMESIS support is a separate optional field. Exact case-insensitive identifiers and * have defined matching behavior. Prose or version ranges remain informational unless a matcher explicitly understands them.",
-          "Do not advertise missing or unknown declarations as verified support. Explicit mismatches produce advisory warnings and do not become installation or publication gates.",
+          "New GitHub releases can be submitted automatically for registered packages. If a release has not appeared yet, select it manually in Publish.",
+          "If the release has several installer ZIPs, select the package and file yourself. For an access error, check GitHub App permissions and register the repository again.",
+          "You can add vehicle names, firmware versions, and a NEMESIS version in More package details. Exact values are compared without regard to letter case. Use * to allow any value.",
+          "Written notes and version ranges may show as unknown in compatibility checks. List only support you can confirm. Warnings do not prevent downloads or installation.",
         ],
       },
     ],
@@ -292,28 +285,27 @@ export const guides: Guide[] = [
   {
     id: "troubleshooting",
     title: "Troubleshooting and compatibility",
-    audience: "Everyone",
     intro: "Find the problem below and follow the suggested next step.",
     figure: "manager-result.svg",
-    alt: "Illustrative readable vehicle operation result with a summary and access to diagnostic details.",
+    alt: "Installation result with a summary and error details.",
     sections: [
       {
-        title: "Choose a safe next action",
+        title: "Fix a problem",
         steps: [
-          "Registry unavailable: retain installed-package access, switch to USB when needed, and retry the cloud operation after connectivity returns. Do not disable HTTPS certificate or hostname checks.",
-          "Hash, size, manifest, or unsafe archive error: do not import or install those bytes. Obtain the published release again or ask the publisher to submit a corrected new version.",
-          "USB removed, changed, or wrong destination: reconnect and explicitly select the drive again. Keep recovery files mentioned by an importer error and inspect per-package results before retrying.",
-          "Installation failed: read Details and the NEMESIS result. Do not treat a failed installed-state query as evidence that a package was uninstalled.",
-          "Publisher cannot see a repository/release: check public visibility, signed-in repository permissions, selected App installation, release publication, and the chosen ZIP asset.",
+          "Registry unavailable: check your internet connection and try again. You can use a prepared USB drive while offline. Keep HTTPS security checks enabled.",
+          "Download check failed: download the installer again. If it still fails, send the error to the publisher. Do not install the failed download.",
+          "USB missing or wrong drive: reconnect it and select the correct drive. Read each package’s result before retrying. Keep any recovery files mentioned in the error.",
+          "Installation failed: open Details and read the NEMESIS result. If the installed list fails to load, press Refresh.",
+          "Repository or release missing: check that the repository is public, your account and the GitHub App have access, and the release is published with an installer ZIP.",
         ],
       },
       {
         title: "Understand compatibility warnings",
         steps: [
-          "Match: the known profile matches declared exact values; this is still publisher information, not a hardware certification.",
-          "Mismatch: at least one known profile value differs from an understood declaration. Read the conflicting field and decide whether to continue through the ordinary confirmation.",
-          "Unknown: profile information is missing, a declaration is absent, or range/prose syntax is not understood. Check the publisher’s documentation and your device information.",
-          "Optional information must never block publication, downloads, USB preparation, or installation. Ordinary integrity, authorization, locked-package, and installation protections still apply.",
+          "Match: your saved vehicle details match the publisher’s requirements. Check the package instructions too.",
+          "Mismatch: a saved vehicle detail differs from the package requirements. Check the highlighted field and ask the publisher if you are unsure.",
+          "Unknown: details are missing or the requirements cannot be compared automatically. Read the publisher’s instructions and check your vehicle information.",
+          "Compatibility warnings do not block downloads or installation. A match does not guarantee that the package will work.",
         ],
       },
     ],
@@ -353,16 +345,12 @@ export function renderGuides(root: HTMLElement, id = "") {
     heading(
       root,
       id ? "Guide not found" : "Guides",
-      "New here? Start with Start here. Then choose the task you want to do.",
+      "Setup, downloads, and publishing.",
     );
     if (id) root.append(el("p", "Choose one of the guides below."));
     if (!id)
       root.append(
-        link(
-          "First time? Set up Package Manager",
-          "#guides/start",
-          "button-link primary",
-        ),
+        link("Set up Package Manager", "#guides/start", "button-link primary"),
       );
     const cards = el("div", "", "guide-cards");
     for (const guide of guides) {
@@ -370,22 +358,14 @@ export function renderGuides(root: HTMLElement, id = "") {
       const title = el("h2");
       title.append(icon(guideIcons[guide.id]));
       title.append(link(guide.title, "#guides/" + guide.id));
-      card.append(
-        el("p", guide.audience, "eyebrow"),
-        title,
-        el("p", guide.intro),
-      );
+      card.append(title, el("p", guide.intro));
       cards.append(card);
     }
     root.append(cards);
     const library = el("details", "", "guide-library");
     library.append(
-      el("summary", "Illustration library — example screens"),
-      el(
-        "p",
-        "These labeled illustrations explain tasks; package names, versions, and screen layouts are examples, not evidence of vehicle compatibility.",
-        "hint",
-      ),
+      el("summary", "Example screens"),
+      el("p", "Package names and versions shown here are examples.", "hint"),
     );
     const illustrations = [
       "companion-packages",
@@ -423,7 +403,7 @@ export function renderGuides(root: HTMLElement, id = "") {
         "Open " + label + " illustration",
         asset(name + ".svg"),
       );
-      figure.append(image, el("figcaption", label + " — example screen"), full);
+      figure.append(image, el("figcaption", label + " (example)"), full);
       gallery.append(figure);
     }
     library.append(gallery);

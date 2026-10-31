@@ -245,7 +245,7 @@ export async function renderPublish(
       review,
       el(
         "p",
-        "After submission, trusted validation checks the exact ZIP. A valid package publishes automatically after repository authorization and ownership checks; no maintainer approval is required.",
+        "The registry checks your ZIP and permission to publish it. If the checks pass, your package is published automatically.",
         "callout",
       ),
     );
