@@ -14,7 +14,7 @@ export function renderManagement(
   heading(
     root,
     "Registry management",
-    "Publishers publish automatically after trusted validation. Use these controls for abuse, broken packages, and failed validations.",
+    "Packages publish automatically after validation. Use these controls to remove broken or abusive packages and retry failed checks.",
   );
   async function change(path: string, question: string) {
     if (!confirm(question)) return;
@@ -82,7 +82,7 @@ export function renderManagement(
             controls.run(() =>
               change(
                 "/v1/admin/submissions/" + submission.id + "/retry",
-                "Retry trusted validation for this submission?",
+                "Run validation again for this submission?",
               ),
             ),
           "quiet",

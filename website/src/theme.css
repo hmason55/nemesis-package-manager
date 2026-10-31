@@ -762,10 +762,12 @@ td {
     padding: 18px;
   }
   .steps {
-    gap: 12px;
+    flex-direction: column;
+    gap: 8px;
   }
   .steps li {
-    max-width: 145px;
+    max-width: none;
+    padding-bottom: 8px;
   }
   .result-toolbar .form-field {
     flex-wrap: wrap;
@@ -807,13 +809,6 @@ td {
   background: linear-gradient(110deg, var(--panel), var(--callout));
   border-bottom: 1px solid var(--border);
   padding-bottom: 14px;
-}
-.search-hint {
-  max-width: 1180px;
-  margin: 0 auto;
-  color: var(--muted);
-  padding: 0 32px;
-  font-size: 14px;
 }
 #search {
   position: relative;
@@ -913,10 +908,6 @@ td {
   text-align: center;
 }
 @media (max-width: 760px) {
-  .search-hint {
-    padding: 0 16px;
-    font-size: 12px;
-  }
   #search {
     flex-wrap: wrap;
   }
@@ -1006,6 +997,10 @@ td {
   border-top: 1px solid var(--border);
 }
 @media (max-width: 600px) {
-  .site-header nav { gap: 2px; }
-  .site-header nav a { padding: 8px 2px; }
+  .site-header nav {
+    gap: 2px;
+  }
+  .site-header nav a {
+    padding: 8px 2px;
+  }
 }

@@ -353,7 +353,7 @@ export function renderPackage(
     el("p", compatibility(selected.compatibility)),
     el(
       "div",
-      "Publisher requirements are advisory. Missing information or a matching firmware number does not establish vehicle support.",
+      "Check that the publisher supports your vehicle and firmware before installing.",
       "callout",
     ),
   );

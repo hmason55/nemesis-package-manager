@@ -36,8 +36,8 @@
 <rect x="0" y="0" width="1024" height="660" rx="0" fill="#000" opacity=".78"/>
 <rect x="130" y="140" width="764" height="380" rx="6" fill="#14181e" stroke="#5b748f"/>
 <text x="156" y="184" font-size="25" fill="#ebeef4" font-weight="700">Choose package source</text>
-<text x="160" y="236" font-size="21" fill="#ebeef4" font-weight="400">◉ Cloud Registry — browse and download packages</text>
-<text x="160" y="286" font-size="21" fill="#ebeef4" font-weight="400">○ USB Storage — packages and scripts, available offline</text>
+<text x="160" y="236" font-size="21" fill="#ebeef4" font-weight="400">◉ Cloud Registry: browse and download packages</text>
+<text x="160" y="286" font-size="21" fill="#ebeef4" font-weight="400">○ USB Storage: packages and scripts, available offline</text>
 <text x="160" y="350" font-size="20" fill="#ebeef4" font-weight="400">□ Don’t show again on startup</text>
 <rect x="156" y="438" width="332" height="48" rx="6" fill="#262d37" stroke="#5b748f"/>
 <text x="322.0" y="468" font-size="18" fill="#ebeef4" font-weight="400" text-anchor="middle">Cancel</text>

@@ -14,10 +14,6 @@
 .guide-card h2 {
   font-size: 20px;
 }
-.eyebrow {
-  color: var(--muted);
-  font-size: 13px;
-}
 .guide-layout {
   display: grid;
   grid-template-columns: 230px minmax(0, 1fr);
@@ -118,4 +114,16 @@ textarea {
   height: auto;
   border-radius: 8px;
   border: 1px solid var(--border);
+}
+
+.guide-example {
+  margin-top: 24px;
+}
+.guide-example summary {
+  cursor: pointer;
+  padding: 12px 0;
+  font-weight: 600;
+}
+.guide-example figure {
+  margin-top: 12px;
 }

@@ -13,11 +13,7 @@ export function deviceProfile(): Profile {
   return profile;
 }
 export function renderSettings(root: HTMLElement) {
-  heading(
-    root,
-    "Settings",
-    "Optional preferences saved only in this browser. Browsing and downloads work without configuration.",
-  );
+  heading(root, "Settings", "These settings are saved in this browser.");
   const appearance = el("section", "", "settings-card");
   appearance.append(el("h2", "Appearance"));
   const theme = selectField(appearance, "Theme");
@@ -44,7 +40,7 @@ export function renderSettings(root: HTMLElement) {
     el("summary", "Device profile for compatibility comparisons (optional)"),
     el(
       "p",
-      "Use exact identifiers from your device. Compatibility is advisory; unknown values and mismatches never block downloads or installation.",
+      "Copy the model and version numbers from your vehicle’s settings. Package pages can compare them with the publisher’s requirements. You can still download when details are missing or differ.",
       "hint",
     ),
   );

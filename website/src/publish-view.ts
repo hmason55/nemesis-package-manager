@@ -37,7 +37,7 @@ export async function renderPublish(
   heading(
     root,
     "Publish a package",
-    "Connect your GitHub repository, choose an installer release, then review the package before submitting it.",
+    "Choose a package ZIP from your GitHub releases and check its details before publishing.",
   );
   if (!user) {
     const intro = el("div", "", "signin-panel");
@@ -82,7 +82,7 @@ export async function renderPublish(
     ),
     el(
       "p",
-      "Install the NEMESIS GitHub App on your repository, then return to this tab to register it.",
+      "First, select Connect repository on GitHub and allow access to your public repository. Then return here, enter its name below, and select Register repository.",
     ),
     external("Connect repository on GitHub", user.installation_url),
   );
@@ -93,7 +93,7 @@ export async function renderPublish(
     "repository",
     "text",
     "",
-    "Use owner/repository, for example yourname/vehicle-utility.",
+    "Enter the owner and repository name, for example yourname/vehicle-utility.",
   );
   repository.required = true;
   const consent = checkField(
@@ -163,7 +163,7 @@ export async function renderPublish(
         "package_id",
         "text",
         "",
-        "Must match id in the installer’s NEMESIS.data manifest.",
+        "Open NEMESIS.data inside your installer ZIP and copy the id value here.",
       ),
       version = inputField(
         identity,
@@ -171,7 +171,7 @@ export async function renderPublish(
         "version",
         "text",
         "",
-        "Must match the manifest version. The release tag is only a suggestion.",
+        "Copy the version value from NEMESIS.data. Check this even if a version is filled in.",
       );
     id.required = version.required = true;
     sections[1].append(identity);
@@ -235,7 +235,7 @@ export async function renderPublish(
       notes.parentElement!,
       el(
         "p",
-        "For a custom package icon, add a square icon.png at the GitHub repository root. Otherwise the publisher’s GitHub avatar is used.",
+        "For a custom package icon, include icon.png beside NEMESIS.data inside the installer ZIP. Use a non-interlaced PNG up to 512 × 512 pixels and 256 KiB. Otherwise the publisher’s GitHub avatar is used.",
         "hint",
       ),
     );
@@ -245,7 +245,7 @@ export async function renderPublish(
       review,
       el(
         "p",
-        "After submission, trusted validation checks the exact ZIP. A valid package publishes automatically after repository authorization and ownership checks; no maintainer approval is required.",
+        "The registry checks your ZIP and permission to publish it. If the checks pass, your package is published automatically.",
         "callout",
       ),
     );
