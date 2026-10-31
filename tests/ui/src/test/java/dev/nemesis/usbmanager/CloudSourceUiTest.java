@@ -26,7 +26,7 @@ public class CloudSourceUiTest {
     private List<View> views(View root){List<View> result=new ArrayList<View>();result.add(root);if(root instanceof ViewGroup){ViewGroup g=(ViewGroup)root;for(int i=0;i<g.getChildCount();i++)result.addAll(views(g.getChildAt(i)));}return result;}
     @Before public void create()throws Exception{controller=Robolectric.buildActivity(MainActivity.class).create().start().visible();activity=controller.get();set("resumed",true);}
     @After public void destroy(){controller.stop().destroy();}
-    private AlertDialog picker()throws Exception{invoke("chooseSource");return (AlertDialog)ShadowDialog.getLatestDialog();}
+    private AlertDialog picker()throws Exception{invoke("showSettings");return (AlertDialog)ShadowDialog.getLatestDialog();}
     @Test public void selectionCanBeRememberedAndChangedBackToUsb()throws Exception{
         AlertDialog dialog=picker();List<EditText> fields=new ArrayList<EditText>();RadioGroup group=null;CheckBox remember=null;
         for(View v:views(dialog.getWindow().getDecorView())){if(v instanceof EditText)fields.add((EditText)v);if(v instanceof RadioGroup)group=(RadioGroup)v;if(v instanceof CheckBox)remember=(CheckBox)v;}
