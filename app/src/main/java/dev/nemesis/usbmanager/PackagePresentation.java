@@ -48,6 +48,18 @@ final class PackagePresentation {
         if (category == UPDATES) return updateAvailable(item);
         return category == INSTALLED && item.installedStateKnown && item.installed;
     }
+    /** Retain releases for version selection while showing one row per package. */
+    static java.util.ArrayList<PackageScanner.Item> uniquePackages(java.util.List<PackageScanner.Item> releases) {
+        java.util.LinkedHashMap<String, PackageScanner.Item> grouped = new java.util.LinkedHashMap<String, PackageScanner.Item>();
+        for (PackageScanner.Item item : releases) {
+            String id = item.id == null || PackageScanner.EXECUTE.equals(item.kind) || PackageScanner.BROKEN.equals(item.kind) ? key(item) : item.id;
+            PackageScanner.Item previous = grouped.get(id);
+            Integer order = previous == null ? null : compareVersions(item.version, previous.version);
+            if (previous == null || (canInstall(item) && !canInstall(previous)) ||
+                (canInstall(item) == canInstall(previous) && order != null && order > 0)) grouped.put(id, item);
+        }
+        return new java.util.ArrayList<PackageScanner.Item>(grouped.values());
+    }
     static String installedVersion(PackageScanner.Item item) {
         if (PackageScanner.EXECUTE.equals(item.kind)) return "N/A";
         if (!item.installedStateKnown) return "Unknown";

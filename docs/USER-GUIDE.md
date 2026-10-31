@@ -57,6 +57,14 @@ A package with an update appears in both **Installed** and **Updates**. **Availa
 
 ![Help mockup with short sections and contextual action descriptions](images/manager-help.svg)
 
+## Startup, keyboard, and release selection
+
+The startup prompt asks only for **Cloud Registry** or **USB Storage** and whether to hide the prompt next time. The registry defaults to the Cloudflare Worker used by the project. Open **Settings** to edit its HTTPS address and the optional vehicle, firmware, and NEMESIS profile. Existing source and startup preferences are preserved.
+
+Use the keyboard's **Done/OK** action or the fixed **Hide keyboard** button in Settings to dismiss it. Submitting the browser search also closes its keyboard. Typing still filters and searches live; **Filters** retains package-type and sorting controls.
+
+Each package ID has one browser row and counts once per tab. Comparable versions default to the newest installable release; differing arbitrary version labels require manual choice. **Install** or **Update** opens a version picker when several releases exist, and **Details > Choose version** also exposes them. USB choices show their source location so separate installers retain their own files and data. Scripts and invalid installers keep separate entries. Installed cloud packages still discover published versions on demand, and installed management works offline.
+
 ## Install a package
 
 1. Tap **Available** and select the package you want.

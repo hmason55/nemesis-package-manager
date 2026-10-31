@@ -56,6 +56,7 @@ public final class MainActivity extends Activity {
     private boolean destroyed;
     private boolean cloudSelected;
     private boolean sourcePrompted;
+    static final String DEFAULT_REGISTRY_URL = "https://nemesis-registry-staging.hmason55.workers.dev";
     private String cloudQuery = "";
     private android.widget.EditText browserSearch;
     private String browserQuery = "";
@@ -177,7 +178,7 @@ public final class MainActivity extends Activity {
         header.addView(title, new LinearLayout.LayoutParams(0, -2, 1));
         Button changeSource = button("Settings"); changeSource.setTextSize(13);
         header.addView(changeSource, spaced(dp(90), 48, 0, 6));
-        changeSource.setOnClickListener(new View.OnClickListener() { public void onClick(View view) { if (!unavailable() || scanRunning) chooseSource(); } });
+        changeSource.setOnClickListener(new View.OnClickListener() { public void onClick(View view) { if (!unavailable() || scanRunning) showSettings(); } });
         refreshButton = button("Refresh");
         Button help = button("Help");
         Button close = button("Close");
@@ -203,7 +204,7 @@ public final class MainActivity extends Activity {
         root.addView(categories);
         browserSearch = new android.widget.EditText(this); browserSearch.setSingleLine(true); browserSearch.setTextSize(16);
         browserSearch.setHint("Search packages"); browserSearch.setContentDescription("Search packages by name, ID, description or publisher");
-        browserSearch.setImeOptions(android.view.inputmethod.EditorInfo.IME_ACTION_SEARCH);
+        browserSearch.setImeOptions(android.view.inputmethod.EditorInfo.IME_ACTION_SEARCH | android.view.inputmethod.EditorInfo.IME_FLAG_NO_EXTRACT_UI);
         title.setTextSize(18); title.setLayoutParams(new LinearLayout.LayoutParams(dp(145), -2));
         header.addView(browserSearch, 1, new LinearLayout.LayoutParams(0, dp(48), 1));
         Button clearSearch = button("Clear"), filters = button("Filters");
@@ -216,8 +217,9 @@ public final class MainActivity extends Activity {
             public void afterTextChanged(android.text.Editable text) { }
         });
         browserSearch.setOnEditorActionListener(new TextView.OnEditorActionListener() { public boolean onEditorAction(TextView view,int actionId,android.view.KeyEvent event) {
+            if (actionId == android.view.inputmethod.EditorInfo.IME_ACTION_DONE) { hideKeyboard(view); return true; }
             if (actionId != android.view.inputmethod.EditorInfo.IME_ACTION_SEARCH && (event == null || event.getKeyCode() != android.view.KeyEvent.KEYCODE_ENTER)) return false;
-            refreshBrowser(); return true;
+            hideKeyboard(view); refreshBrowser(); return true;
         } });
 
         LinearLayout columns = new LinearLayout(this);
@@ -300,17 +302,9 @@ public final class MainActivity extends Activity {
     }
     private void filterItems(String previousKey) {
         items.clear(); selected = -1;
-        Set<String> installedIds = new HashSet<String>();
-        for (PackageScanner.Item item : allItems) {
-            if (!PackagePresentation.inCategory(item, category) || !BrowserFilters.matches(item, browserQuery, browserType)) continue;
-            if (category == PackagePresentation.INSTALLED && item.id != null && !installedIds.add(item.id)) continue;
-            if (PackagePresentation.key(item).equals(previousKey)) selected = items.size();
-            items.add(item);
-        }
+        items.addAll(browserItems(category));
         for (int i = 0; i < tabs.length; i++) {
-            int count = 0;
-            for (PackageScanner.Item item : allItems) if (PackagePresentation.inCategory(item, i) && BrowserFilters.matches(item, browserQuery, browserType)) count++;
-            tabs[i].setText(categoryNames[i] + " (" + count + ")");
+            tabs[i].setText(categoryNames[i] + " (" + browserItems(i).size() + ")");
             tabs[i].setSelected(i == category);
             tabs[i].setBackground(buttonBackground(i == category ? Color.rgb(25, 99, 137) : PANEL));
         }
@@ -333,6 +327,12 @@ public final class MainActivity extends Activity {
         if (!busy && cloudSelected && items.isEmpty() && scanError == null) empty.setText(category == PackagePresentation.SCRIPTS ? "Scripts are available from USB Storage.\nUse Settings to switch to USB." : category == PackagePresentation.UPDATES ? "No confirmed newer registry versions." : category == PackagePresentation.INSTALLED ? "No installed packages." : "No published packages match your search.");
         if (!busy && scanError == null && items.isEmpty() && (browserQuery.trim().length() > 0 || browserType != 0)) empty.setText("No packages match these filters. Clear the search or reset Filters.");
         updateButtons();
+    }
+    private ArrayList<PackageScanner.Item> browserItems(int tab) {
+        ArrayList<PackageScanner.Item> matches = new ArrayList<PackageScanner.Item>();
+        for (PackageScanner.Item item : allItems)
+            if (PackagePresentation.inCategory(item, tab) && BrowserFilters.matches(item, browserQuery, browserType)) matches.add(item);
+        return PackagePresentation.uniquePackages(matches);
     }
     private PackageScanner.Item selection() {
         return selected >= 0 && selected < items.size() ? items.get(selected) : null;
@@ -384,7 +384,7 @@ public final class MainActivity extends Activity {
         final boolean installedOnly = category == PackagePresentation.INSTALLED;
         final boolean scriptsOnly = category == PackagePresentation.SCRIPTS;
         final String queryText = cloudQuery;
-        final String registryAddress = getPreferences(MODE_PRIVATE).getString("registry_url", "");
+        final String registryAddress = registryUrl();
         scanRunning = true; busy = true; updateButtons();
         scanError = null;
         empty.setText("Scanning for packages...");
@@ -506,6 +506,11 @@ public final class MainActivity extends Activity {
     private void chooseAction() {
         final PackageScanner.Item item = selection();
         if (category == PackagePresentation.INSTALLED || unavailable() || !PackagePresentation.canInstall(item)) return;
+        if (packageVersions(item).size() > 1) { choosePackageVersion(item); return; }
+        installVersion(item);
+    }
+    private void installVersion(final PackageScanner.Item item) {
+        if (unavailable() || !PackagePresentation.canInstall(item)) return;
         if (item.remote != null && item.target == null) { download(item); return; }
         String action = PackagePresentation.action(item);
         confirm(action + " " + PackagePresentation.name(item) + "?",
@@ -555,7 +560,8 @@ public final class MainActivity extends Activity {
             try {
                 if (command == null && item.remote != null) {
                     android.content.SharedPreferences preferences = context.getSharedPreferences("MainActivity", Context.MODE_PRIVATE);
-                    new CloudPackageSource(preferences.getString("registry_url", ""), context.getCacheDir()).current(item.remote);
+                    String url = preferences.getString("registry_url", DEFAULT_REGISTRY_URL).trim();
+                    new CloudPackageSource(url.length() == 0 ? DEFAULT_REGISTRY_URL : url, context.getCacheDir()).current(item.remote);
                     CloudArchive.validate(item.target, item.remote);
                 }
                 result = command != null ? NemesisCli.run(command, item.id) :
@@ -576,17 +582,17 @@ public final class MainActivity extends Activity {
         if (item != null && !unavailable()) {
             if (cloudSelected && item.installed && item.remote == null) {
                 showDialog(PackagePresentation.name(item), PackagePresentation.details(item), "OK", null, "Choose version", new Runnable() { public void run() { loadCloudVersions(item); } });
-            } else if (item.remote == null) message(PackagePresentation.name(item), PackagePresentation.details(item));
+            } else if (item.remote == null && packageVersions(item).size() < 2) message(PackagePresentation.name(item), PackagePresentation.details(item));
             else {
-                final String id = item.id;
-                showDialog(PackagePresentation.name(item), PackagePresentation.details(item), "OK", null, "Choose version", new Runnable() { public void run() { chooseCloudVersion(id); } });
+                final PackageScanner.Item selectedItem = item;
+                showDialog(PackagePresentation.name(item), PackagePresentation.details(item), "OK", null, "Choose version", new Runnable() { public void run() { choosePackageVersion(selectedItem); } });
             }
         }
     }
     private void loadCloudVersions(final PackageScanner.Item installed) {
         if (unavailable() || destroyed) return;
         handler.removeCallbacks(browserReload); final int generation = ++scanGeneration;
-        final String address = getPreferences(MODE_PRIVATE).getString("registry_url", "");
+        final String address = registryUrl();
         scanRunning = true; busy = true; updateButtons();
         final android.app.ProgressDialog loading = new android.app.ProgressDialog(this);
         loading.setTitle("Loading published versions"); loading.setMessage("Checking the registry. Installed package management works offline."); loading.setCancelable(true);
@@ -610,47 +616,108 @@ public final class MainActivity extends Activity {
         } }, "nemesis-version-discovery").start();
     }
     private void chooseCloudVersion(String id) {
-        final ArrayList<PackageScanner.Item> versions = new ArrayList<PackageScanner.Item>();
-        for (PackageScanner.Item item : allItems) if (item.remote != null && id.equals(item.id)) versions.add(item);
+        for (PackageScanner.Item item : allItems) if (item.remote != null && id.equals(item.id)) { choosePackageVersion(item); return; }
+    }
+    private ArrayList<PackageScanner.Item> packageVersions(PackageScanner.Item selectedItem) {
+        ArrayList<PackageScanner.Item> versions = new ArrayList<PackageScanner.Item>();
+        if (PackageScanner.EXECUTE.equals(selectedItem.kind) || PackageScanner.BROKEN.equals(selectedItem.kind)) return versions;
+        for (PackageScanner.Item item : allItems)
+            if (selectedItem.id != null && selectedItem.id.equals(item.id) && !PackageScanner.EXECUTE.equals(item.kind) && !PackageScanner.BROKEN.equals(item.kind) && !"installed".equals(item.kind)) versions.add(item);
+        Collections.sort(versions, new Comparator<PackageScanner.Item>() {
+            public int compare(PackageScanner.Item a, PackageScanner.Item b) {
+                Integer order = PackagePresentation.compareVersions(a.version, b.version);
+                if (order != null) return -order;
+                boolean numericA = PackagePresentation.compareVersions(a.version, "0") != null;
+                boolean numericB = PackagePresentation.compareVersions(b.version, "0") != null;
+                if (numericA != numericB) return numericA ? -1 : 1;
+                return PackagePresentation.key(a).compareTo(PackagePresentation.key(b));
+            }
+        });
+        return versions;
+    }
+    private void choosePackageVersion(PackageScanner.Item selectedItem) {
+        final ArrayList<PackageScanner.Item> versions = packageVersions(selectedItem);
         String[] labels = new String[versions.size()];
-        for (int i = 0; i < labels.length; i++) labels[i] = versions.get(i).version + " — " + PackagePresentation.action(versions.get(i));
+        for (int i = 0; i < labels.length; i++) {
+            PackageScanner.Item item = versions.get(i);
+            labels[i] = item.version + " — " + PackagePresentation.action(item);
+            if (item.remote == null && item.target != null) labels[i] += " — " + item.target.getParentFile().getName() + "/" + item.target.getName();
+        }
         android.app.AlertDialog dialog = new android.app.AlertDialog.Builder(this).setTitle("Choose package version").setItems(labels, new android.content.DialogInterface.OnClickListener() { public void onClick(android.content.DialogInterface dialog, int which) {
             PackageScanner.Item item = versions.get(which);
-            if (PackagePresentation.canInstall(item)) download(item);
+            if (PackagePresentation.canInstall(item)) installVersion(item);
             else message("Version not selected", "This version is already installed, older, locked, or its installed state is unavailable. Choose a newer version or check its details.");
         } }).setNegativeButton("Cancel", null).create();
         dialogs.add(dialog); dialog.show();
     }
-    private CloudPackageSource cloudSource() throws Exception { return new CloudPackageSource(getPreferences(MODE_PRIVATE).getString("registry_url", ""), getCacheDir()); }
-    private void chooseSource() {
+    private String registryUrl() {
+        String value = getPreferences(MODE_PRIVATE).getString("registry_url", DEFAULT_REGISTRY_URL).trim();
+        return value.length() == 0 ? DEFAULT_REGISTRY_URL : value;
+    }
+    private CloudPackageSource cloudSource() throws Exception { return new CloudPackageSource(registryUrl(), getCacheDir()); }
+
+    private void chooseSource() { sourceDialog(false); }
+    private void showSettings() { sourceDialog(true); }
+    private void sourceDialog(final boolean settings) {
         if (!resumed || destroyed || operations.isRunning()) return;
-        android.widget.LinearLayout panel = new android.widget.LinearLayout(this); panel.setOrientation(LinearLayout.VERTICAL); panel.setPadding(dp(20), dp(8), dp(20), dp(8));
+        final android.widget.LinearLayout panel = new android.widget.LinearLayout(this); panel.setOrientation(LinearLayout.VERTICAL); panel.setPadding(dp(20), dp(8), dp(20), dp(8));
         final android.widget.RadioGroup sources = new android.widget.RadioGroup(this);
         android.widget.RadioButton cloud = new android.widget.RadioButton(this); cloud.setId(1001); cloud.setText("Cloud Registry — browse and download packages"); sources.addView(cloud);
         android.widget.RadioButton usb = new android.widget.RadioButton(this); usb.setId(1002); usb.setText("USB Storage — packages and scripts, available offline"); sources.addView(usb); sources.check(cloudSelected ? 1001 : 1002); panel.addView(sources);
         final android.widget.CheckBox remember = new android.widget.CheckBox(this); remember.setText("Don’t show again on startup"); remember.setChecked(!getPreferences(MODE_PRIVATE).getBoolean("show_source_prompt", !getPreferences(MODE_PRIVATE).contains("source"))); panel.addView(remember);
-        final android.widget.EditText address = new android.widget.EditText(this); address.setHint("Registry HTTPS address"); address.setSingleLine(true); address.setInputType(android.text.InputType.TYPE_CLASS_TEXT | android.text.InputType.TYPE_TEXT_VARIATION_URI); address.setText(getPreferences(MODE_PRIVATE).getString("registry_url", "")); panel.addView(address);
-        final android.widget.EditText profile = new android.widget.EditText(this); profile.setHint("Vehicle / firmware notes (optional)"); profile.setText(getPreferences(MODE_PRIVATE).getString("profile", android.os.Build.MODEL + " / " + android.os.Build.DISPLAY)); panel.addView(profile);
-        final android.widget.EditText vehicle = profileField(panel, "Vehicle model (optional)", "device_vehicle");
-        final android.widget.EditText firmware = profileField(panel, "Firmware version (optional)", "device_firmware");
-        final android.widget.EditText nemesis = profileField(panel, "NEMESIS version (optional)", "device_nemesis");
-        TextView guidance = text("Compatibility uses your profile below. Leave unknown values blank. Declarations are advisory and never block installation.", 14, MUTED); panel.addView(guidance);
+        LinearLayout advanced = new LinearLayout(this); advanced.setOrientation(LinearLayout.VERTICAL);
+        final android.widget.EditText address = new android.widget.EditText(this); address.setHint("Registry HTTPS address"); address.setSingleLine(true); address.setInputType(android.text.InputType.TYPE_CLASS_TEXT | android.text.InputType.TYPE_TEXT_VARIATION_URI); address.setText(registryUrl()); address.setContentDescription("Registry HTTPS address"); addSetting(advanced, address);
+        final android.widget.EditText profile = new android.widget.EditText(this); profile.setHint("Vehicle / firmware notes (optional)"); profile.setText(getPreferences(MODE_PRIVATE).getString("profile", android.os.Build.MODEL + " / " + android.os.Build.DISPLAY)); profile.setSingleLine(true); profile.setContentDescription("Vehicle / firmware notes (optional)"); addSetting(advanced, profile);
+        final android.widget.EditText vehicle = profileField(advanced, "Vehicle model (optional)", "device_vehicle");
+        final android.widget.EditText firmware = profileField(advanced, "Firmware version (optional)", "device_firmware");
+        final android.widget.EditText nemesis = profileField(advanced, "NEMESIS version (optional)", "device_nemesis");
+        TextView guidance = text("Compatibility uses your profile below. Leave unknown values blank. Declarations are advisory and never block installation.", 14, MUTED); advanced.addView(guidance);
+        panel.setFocusableInTouchMode(true);
+        for (int i = 0; i < advanced.getChildCount(); i++) if (advanced.getChildAt(i) instanceof android.widget.EditText) configureEditor((android.widget.EditText) advanced.getChildAt(i));
+        if (settings) panel.addView(advanced);
         android.widget.ScrollView scroll = new android.widget.ScrollView(this); scroll.addView(panel);
-        final android.app.AlertDialog dialog = new android.app.AlertDialog.Builder(this).setTitle("Package Manager settings — choose source").setView(scroll).setPositiveButton("Continue", null).setNegativeButton("Cancel", null).create();
+        final android.app.AlertDialog dialog = new android.app.AlertDialog.Builder(this).setTitle(settings ? "Package Manager settings" : "Choose package source").setView(scroll).setPositiveButton(settings ? "Save" : "Continue", null).setNegativeButton("Cancel", null).setNeutralButton(settings ? "Hide keyboard" : null, null).create();
         dialogs.add(dialog); dialog.show();
+        if (settings) dialog.getButton(android.app.AlertDialog.BUTTON_NEUTRAL).setOnClickListener(new View.OnClickListener() { public void onClick(View view) { hideKeyboard(panel); } });
+        dialog.getWindow().setSoftInputMode(android.view.WindowManager.LayoutParams.SOFT_INPUT_STATE_ALWAYS_HIDDEN | android.view.WindowManager.LayoutParams.SOFT_INPUT_ADJUST_RESIZE);
+        dialog.setOnDismissListener(new android.content.DialogInterface.OnDismissListener() { public void onDismiss(android.content.DialogInterface ignored) { hideKeyboard(panel); dialogs.remove(dialog); } });
+        panel.requestFocus();
         dialog.getButton(android.app.AlertDialog.BUTTON_POSITIVE).setOnClickListener(new View.OnClickListener() { public void onClick(View view) {
             if (unavailable() && !scanRunning) { android.widget.Toast.makeText(MainActivity.this, "Wait for the current action to finish", android.widget.Toast.LENGTH_SHORT).show(); return; }
             boolean nextCloud = sources.getCheckedRadioButtonId() == 1001;
-            if (nextCloud) try { new CloudPackageSource(address.getText().toString().trim(), getCacheDir()); } catch (Exception error) { address.setError("Enter the registry HTTPS address"); return; }
+            if (settings || nextCloud) try { new CloudPackageSource(address.getText().toString().trim(), getCacheDir()); } catch (Exception error) { address.setError("Enter the registry HTTPS address"); return; }
             cloudSelected = nextCloud; cloudQuery = nextCloud ? browserQuery : ""; browserSearch.setText(cloudQuery);
             android.content.SharedPreferences.Editor edit = getPreferences(MODE_PRIVATE).edit().putString("registry_url", address.getText().toString().trim()).putString("profile", profile.getText().toString());
-            edit.putString("source", cloudSelected ? "cloud" : "usb").putBoolean("show_source_prompt", !remember.isChecked()).putString("device_vehicle", vehicle.getText().toString().trim()).putString("device_firmware", firmware.getText().toString().trim()).putString("device_nemesis", nemesis.getText().toString().trim()); edit.apply(); dialog.dismiss(); refreshBrowser();
+            edit.putString("source", cloudSelected ? "cloud" : "usb").putBoolean("show_source_prompt", !remember.isChecked()).putString("device_vehicle", vehicle.getText().toString().trim()).putString("device_firmware", firmware.getText().toString().trim()).putString("device_nemesis", nemesis.getText().toString().trim()); edit.apply(); hideKeyboard(panel); dialog.dismiss(); refreshBrowser();
         } });
     }
     private android.widget.EditText profileField(LinearLayout panel, String label, String key) {
         TextView caption = text(label, 16, TEXT); panel.addView(caption);
         android.widget.EditText input = new android.widget.EditText(this); input.setSingleLine(true); input.setContentDescription(label);
         input.setText(getPreferences(MODE_PRIVATE).getString(key, "")); panel.addView(input); return input;
+    }
+    private void addSetting(LinearLayout panel, android.widget.EditText field) {
+        panel.addView(text(field.getHint().toString(), 14, MUTED)); panel.addView(field);
+    }
+    private void configureEditor(android.widget.EditText field) {
+        field.setImeOptions(android.view.inputmethod.EditorInfo.IME_ACTION_DONE | android.view.inputmethod.EditorInfo.IME_FLAG_NO_EXTRACT_UI);
+        field.setOnEditorActionListener(new TextView.OnEditorActionListener() {
+            public boolean onEditorAction(TextView view, int actionId, android.view.KeyEvent event) {
+                if (actionId == android.view.inputmethod.EditorInfo.IME_ACTION_DONE || (event != null && event.getKeyCode() == android.view.KeyEvent.KEYCODE_ENTER)) {
+                    hideKeyboard(view); return true;
+                }
+                return false;
+            }
+        });
+    }
+    private void hideKeyboard(View view) {
+        android.view.inputmethod.InputMethodManager keyboard = (android.view.inputmethod.InputMethodManager) getSystemService(INPUT_METHOD_SERVICE);
+        if (keyboard != null) keyboard.hideSoftInputFromWindow(view.getWindowToken(), 0);
+        ViewGroup root = (ViewGroup) view.getRootView();
+        int focusability = root.getDescendantFocusability();
+        root.setDescendantFocusability(ViewGroup.FOCUS_BLOCK_DESCENDANTS);
+        root.setFocusableInTouchMode(true); root.requestFocus();
+        root.setDescendantFocusability(focusability);
     }
     private String compatibilityWarning(PackageRecord record) {
         return CompatibilityAdvisory.describe(record, getPreferences(MODE_PRIVATE).getString("device_vehicle", ""), getPreferences(MODE_PRIVATE).getString("device_firmware", ""), getPreferences(MODE_PRIVATE).getString("device_nemesis", ""));
