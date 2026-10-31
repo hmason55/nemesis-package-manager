@@ -208,3 +208,13 @@ See the [illustrated companion controls](USER-GUIDE.md#manage-the-usb-drive-on-y
 ## Illustrated online guides
 
 Open [NEMESIS user and publisher guides](https://hmason55.github.io/nemesis-package-manager/#guides) for vehicle Settings/source choice, manual and registry USB preparation, compatibility warnings, and GitHub publisher onboarding. The hosted guides include labeled example illustrations and recovery steps. Package Manager itself retains its dedicated update workflow.
+
+### Registry connection and publication
+
+Companion has a built-in staging registry address, so Cloud registry browsing needs
+no connection setup or account by default. Settings → Registry HTTPS address → Save registry can override it;
+manual USB imports remain available offline. Publishers sign in with GitHub and
+connect their public repository/App installation. Successful trusted validation
+publishes their release automatically; there is no separate maintainer approval.
+Failed validation remains private, and administrators can withdraw broken or abusive
+releases. See the hosted publisher guide for the complete workflow.

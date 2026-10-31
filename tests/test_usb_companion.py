@@ -12,6 +12,7 @@ from pathlib import Path
 from unittest.mock import patch
 
 from tools.usb_companion import CompanionServer
+from tools.registry_client import DEFAULT_REGISTRY_URL
 from tools.companion_drives import checked_path, drive_root
 from tools.companion_metadata import describe_package, scan_drive
 from tools.companion_packages import add_package
@@ -444,6 +445,10 @@ class CompanionHttpTests(CompanionFixture):
     def test_registry_configuration_is_authenticated_and_manual_import_stays_offline(
         self,
     ):
+        self.assertEqual(
+            json.loads(self.request("GET", "/api/cloud/config")[1])["url"],
+            DEFAULT_REGISTRY_URL,
+        )
         options = json.dumps({"url": "https://registry.test"})
         self.assertEqual(
             self.request("GET", "/api/cloud/config", headers={"X-Companion-Token": ""})[
@@ -663,5 +668,7 @@ class CompanionLaunchTests(unittest.TestCase):
             patch("builtins.print"),
         ):
             main()
-            factory.assert_called_once_with(8765, "/media/usb")
+            factory.assert_called_once_with(
+                8765, "/media/usb", registry_url=DEFAULT_REGISTRY_URL
+            )
             browser.assert_not_called()

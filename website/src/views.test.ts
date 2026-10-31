@@ -177,6 +177,8 @@ describe("publisher onboarding", () => {
       controls,
     );
     const form = root.querySelector<HTMLFormElement>(".publish-wizard")!;
+    expect(root.textContent).toContain("no maintainer approval is required");
+    expect(root.textContent).not.toContain("maintainer reviews this version");
     form.dispatchEvent(
       new Event("submit", { cancelable: true, bubbles: true }),
     );

@@ -6,6 +6,7 @@ import { publisher, admin, validator } from "./publishing";
 import { webhook, synchronize } from "./webhooks";
 import { dispatchValidation } from "./github";
 import { cleanupUploads } from "./uploads";
+import { publishPending } from "./publication";
 export default {
   async fetch(request: Request, env: Env): Promise<Response> {
     const origin = request.headers.get("Origin"),
@@ -91,6 +92,7 @@ export default {
         ),
       ),
     );
+    await publishPending(env);
     await synchronize(env);
     const pending = await env.DB.prepare(
       "SELECT id FROM submissions WHERE status='queued' ORDER BY created_at LIMIT 10",

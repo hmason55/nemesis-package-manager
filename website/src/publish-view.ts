@@ -14,9 +14,9 @@ import {
 export const statusLabels: Record<string, string> = {
   queued: "Waiting for validation",
   validating: "Validation in progress",
-  review: "Awaiting maintainer review",
+  review: "Finishing publication",
   approved: "Published",
-  rejected: "Not approved",
+  rejected: "Rejected",
   withdrawn: "Withdrawn",
   failed: "Validation failed",
 };
@@ -224,7 +224,7 @@ export async function renderPublish(
       review,
       el(
         "p",
-        "After submission, the ZIP is validated automatically and a maintainer reviews this version. It stays private until approved.",
+        "After submission, trusted validation checks the exact ZIP. A valid package publishes automatically after repository authorization and ownership checks; no maintainer approval is required.",
         "callout",
       ),
     );
@@ -244,7 +244,7 @@ export async function renderPublish(
         else item.removeAttribute("aria-current");
       });
       back.hidden = step === 0;
-      next.textContent = step === 2 ? "Submit for review" : "Continue";
+      next.textContent = step === 2 ? "Submit for validation" : "Continue";
       if (step === 2) renderReview();
       const legend = sections[step].querySelector("legend")!;
       legend.tabIndex = -1;
@@ -366,7 +366,7 @@ export async function renderPublish(
             await api("/v1/publisher/submissions", payload());
             await controls.refresh();
             controls.notify(
-              "Submitted. You can follow validation and review in My submissions.",
+              "Submitted. Follow validation and automatic publication in My submissions.",
             );
           } finally {
             next.disabled = false;

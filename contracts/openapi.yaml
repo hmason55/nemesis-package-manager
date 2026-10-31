@@ -2,7 +2,7 @@ openapi: 3.1.0
 info:
   title: NEMESIS Registry API
   version: 1.0.0
-  description: Anonymous discovery and verified downloads; GitHub-authenticated publishing and administrator moderation.
+  description: Anonymous discovery and verified downloads; GitHub-authenticated repository publishing with automatic publication after trusted validation; administrator anti-abuse management remains available. Internal status approved means published. Legacy review is a transient finishing/backfill state, not a mandatory maintainer queue.
 servers:
   - url: https://REGISTRY_WORKER.workers.dev
 paths:
@@ -284,7 +284,7 @@ paths:
         {
           "202":
             {
-              description: Same validation and moderation path as explicit submission,
+              description: Same trusted validation and automatic publication path as explicit submission,
             },
         }
   /v1/publisher/events:
@@ -300,6 +300,7 @@ paths:
         }
   /v1/admin/submissions:
     get:
+      description: Administrator diagnostics and anti-abuse management; not a publication approval queue.
       operationId: reviewQueue
       security: [{ registrySession: [] }]
       responses:
@@ -322,6 +323,7 @@ paths:
           name: action,
           in: path,
           required: true,
+          description: "Administrative recovery and anti-abuse action. approve is retained only as a legacy optional recovery action using the same validated publication checks; normal publishing never requires it.",
           schema: { enum: [approve, reject, withdraw, retry] },
         }
     post:
@@ -421,12 +423,12 @@ components:
                 latest_published_version:
                   {
                     type: string,
-                    description: Most recently approved version; does not establish version precedence,
+                    description: Most recently published version; does not establish version precedence,
                   },
                 published_at:
                   {
                     type: integer,
-                    description: Unix seconds of most recent approval,
+                    description: Unix seconds of most recent publication,
                   },
                 version_count: { type: integer, minimum: 1 },
               },

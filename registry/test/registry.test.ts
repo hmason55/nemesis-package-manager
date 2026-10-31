@@ -3,6 +3,9 @@ import { beforeAll, beforeEach, describe, it, expect, vi } from "vitest";
 import worker from "../src/index";
 import { hash, seal, challenge } from "../src/security";
 import { Env, now, metadata as parseMetadata } from "../src/types";
+import { publishPending, publishValidated } from "../src/publication";
+import { createSubmission } from "../src/publishing";
+import { HttpError } from "../src/types";
 import { publicVersion } from "../src/catalog";
 import { synchronize } from "../src/webhooks";
 import { github } from "../src/github";
@@ -53,6 +56,7 @@ beforeAll(async () => {
   await applyD1Migrations(bindings.DB, bindings.TEST_MIGRATIONS);
 });
 beforeEach(async () => {
+  bindings.ADMIN_IDS = "1";
   for (const table of [
     "artifact_parts",
     "artifact_uploads",
@@ -92,6 +96,183 @@ beforeEach(async () => {
   await bindings.PACKAGES.put("sha256/" + sha + ".zip", "zip");
 });
 describe("public catalog and moderation", () => {
+  it("does not let a stale publication finisher restore older listing metadata", async () => {
+    const stale = await bindings.DB.prepare(
+      "SELECT * FROM submissions WHERE id=?",
+    )
+      .bind(submission)
+      .first<any>();
+    await publishValidated(bindings, stale);
+    const second = "91".repeat(32),
+      latestMetadata = {
+        ...metadata,
+        name: "Newer package listing",
+        description: "Latest validated description",
+      };
+    await bindings.DB.prepare(
+      "INSERT INTO submissions(id,package_id,repository_id,publisher_id,release_id,asset_id,version,metadata,status,sha256,size,object_key,report,created_at,updated_at) SELECT ?,package_id,repository_id,publisher_id,31,41,'2.0',?,'review',sha256,size,object_key,report,created_at,updated_at FROM submissions WHERE id=?",
+    )
+      .bind(second, JSON.stringify(latestMetadata), submission)
+      .run();
+    const current = await bindings.DB.prepare(
+      "SELECT * FROM submissions WHERE id=?",
+    )
+      .bind(second)
+      .first<any>();
+    await publishValidated(bindings, current);
+    await expect(publishValidated(bindings, stale)).rejects.toMatchObject({
+      status: 409,
+    });
+    const listing = await (await call("/v1/packages/example.app")).json<any>();
+    expect(listing.name).toBe(latestMetadata.name);
+    expect(listing.description).toBe(latestMetadata.description);
+    expect(
+      (
+        await bindings.DB.prepare("SELECT status FROM submissions WHERE id=?")
+          .bind(second)
+          .first<any>()
+      ).status,
+    ).toBe("approved");
+  });
+  it("publishes legacy validated submissions after fresh authorization without moderator action", async () => {
+    await publishPending(bindings);
+    expect(
+      (await call("/v1/packages/example.app/versions/1.2/download")).status,
+    ).toBe(200);
+    await call(
+      "/v1/admin/submissions/" + submission + "/withdraw",
+      "POST",
+      {},
+      token,
+    );
+    await publishPending(bindings);
+    expect(
+      (await call("/v1/packages/example.app/versions/1.2/download")).status,
+    ).toBe(404);
+  });
+  it("retains verified bytes pending suspended, private, transferred, or temporarily unavailable repository authorization", async () => {
+    await bindings.DB.prepare("UPDATE repositories SET active=0").run();
+    await publishPending(bindings);
+    expect(
+      (await call("/v1/packages/example.app/versions/1.2/download")).status,
+    ).toBe(404);
+    await bindings.DB.prepare(
+      "UPDATE repositories SET active=1,consent_at=0",
+    ).run();
+    await publishPending(bindings);
+    await bindings.DB.prepare("UPDATE repositories SET consent_at=1").run();
+    for (const response of [
+      { id: 10, owner: { id: 1 }, private: true },
+      { id: 10, owner: { id: 99 }, private: false },
+    ]) {
+      vi.mocked(github).mockResolvedValueOnce(response);
+      await publishPending(bindings);
+      expect(
+        (
+          await bindings.DB.prepare("SELECT status FROM submissions WHERE id=?")
+            .bind(submission)
+            .first<any>()
+        ).status,
+      ).toBe("review");
+    }
+    vi.mocked(github).mockRejectedValueOnce(
+      new HttpError(502, "Provider unavailable"),
+    );
+    await publishPending(bindings);
+    const pending = await bindings.DB.prepare(
+      "SELECT status,report FROM submissions WHERE id=?",
+    )
+      .bind(submission)
+      .first<any>();
+    expect(pending.status).toBe("review");
+    expect(pending.report).toContain("publication pending");
+    await publishPending(bindings);
+    expect(
+      (await call("/v1/packages/example.app/versions/1.2/download")).status,
+    ).toBe(200);
+  });
+  it("never republishes rejected or failed jobs and reserves the manager identity", async () => {
+    for (const state of ["rejected", "failed"]) {
+      await bindings.DB.prepare("UPDATE submissions SET status=?")
+        .bind(state)
+        .run();
+      await publishPending(bindings);
+      expect(
+        (
+          await bindings.DB.prepare("SELECT status FROM submissions WHERE id=?")
+            .bind(submission)
+            .first<any>()
+        ).status,
+      ).toBe(state);
+    }
+    await bindings.DB.prepare(
+      "UPDATE submissions SET status='review',package_id='USB.Package.Manager'",
+    ).run();
+    await publishPending(bindings);
+    expect(
+      (
+        await bindings.DB.prepare("SELECT status FROM submissions WHERE id=?")
+          .bind(submission)
+          .first<any>()
+      ).status,
+    ).toBe("failed");
+    await expect(
+      createSubmission(bindings, { id: 10 }, 1, {
+        package_id: "usb.package.manager",
+        version: "1",
+        metadata,
+      }),
+    ).rejects.toThrow("dedicated self-update");
+  });
+  it("caps pending work atomically per repository and per publisher", async () => {
+    await bindings.DB.prepare(
+      "INSERT INTO repositories VALUES(11,'owner/second',21,1,1,1)",
+    ).run();
+    for (const repository of [10, 11]) {
+      await bindings.DB.prepare("DELETE FROM submissions WHERE id<>?")
+        .bind(submission)
+        .run();
+      await bindings.DB.prepare("UPDATE submissions SET status='failed'").run();
+      for (let i = 0; i < 20; i++)
+        await bindings.DB.prepare(
+          "INSERT INTO submissions(id,package_id,repository_id,publisher_id,release_id,asset_id,version,metadata,status,created_at,updated_at) VALUES(?,?,?,1,30,?,?,'{}','queued',1,1)",
+        )
+          .bind(
+            i.toString(16).padStart(64, "0"),
+            "pending.app",
+            repository,
+            100 + i,
+            String(i),
+          )
+          .run();
+      vi.mocked(github).mockResolvedValueOnce({
+        id: 50,
+        draft: false,
+        assets: [{ id: 500, name: "test.zip", size: 3, state: "uploaded" }],
+      });
+      await expect(
+        createSubmission(
+          bindings,
+          { id: 10, installation_id: 20, full_name: "owner/repo" },
+          1,
+          {
+            package_id: "new.app",
+            version: "1",
+            metadata,
+            release_id: 50,
+            asset_id: 500,
+          },
+        ),
+      ).rejects.toMatchObject({ status: 429 });
+      expect(
+        (
+          await bindings.DB.prepare(
+            "SELECT COUNT(*) AS n FROM submissions WHERE status='queued'",
+          ).first<any>()
+        ).n,
+      ).toBe(20);
+    }
+  });
   it("allows omitted advisory declarations and retains informational ranges", () => {
     const { compatibility: ignored, ...input } = metadata;
     expect(parseMetadata(input).compatibility).toEqual({
@@ -376,7 +557,8 @@ describe("authentication and ingestion", () => {
       fetch.mockRestore();
     }
   });
-  it("streams a checksum-verified artifact into review before a separate approval", async () => {
+  it("automatically publishes exact validated bytes without an administrator", async () => {
+    bindings.ADMIN_IDS = "2";
     await bindings.DB.prepare(
       "UPDATE submissions SET status='queued',object_key=NULL,sha256=NULL",
     ).run();
@@ -429,20 +611,17 @@ describe("authentication and ingestion", () => {
     ).toBe(200);
     expect(
       (await call("/v1/packages/example.app/versions/1.2/download")).status,
-    ).toBe(404);
+    ).toBe(200);
     expect(
       (
         await call(
-          "/v1/admin/submissions/" + submission + "/approve",
+          "/internal/jobs/" + submission + "/complete",
           "POST",
-          {},
-          token,
+          { package_id: "example.app", version: "1.2" },
+          "validator-secret",
         )
       ).status,
-    ).toBe(200);
-    expect(
-      (await call("/v1/packages/example.app/versions/1.2/download")).status,
-    ).toBe(200);
+    ).toBe(409);
   });
   it("binds single-use exchanges to the initiating verifier", async () => {
     const code = "12".repeat(32),

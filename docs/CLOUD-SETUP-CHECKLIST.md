@@ -1,9 +1,9 @@
 # Your Cloudflare and GitHub setup
 
 This is the account-owner checklist for `hmason55/nemesis-package-manager`.
-The source code and deployment workflows are local until they are reviewed and
-put on `main`. The registry website workflow is not currently present on remote
-`main`; enabling Pages alone will not deploy it.
+The registry implementation and deployment workflows are on `main`. GitHub Pages
+uses the dedicated website workflow; enabling Pages alone does not build the Vite
+site. Check CLOUD-DEPLOYMENT.md for the separate infrastructure deployment record.
 
 The GitHub connector can access the repository with admin permission, but its
 available tools cannot change Pages settings, create GitHub Apps, manage secrets
@@ -116,9 +116,10 @@ For each environment add:
 | Variable | `REGISTRY_API_URL` | That environment's actual Worker HTTPS URL |
 | Secret | `REGISTRY_VALIDATOR_TOKEN` | The same value as that Worker's `VALIDATOR_TOKEN` |
 
-Keep validation automatic rather than requiring a manual environment approval
-for every run. Package publication already has its own mandatory maintainer
-review in the registry website.
+Keep validation automatic rather than requiring manual environment approval for
+every run. Authorized GitHub publishers publish automatically after trusted artifact
+validation and ownership checks; there is no mandatory maintainer review step.
+Administrator report/retry/rejection/withdrawal controls remain available for abuse.
 
 ## 4. Enable GitHub Pages
 
@@ -144,7 +145,7 @@ Codex can finish resource bindings, non-secret config values, D1 migrations, and
 Worker deployment after Cloudflare login. The exact commands are in
 CLOUD-REGISTRY.md. Deploy staging first, install the staging GitHub App on a
 test package repository, and exercise one real release through validation,
-moderation, browsing, and download.
+automatic publication, browsing, and download.
 
 Large validated installer uploads use 8 MiB multipart requests; enabling a
 higher request-body tier is not required solely for the 512 MiB package limit.

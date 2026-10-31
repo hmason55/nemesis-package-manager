@@ -2,6 +2,7 @@
 
 import http.client
 import json
+import os
 import re
 import subprocess
 import sys
@@ -15,10 +16,13 @@ def smoke(executable):
     with tempfile.TemporaryDirectory() as work:
         log = Path(work) / "startup.log"
         with log.open("wb") as output:
+            environment = os.environ.copy()
+            environment.pop("NEMESIS_REGISTRY_URL", None)
             process = subprocess.Popen(
                 [str(Path(executable).resolve()), "--no-browser"],
                 stdout=output,
                 stderr=output,
+                env=environment,
             )
             try:
                 deadline = time.monotonic() + 20
@@ -45,6 +49,10 @@ def smoke(executable):
                     ("/cloud.js", b"/api/cloud/start"),
                     ("/style.css", b":root"),
                     ("/api/state", b"drives"),
+                    (
+                        "/api/cloud/config",
+                        b"https://nemesis-registry-staging.hmason55.workers.dev",
+                    ),
                 ):
                     connection = http.client.HTTPConnection(
                         url.hostname, url.port, timeout=5

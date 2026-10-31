@@ -113,14 +113,14 @@ async function renderRoute() {
     } else if (route.page === "moderate") {
       if (!user?.admin)
         throw new Error(
-          "Sign in with an administrator account to review submissions.",
+          "Sign in with an administrator account to manage registry submissions.",
         );
       const submissions = await api("/v1/admin/submissions");
       if (token !== generation) return;
       heading(
         target,
-        "Review submissions",
-        "Validation results and package ownership must be reviewed before a version is published.",
+        "Registry management",
+        "Inspect validation reports, retry failed jobs, and withdraw abusive or broken releases. Authorized publishers publish automatically after trusted validation.",
       );
       for (const submission of submissions) {
         const data = JSON.parse(submission.metadata),
@@ -155,7 +155,7 @@ async function renderRoute() {
         const actions = el("div", "", "actions");
         const allowed =
           submission.status === "review"
-            ? ["approve", "reject"]
+            ? []
             : submission.status === "approved"
               ? ["withdraw"]
               : submission.status === "failed"
@@ -180,10 +180,7 @@ async function renderRoute() {
                     )
                   )
                     return;
-                  const reason =
-                    operation === "approve"
-                      ? ""
-                      : prompt("Reason for this action");
+                  const reason = prompt("Reason for this action");
                   if (reason === null) return;
                   await api(
                     "/v1/admin/submissions/" + submission.id + "/" + operation,
@@ -191,7 +188,7 @@ async function renderRoute() {
                   );
                   await renderRoute();
                 }),
-              operation === "approve" ? "primary" : "quiet",
+              "quiet",
             ),
           );
         card.append(actions);

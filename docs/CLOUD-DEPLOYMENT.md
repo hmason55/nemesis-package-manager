@@ -86,3 +86,12 @@ The local workflows and site must reach
 confirmed absent from remote `main` after App installation. Follow [the setup checklist](CLOUD-SETUP-CHECKLIST.md)
 for the remaining account-owner steps. Keep credentials out of chat and website
 assets.
+
+## Publishing policy update
+
+The implementation now supports automatic publication after trusted validation
+for GitHub-authenticated publishers with repository write/maintain/admin permission
+and the required App installation. There is no mandatory maintainer approval step.
+Admin report/retry/rejection/withdrawal controls remain available. Deploy the updated
+Worker and website together before claiming this new policy is live; the historical
+resource and smoke-test record above does not establish a new deployment.

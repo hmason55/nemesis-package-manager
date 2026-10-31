@@ -22,6 +22,7 @@ from tools.companion_mutations import mutate
 from tools.companion_releases import latest_release
 from tools.companion_cloud_http import cloud_get, cloud_post
 from tools.companion_cloud import CloudJobs
+from tools.registry_client import configured_registry_url
 
 ASSETS = Path(__file__).with_name("companion_ui")
 EXPECTED_ERRORS = (
@@ -36,7 +37,7 @@ EXPECTED_ERRORS = (
 class CompanionServer(HTTPServer):
     """Serialize drive operations so imports and selection cannot race each other."""
 
-    def __init__(self, port=0, usb=None, registry_url=""):
+    def __init__(self, port=0, usb=None, registry_url=None):
         self.drive_lock = threading.RLock()
         self.usb = drive_root(usb) if usb else None
         self.device = self.usb.stat().st_dev if self.usb else None
@@ -44,7 +45,7 @@ class CompanionServer(HTTPServer):
         self.token = secrets.token_urlsafe(32)
         self.selection_id = secrets.token_urlsafe(24)
         self.origin = f"http://127.0.0.1:{self.server_port}"
-        self.cloud = CloudJobs(self, registry_url)
+        self.cloud = CloudJobs(self, configured_registry_url(registry_url))
 
     def selected_root(self):
         """Revalidate selection before writes, including after a long upload."""
