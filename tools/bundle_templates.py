@@ -3,7 +3,7 @@
 import os
 
 PACKAGE_MANIFEST = """[nemesis]
-version=0.2.0
+version=1.0.0
 id=usb.package.manager
 name=Package Manager
 types=application
@@ -15,7 +15,7 @@ package=dev.nemesis.usbmanager
 component=dev.nemesis.usbmanager/.MainActivity
 """
 PACKAGE_MANIFEST = PACKAGE_MANIFEST.replace(
-    "version=0.2.0", "version=" + os.environ.get("NEMESIS_RELEASE_VERSION", "0.2.0"), 1
+    "version=1.0.0", "version=" + os.environ.get("NEMESIS_RELEASE_VERSION", "1.0.0"), 1
 )
 
 

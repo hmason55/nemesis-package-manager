@@ -5,6 +5,38 @@ const sha = 'a'.repeat(40);
 const context = {eventName: 'push', ref: 'refs/heads/main', sha};
 const quality = () => Object.fromEntries(policy.requiredJobs.map(name => [name, {result: 'success', outputs: {tested_sha: sha}}]));
 
+test('automatic stable selection starts at 1.0.0 and increments the highest published patch numerically', () => {
+  const select = releases => policy.nextStableVersion({base: '1.0.0', releases, sourceSha: sha, runId: 12});
+  assert.equal(select([]), '1.0.0');
+  assert.equal(select([{tag_name: 'v0.2.0-build.91', prerelease: true}, {tag_name: 'v0.2.0-build.59'}]), '1.0.0');
+  assert.equal(select([{tag_name: 'v1.0.9'}, {tag_name: 'v1.0.10'}, {tag_name: 'v2.0.0', draft: true},
+    {tag_name: 'v3.0.0', prerelease: true}, {tag_name: 'invalid'}]), '1.0.11');
+  assert.equal(select([{tag_name: 'v1.0.999999999999999999999'}]), '1.0.1000000000000000000000');
+  assert.equal(policy.nextStableVersion({base: '1.1.0', releases: [{tag_name: 'v1.0.10'}]}), '1.1.0');
+  assert.throws(() => policy.nextStableVersion({base: 'bad', releases: []}), /base/);
+});
+test('automatic retries keep the same version and reject inconsistent run markers', () => {
+  const release = {tag_name: 'v1.0.0', target_commitish: sha, body: '<!-- nemesis-build:12 -->'};
+  const args = {base: '1.0.0', releases: [release], sourceSha: sha, runId: 12};
+  assert.equal(policy.nextStableVersion(args), '1.0.0');
+  release.draft = true; assert.equal(policy.nextStableVersion(args), '1.0.0');
+  release.target_commitish = 'b'.repeat(40); assert.throws(() => policy.nextStableVersion(args), /identity/);
+  release.target_commitish = sha; args.releases.push({...release}); assert.throws(() => policy.nextStableVersion(args), /Multiple/);
+});
+test('only main pushes can automatically select and publish stable versions of their exact commit', () => {
+  const args = {base: '1.0.0', runNumber: 92, automaticVersion: '1.0.0', context};
+  const release = policy.selectVersion(args);
+  assert.deepEqual(release, {version: '1.0.0', sourceSha: sha, versionCode: 1092, channel: 'stable'});
+  policy.assertPublication({context, ...release});
+  for (const eventName of ['pull_request', 'workflow_dispatch'])
+    assert.throws(() => policy.selectVersion({...args, context: {...context, eventName}}), /push to main/);
+  assert.throws(() => policy.selectVersion({...args, context: {...context, ref: 'refs/heads/feature'}}), /push to main/);
+  assert.throws(() => policy.selectVersion({...args, candidateSha: sha}), /unambiguous/);
+  assert.throws(() => policy.selectVersion({...args, stableVersion: '1.0.0'}), /unambiguous/);
+  assert.throws(() => policy.selectVersion({...args, automaticVersion: 'bad'}), /version/);
+  assert.throws(() => policy.assertPublication({context, ...release, sourceSha: 'b'.repeat(40)}));
+});
+
 test('development versions and stable versions share a monotonic workflow version-code sequence', () => {
   const dev = policy.selectVersion({base: '0.2.0', runNumber: 57, context});
   assert.deepEqual(dev, {version: '0.2.0-build.57', versionCode: 1057, sourceSha: sha, channel: 'development'});

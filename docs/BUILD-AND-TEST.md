@@ -4,17 +4,17 @@ This project targets Android API 19 (Android 4.4). The Android app has no depend
 
 ## Automated GitHub Actions build
 
-The workflow `.github/workflows/build.yml` uses Java 17, Gradle 8.10.2, and AGP 8.7.3. Pull requests and pushes to `main` trigger it automatically; maintainers can also launch it manually. A merge into `main` therefore starts a new build. It runs the Python and Java quality gates, host tests, SDK signature/metadata validation, and both companion builds. Development runs build `app-debug.apk`; explicitly selected stable candidates build a signed, non-debuggable release APK. Verified bundles and provenance are uploaded as the `nemesis-usb-package-manager` artifact.
+The workflow `.github/workflows/build.yml` uses Java 17, Gradle 8.10.2, and AGP 8.7.3. Pull requests and pushes to `main` trigger it automatically; maintainers can also launch it manually. A merge into `main` therefore starts a new build. It runs the Python and Java quality gates, host tests, SDK signature/metadata validation, and both companion builds. Development runs build `app-debug.apk`; main builds and explicitly selected stable candidates build a signed, non-debuggable release APK. Verified bundles and provenance are uploaded as the `nemesis-usb-package-manager` artifact.
 
 Extract the downloaded artifact wrapper on your PC, then extract its `usb-package-manager-ready.zip` onto the normal USB. Installing a new build over an existing manager requires the explicit update procedure in [SETUP-WINDOWS.md](SETUP-WINDOWS.md#e-update-package-manager-itself); copying files alone does not update the installed APK.
 
 ## Automatic releases
 
-Every successful push to `main` publishes a **development prerelease** after all quality and artifact gates pass. PRs and ordinary manual validation runs do not publish. Stable publication is an explicit dispatch using a clean version and an exact main-branch candidate SHA and successful quality and artifact checks.
+Every successful push to `main` publishes a **signed stable release** after all quality and artifact gates pass. The first is `1.0.0`; subsequent successful runs increment the highest stable patch version. PRs and ordinary manual validation runs do not publish. Explicit stable version/candidate dispatches remain available. Version selection and publication share a concurrency lock.
 
 Development versions use the Android base version plus the workflow run number, for example `0.2.0-build.42`. All channels use `1000 + Build Package Manager run_number` for the Android version code. The APK, NEMESIS manifest, tag, notes, and public provenance identify the same selected version/commit.
 
-Downloads include the two installer ZIPs, Windows and Linux companion archives, `release-evidence.json`, and `SHA256SUMS`. Uploads stay in a draft until complete; retries verify immutable tag and asset identity. Development prereleases cannot replace the latest stable release. See [release procedures](RELEASING.md) for candidate builds, promotion, and artifact verification.
+Downloads include the two installer ZIPs, Windows and Linux companion archives, `release-evidence.json`, and `SHA256SUMS`. Uploads stay in a draft until complete; retries verify immutable tag and asset identity. The new stable release becomes latest. Only after successful publication are obsolete development releases and ancestor build tags pruned. See [release procedures](RELEASING.md) for candidate builds, promotion, and artifact verification.
 
 ## Local build commands
 

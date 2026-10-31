@@ -10,6 +10,7 @@ module.exports = async function publish({github, context, version, sourceSha = c
   const repo = context.repo;
   if (channel === 'stable') await assertStableReadiness({github, repo, sourceSha});
   const tag = `v${version}`;
+  const runMarker = Number.isSafeInteger(context.runId) && context.runId > 0 ? `\n\n<!-- nemesis-build:${context.runId} -->` : '';
   const digest = data => crypto.createHash('sha256').update(data).digest('hex');
   const names = ['usb-package-manager-ready.zip', 'usb.package.manager.zip',
     'nemesis-usb-companion-windows-x86_64.zip', 'nemesis-usb-companion-linux-x86_64.tar.gz', 'release-evidence.json'];
@@ -59,10 +60,15 @@ module.exports = async function publish({github, context, version, sourceSha = c
   if (!ref) await github.rest.git.createRef({...repo, ref: `refs/tags/${tag}`, sha: sourceSha});
   if (!release) {
     const notes = (await github.rest.repos.generateReleaseNotes({...repo, tag_name: tag, target_commitish: sourceSha})).data;
+    // Keep the first stable changelog usable after obsolete development tags are pruned.
+    for (const previous of releases) {
+      if (/^v\d+\.\d+\.\d+-build\.[1-9]\d*$/.test(previous.tag_name || '') && /^[a-f0-9]{40}$/.test(previous.target_commitish || ''))
+        notes.body = notes.body.replaceAll(`/compare/${previous.tag_name}...`, `/compare/${previous.target_commitish}...`);
+    }
     const signing = channel === 'stable' ? 'Stable release (release signed).' : 'Experimental development prerelease (debug signed).';
     release = (await github.rest.repos.createRelease({...repo, tag_name: tag, target_commitish: sourceSha,
       name: `Package Manager ${version}`, draft: true, prerelease: channel === 'development', make_latest: 'false',
-      body: `${signing}\n\nDownload **usb-package-manager-ready.zip** for USB setup, or **usb.package.manager.zip** for the NEMESIS installer.\n\nFor the local USB companion, download **nemesis-usb-companion-windows-x86_64.zip** (Windows) or **nemesis-usb-companion-linux-x86_64.tar.gz** (Linux). Extract and run it to open the local browser UI; no Python or Node installation is needed. See the [companion guide](https://github.com/${repo.owner}/${repo.repo}/blob/${sourceSha}/docs/USB-COMPANION.md). Verify all downloads with SHA256SUMS. The public release-evidence.json records the tested commit, versions, and APK certificate fingerprint.\n\nExisting installations require an explicit update through NEMESIS; copying USB files alone does not update the installed app. Read the [release procedures](https://github.com/${repo.owner}/${repo.repo}/blob/${sourceSha}/docs/RELEASING.md) before upgrading. See [update instructions](https://github.com/${repo.owner}/${repo.repo}/blob/${sourceSha}/docs/SETUP-WINDOWS.md#e-update-package-manager-itself).\n\n${notes.body}`
+      body: `${signing}\n\nDownload **usb-package-manager-ready.zip** for USB setup, or **usb.package.manager.zip** for the NEMESIS installer.\n\nFor the local USB companion, download **nemesis-usb-companion-windows-x86_64.zip** (Windows) or **nemesis-usb-companion-linux-x86_64.tar.gz** (Linux). Extract and run it to open the local browser UI; no Python or Node installation is needed. See the [companion guide](https://github.com/${repo.owner}/${repo.repo}/blob/${sourceSha}/docs/USB-COMPANION.md). Verify all downloads with SHA256SUMS. The public release-evidence.json records the tested commit, versions, and APK certificate fingerprint.\n\nExisting installations require an explicit update through NEMESIS; copying USB files alone does not update the installed app. Read the [release procedures](https://github.com/${repo.owner}/${repo.repo}/blob/${sourceSha}/docs/RELEASING.md) before upgrading. See [update instructions](https://github.com/${repo.owner}/${repo.repo}/blob/${sourceSha}/docs/SETUP-WINDOWS.md#e-update-package-manager-itself).\n\n${notes.body}${runMarker}`
     })).data;
   }
   const existing = await github.paginate(github.rest.repos.listReleaseAssets, {...repo, release_id: release.id});

@@ -102,6 +102,31 @@ test('explicit stable promotion publishes the tested candidate and persistent id
   assert.equal(f.state.published, 1);
 });
 
+test('a main push publishes a signed stable release and records its run for idempotent version selection', async t => {
+  const f = stableFixture(t);
+  f.context = {...f.context, sha, eventName: 'push', payload: {}, runId: 123};
+  await publish(f);
+  assert.equal(f.state.release.prerelease, false);
+  assert.equal(f.state.release.make_latest, 'true');
+  assert.match(f.state.release.body, /<!-- nemesis-build:123 -->/);
+  assert.equal(require('./release-policy.cjs').nextStableVersion({base: '1.0.0',
+    releases: [f.state.release], sourceSha: sha, runId: 123}), '1.0.0');
+  await publish(f);
+  assert.equal(f.state.created, 1);
+  assert.equal(f.state.published, 1);
+});
+
+test('first stable changelog uses immutable commits for development tags that cleanup removes', async t => {
+  const f = stableFixture(t), previous = 'e'.repeat(40);
+  f.state.previousReleases = [{id: 2, tag_name: 'v0.2.0-build.91', target_commitish: previous, prerelease: true}];
+  f.github.rest.repos.generateReleaseNotes = async () => ({data: {
+    body: 'Full Changelog: https://github.com/example/manager/compare/v0.2.0-build.91...v1.0.0'
+  }});
+  await publish(f);
+  assert.match(f.state.release.body, new RegExp(`/compare/${previous}\\.\\.\\.v1\\.0\\.0`));
+  assert.doesNotMatch(f.state.release.body, /compare\/v0\.2\.0-build\.91/);
+});
+
 test('quality failures, missing results, and stale results create no tags, release, or assets', async t => {
   for (const job of ['python-quality', 'java-quality', 'build', 'companion']) {
     for (const result of ['failure', 'cancelled', 'skipped', undefined]) {

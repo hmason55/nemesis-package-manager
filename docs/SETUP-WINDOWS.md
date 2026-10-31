@@ -66,4 +66,4 @@ Only run trusted packages. Hooks and scripts run as root. This manager does not 
 
 ## Release channels
 
-Automatic main-branch builds are experimental prereleases. Stable releases use an explicit maintainer publication after quality and artifact checks pass. See [release procedures](RELEASING.md).
+Successful main-branch builds publish signed stable releases after quality, signing, and artifact checks pass. The first is 1.0.0; later successful builds increment the patch version automatically. See [release procedures](RELEASING.md).
