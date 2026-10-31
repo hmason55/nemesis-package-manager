@@ -4,16 +4,41 @@ const shaPattern = /^[a-f0-9]{40}$/;
 const requiredJobs = ['python-quality', 'java-quality', 'build', 'companion'];
 const stableBlockers = [32];
 
-function selectVersion({base, runNumber, stableVersion = '', candidateSha = '', context}) {
+function nextStableVersion({base, releases, sourceSha, runId}) {
+  if (!stableVersionPattern.test(base)) throw new Error('Invalid base release version');
+  // Reruns resume their own release instead of allocating another patch version.
+  const marker = Number.isSafeInteger(runId) && runId > 0 ? `<!-- nemesis-build:${runId} -->` : null;
+  const resumed = marker ? releases.filter(release => release.body?.includes(marker)) : [];
+  if (resumed.length > 1) throw new Error('Multiple releases claim this workflow run');
+  if (resumed.length) {
+    const release = resumed[0], version = release.tag_name?.replace(/^v/, '');
+    if (release.target_commitish !== sourceSha || release.prerelease || !stableVersionPattern.test(version || ''))
+      throw new Error('Workflow release identity is inconsistent');
+    return version;
+  }
+  let latest = null;
+  for (const release of releases) {
+    const version = release.tag_name?.replace(/^v/, '');
+    if (release.draft || release.prerelease || !stableVersionPattern.test(version || '')) continue;
+    if (latest === null || compareStableVersions(version, latest) > 0) latest = version;
+  }
+  if (latest === null || compareStableVersions(base, latest) > 0) return base;
+  const [major, minor, patch] = latest.split('.');
+  return `${major}.${minor}.${BigInt(patch) + 1n}`;
+}
+
+function selectVersion({base, runNumber, stableVersion = '', automaticVersion = '', candidateSha = '', context}) {
   if (!Number.isSafeInteger(runNumber) || runNumber < 1 || runNumber > 2100000000 - 1000) throw new Error('Invalid workflow run number');
-  const stable = stableVersion !== '';
-  if (stable && (context.eventName !== 'workflow_dispatch' || context.ref !== 'refs/heads/main'))
+  if (automaticVersion && (context.eventName !== 'push' || context.ref !== 'refs/heads/main' || stableVersion || candidateSha))
+    throw new Error('Automatic stable releases require an unambiguous push to main');
+  const stable = stableVersion !== '' || automaticVersion !== '';
+  if (stableVersion && (context.eventName !== 'workflow_dispatch' || context.ref !== 'refs/heads/main'))
     throw new Error('Stable releases require an explicit dispatch from main');
   if (!stable && candidateSha) throw new Error('A candidate SHA requires a stable version');
-  const sourceSha = stable ? candidateSha : context.sha;
+  const sourceSha = stableVersion ? candidateSha : context.sha;
   if (!shaPattern.test(sourceSha || '')) throw new Error('An exact 40-character commit SHA is required');
-  if (!stableVersionPattern.test(stable ? stableVersion : base)) throw new Error('Invalid release version');
-  return {version: stable ? stableVersion : `${base}-build.${runNumber}`,
+  if (!stableVersionPattern.test(stable ? stableVersion || automaticVersion : base)) throw new Error('Invalid release version');
+  return {version: stable ? stableVersion || automaticVersion : `${base}-build.${runNumber}`,
     versionCode: 1000 + runNumber, sourceSha, channel: stable ? 'stable' : 'development'};
 }
 
@@ -30,6 +55,7 @@ function assertPublication({context, sourceSha, channel, version}) {
     if (context.eventName !== 'push' || context.sha !== sourceSha || !developmentVersionPattern.test(version))
       throw new Error('Development releases require a validated push to main');
   } else if (channel === 'stable') {
+    if (context.eventName === 'push' && context.sha === sourceSha && stableVersionPattern.test(version)) return;
     if (context.eventName !== 'workflow_dispatch' || context.payload?.inputs?.publish_stable !== 'true' ||
         context.payload?.inputs?.stable_version !== version ||
         context.payload?.inputs?.candidate_sha !== sourceSha || !stableVersionPattern.test(version))
@@ -56,5 +82,5 @@ function compareStableVersions(a, b) {
   return 0;
 }
 
-module.exports = {selectVersion, assertQuality, assertPublication, assertMainCandidate, assertStableReadiness,
+module.exports = {selectVersion, nextStableVersion, assertQuality, assertPublication, assertMainCandidate, assertStableReadiness,
   compareStableVersions, stableVersionPattern, requiredJobs, stableBlockers};

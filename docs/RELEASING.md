@@ -1,12 +1,15 @@
 # Release channels and stable publication
 
-Pushes to `main` produce **development prereleases**, named
-`<base>-build.<workflow-run-number>`. They are experimental debug-signed builds,
-not declarations that the app is stable. Find them on the repository's
-[Releases page](https://github.com/hmason55/nemesis-package-manager/releases).
-New development prereleases do not become GitHub's latest stable release.
-Older downloads created before this policy may still have legacy release flags;
-their experimental/debug-signing notes remain authoritative.
+Pushes to `main` now build and publish **signed stable releases** after all
+quality and artifact gates pass. The first successful run starts at **`1.0.0`**;
+later runs increment the highest published stable patch version (`1.0.1`,
+`1.0.2`, and so on). A higher source base version starts a new minor/major line.
+Failed builds publish nothing and do not consume a release version.
+
+Version selection through publication is serialized across main builds and
+explicit stable dispatches. A workflow rerun resumes the version recorded for
+that run; it never silently allocates a second stable version. APK version codes
+continue to use the existing workflow counter and must increase.
 
 Pull requests and ordinary manual runs validate and build artifacts without
 publishing. Every release waits for Python tests/coverage/maintainability, Java
@@ -15,15 +18,25 @@ companion builds. Reusable jobs check out and report the selected exact commit.
 The publisher rejects unsuccessful, skipped, cancelled, missing, or stale results
 before creating a tag. It never substitutes a previous run's successful check.
 
-## Version 1.0 candidate
+## First stable release and cleanup
 
-The 1.0 documentation targets stable version **`1.0.0`**. Merge the documentation
-PR, select the final `main` commit, and validate it with `stable_version=1.0.0`
-and `candidate_sha` set, leaving **publish_stable** unchecked. Review its quality,
-signing, artifact, and hardware evidence before explicit stable publication.
-The documentation PR alone does not publish a release or establish new vehicle
-or cloud compatibility. Local source defaults and development versioning remain
-independent of the selected stable candidate.
+The next successful main pipeline publishes `v1.0.0` as a normal release and
+marks it latest. Existing debug prerelease bytes are not relabeled as 1.0.
+The signing secrets and expected certificate below must be configured; missing
+configuration fails the build without a debug-signing fallback.
+
+Only after publication succeeds, the workflow verifies the public stable release,
+its six downloads, tag, and signing evidence, then removes obsolete `v*-build.N`
+releases and their lightweight tags whose commits are ancestors of that stable
+commit. This includes legacy development releases that lacked a prerelease flag
+and orphan development tags left by interrupted publication. Clean stable tags,
+custom/annotated tags, drafts, and unrelated commits are preserved. Cleanup fails
+closed on missing evidence and can resume after a partial API failure. Its results
+are recorded in the workflow summary. Existing installer downloads remain until
+the signed stable release is available.
+
+Manual signed candidate validation remains available without publishing.
+Automatic publication does not establish additional vehicle or cloud compatibility.
 
 ## Stable release prerequisites
 
@@ -68,9 +81,12 @@ Supply `NEMESIS_KEYSTORE_PATH`, `NEMESIS_STORE_PASSWORD`, `NEMESIS_KEY_ALIAS`, a
 For an exact candidate, also set `NEMESIS_RELEASE_VERSION` and
 `NEMESIS_VERSION_CODE`. `assembleDebug` remains available without signing secrets.
 
-## Publish a stable candidate
+## Publish an explicit stable candidate (optional)
 
-1. Merge the release changes. Select a full 40-character commit SHA that
+Main pushes already select and publish the next stable patch automatically. Use
+an explicit dispatch for a deliberate version override or a signed candidate check.
+
+1. Select a full 40-character commit SHA that
    belongs to `main` and contains this release infrastructure.
 2. In **Actions > Build Package Manager > Run workflow**, select `main`, enter
    a clean numeric version such as `1.0.0` in `stable_version`, and enter the

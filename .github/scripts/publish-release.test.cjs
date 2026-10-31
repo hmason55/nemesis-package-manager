@@ -102,6 +102,20 @@ test('explicit stable promotion publishes the tested candidate and persistent id
   assert.equal(f.state.published, 1);
 });
 
+test('a main push publishes a signed stable release and records its run for idempotent version selection', async t => {
+  const f = stableFixture(t);
+  f.context = {...f.context, sha, eventName: 'push', payload: {}, runId: 123};
+  await publish(f);
+  assert.equal(f.state.release.prerelease, false);
+  assert.equal(f.state.release.make_latest, 'true');
+  assert.match(f.state.release.body, /<!-- nemesis-build:123 -->/);
+  assert.equal(require('./release-policy.cjs').nextStableVersion({base: '1.0.0',
+    releases: [f.state.release], sourceSha: sha, runId: 123}), '1.0.0');
+  await publish(f);
+  assert.equal(f.state.created, 1);
+  assert.equal(f.state.published, 1);
+});
+
 test('quality failures, missing results, and stale results create no tags, release, or assets', async t => {
   for (const job of ['python-quality', 'java-quality', 'build', 'companion']) {
     for (const result of ['failure', 'cancelled', 'skipped', undefined]) {

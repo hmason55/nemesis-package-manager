@@ -1,7 +1,8 @@
 NEMESIS Package Manager release status
 
-Source checkout: local defaults remain 0.2.0; CI assigns each candidate its selected version.
-Successful main-branch builds publish experimental development prereleases.
-Stable publication requires an explicit version and exact commit, all quality gates,
-and complete verified artifacts. See docs/RELEASING.md.
-Copying a new USB installer alone does not update the installed manager APK.
+Source base version: 1.0.0.
+The next successful main pipeline publishes the first signed stable release.
+Later successful main pipelines increment the stable patch version automatically.
+All quality, exact-commit, signing, version-code, and artifact checks remain required.
+Obsolete development releases and ancestor build tags are pruned after stable publication.
+See docs/RELEASING.md. Copying USB files alone does not update the installed APK.

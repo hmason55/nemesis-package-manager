@@ -6,7 +6,7 @@ The registry site brings package discovery, version information, and the guides 
 
 Browse and install NEMESIS community packages from USB or the Cloud Registry on a compatible Gen5W head unit. Package Manager uses NEMESIS to install, update, launch, and uninstall packages; it does not replace NEMESIS Manager.
 
-**Requires NEMESIS already installed.** Development prereleases are experimental and debug signed. Check each community package's vehicle and firmware requirements before installing it.
+**Requires NEMESIS already installed.** Stable releases use the configured release signing certificate; PR and manual development builds remain debug signed. Check each community package's vehicle and firmware requirements before installing it.
 
 ![Illustrative Package Manager Installed screen with an example package selected](docs/images/manager-installed.svg)
 
@@ -88,7 +88,7 @@ Only install trusted releases: NEMESIS hooks and scripts run with root privilege
 
 ## Development
 
-Successful builds on `main` publish development prereleases with change notes, provenance, and SHA-256 checksums. Stable publication requires an explicit version/commit selection and all quality and artifact checks. PR builds and ordinary manual checks do not publish. See [release procedures](docs/RELEASING.md). Artifact filenames retain their existing names for compatibility.
+Successful builds on `main` publish signed stable releases, starting at `1.0.0` and incrementing the patch version automatically, with change notes, provenance, and SHA-256 checksums. Publication requires all quality, signing, exact-commit, and artifact checks. Obsolete development releases and ancestor build tags are pruned only after stable publication succeeds. PR builds and ordinary manual checks do not publish. See [release procedures](docs/RELEASING.md). Artifact filenames retain their existing names for compatibility.
 
 - [Build, tests, and releases](docs/BUILD-AND-TEST.md)
 - [Detailed workflow diagrams (optional reference)](docs/WORKFLOW-REFERENCE.md)

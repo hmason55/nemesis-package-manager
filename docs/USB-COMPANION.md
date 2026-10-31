@@ -22,7 +22,7 @@ Get the matching archive from [Releases](https://github.com/hmason55/nemesis-pac
 
 The executable includes Python and the UI assets. No Python, Node, pip packages, or separate web server is needed. Linux needs a glibc distribution compatible with Ubuntu 22.04 or newer; Alpine/musl and ARM are unsupported by these downloads. If needed, run `chmod +x nemesis-usb-companion`. Check the archive against the release's `SHA256SUMS`.
 
-The companion opens a browser automatically. Keep its terminal window open; Ctrl+C stops the local server. Closing the browser alone does not stop it. Release artifacts for Windows, Linux, and the head unit come from the same commit. Development prereleases and explicitly published stable releases follow the [release procedures](RELEASING.md).
+The companion opens a browser automatically. Keep its terminal window open; Ctrl+C stops the local server. Closing the browser alone does not stop it. Release artifacts for Windows, Linux, and the head unit come from the same commit. Main builds publish signed stable releases with automatic patch increments; manual development checks remain unpublished. Both follow the [release procedures](RELEASING.md).
 
 ## Use the UI
 

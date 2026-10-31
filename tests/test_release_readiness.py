@@ -2,7 +2,6 @@
 
 import base64
 import importlib.util
-import json
 import os
 import subprocess
 import sys
@@ -250,6 +249,23 @@ class VerifiedArtifactTests(unittest.TestCase):
 
 
 class WorkflowWiringTests(unittest.TestCase):
+    def test_main_stable_selection_is_serialized_and_cleanup_follows_publication(self):
+        workflow = self.workflow("build.yml")
+        lock = workflow["concurrency"]
+        self.assertIn("github.event_name == 'push'", lock["group"])
+        self.assertIn("inputs.publish_stable", lock["group"])
+        self.assertEqual(lock["cancel-in-progress"], "false")
+        jobs = workflow["jobs"]
+        policy = jobs["prepare"]["steps"][-1]["with"]["script"]
+        self.assertIn("nextStableVersion", policy)
+        self.assertIn("if (automatic ||", policy)
+        script = jobs["release"]["steps"][-1]["with"]["script"]
+        self.assertLess(
+            script.index("publish-release.cjs"),
+            script.index("prune-development-releases.cjs"),
+        )
+        self.assertIn("process.env.RELEASE_CHANNEL === 'stable'", script)
+
     def workflow(self, name):
         return yaml.load(
             (ROOT / ".github/workflows" / name).read_text(), Loader=yaml.BaseLoader

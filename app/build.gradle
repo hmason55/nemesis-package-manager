@@ -14,7 +14,7 @@ android {
         minSdk 19
         targetSdk 19
         versionCode Integer.parseInt(System.getenv('NEMESIS_VERSION_CODE') ?: '2')
-        versionName System.getenv('NEMESIS_RELEASE_VERSION') ?: '0.2.0'
+        versionName System.getenv('NEMESIS_RELEASE_VERSION') ?: '1.0.0'
     }
     compileOptions {
         sourceCompatibility JavaVersion.VERSION_1_7

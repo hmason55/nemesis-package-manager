@@ -22,6 +22,11 @@ on:
 permissions:
   contents: read
 
+# Lock version selection through publication, including explicit stable dispatches.
+concurrency:
+  group: package-manager-${{ ((github.event_name == 'push' && github.ref == 'refs/heads/main') || (github.event_name == 'workflow_dispatch' && inputs.publish_stable)) && 'stable' || github.run_id }}
+  cancel-in-progress: false
+
 jobs:
   prepare:
     runs-on: ubuntu-24.04
@@ -44,13 +49,18 @@ jobs:
             const fs = require('node:fs');
             const policy = require('./.github/scripts/release-policy.cjs');
             const base = fs.readFileSync('app/build.gradle', 'utf8').match(/versionName .*'(\d+\.\d+\.\d+)'/)[1];
+            const automatic = context.eventName === 'push' && context.ref === 'refs/heads/main';
+            const automaticVersion = automatic ? policy.nextStableVersion({base,
+              releases: await github.paginate(github.rest.repos.listReleases, {...context.repo, per_page: 100}),
+              sourceSha: context.sha, runId: context.runId}) : '';
             const release = policy.selectVersion({base, runNumber: Number(process.env.GITHUB_RUN_NUMBER),
+              automaticVersion,
               stableVersion: context.payload.inputs?.stable_version || '',
               candidateSha: context.payload.inputs?.candidate_sha || '', context});
             if (context.payload.inputs?.publish_stable === 'true' && release.channel !== 'stable') throw new Error('Stable publication requires a candidate version and commit');
             if (release.channel === 'stable') {
               await policy.assertMainCandidate({github, repo: context.repo, sourceSha: release.sourceSha});
-              if (context.payload.inputs?.publish_stable === 'true') await policy.assertStableReadiness({github, repo: context.repo, sourceSha: release.sourceSha});
+              if (automatic || context.payload.inputs?.publish_stable === 'true') await policy.assertStableReadiness({github, repo: context.repo, sourceSha: release.sourceSha});
             }
             for (const [name, value] of Object.entries({source_sha: release.sourceSha, version: release.version,
               version_code: release.versionCode, channel: release.channel})) core.setOutput(name, value);
@@ -182,3 +192,10 @@ jobs:
               channel: process.env.RELEASE_CHANNEL, quality: JSON.parse(process.env.RELEASE_QUALITY),
               versionCode: Number(process.env.RELEASE_VERSION_CODE),
               expectedFingerprint: process.env.NEMESIS_SIGNING_CERT_SHA256});
+            if (process.env.RELEASE_CHANNEL === 'stable') {
+              const removed = await require('./.github/scripts/prune-development-releases.cjs')({github,
+                repo: context.repo, version: process.env.RELEASE_VERSION, sourceSha: process.env.RELEASE_SOURCE_SHA,
+                expectedFingerprint: process.env.NEMESIS_SIGNING_CERT_SHA256});
+              await core.summary.addHeading('Obsolete development release cleanup')
+                .addRaw(JSON.stringify(removed, null, 2)).write();
+            }
