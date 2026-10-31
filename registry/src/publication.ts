@@ -8,6 +8,7 @@ import {
 } from "./types";
 import { github, installationToken } from "./github";
 import { audit } from "./security";
+import { publishingAllowed } from "./management";
 
 export async function publishValidated(env: Env, row: Submission) {
   requireValue(
@@ -34,6 +35,7 @@ export async function publishValidated(env: Env, row: Submission) {
     "Repository authorization suspended or redistribution consent missing",
     403,
   );
+  await publishingAllowed(env, row.publisher_id, repo.owner_id);
   const live = await github(
     "/repos/" + repo.full_name,
     await installationToken(env, repo.installation_id),
@@ -68,7 +70,7 @@ export async function publishValidated(env: Env, row: Submission) {
   );
   const result = await env.DB.batch([
     env.DB.prepare(
-      "INSERT INTO packages SELECT ?,?,? WHERE EXISTS(SELECT 1 FROM submissions s JOIN repositories r ON r.id=s.repository_id WHERE s.id=? AND s.status='review' AND r.active=1 AND r.consent_at>0 AND r.owner_id=? AND r.installation_id=?) ON CONFLICT(id) DO NOTHING",
+      "INSERT INTO packages SELECT ?,?,? WHERE EXISTS(SELECT 1 FROM submissions s JOIN repositories r ON r.id=s.repository_id WHERE s.id=? AND s.status='review' AND r.active=1 AND r.consent_at>0 AND r.owner_id=? AND r.installation_id=? AND NOT EXISTS(SELECT 1 FROM blocked_publishers WHERE publisher_id IN (s.publisher_id,r.owner_id))) ON CONFLICT(id) DO NOTHING",
     ).bind(
       row.package_id,
       row.repository_id,
@@ -78,7 +80,7 @@ export async function publishValidated(env: Env, row: Submission) {
       repo.installation_id,
     ),
     env.DB.prepare(
-      "UPDATE submissions SET status='approved',updated_at=? WHERE id=? AND status='review' AND EXISTS(SELECT 1 FROM repositories WHERE id=submissions.repository_id AND active=1 AND consent_at>0 AND owner_id=? AND installation_id=?) AND EXISTS(SELECT 1 FROM packages WHERE id=? COLLATE BINARY AND repository_id=?) AND NOT EXISTS(SELECT 1 FROM submissions WHERE package_id=? COLLATE NOCASE AND version=? AND status IN ('approved','withdrawn') AND id<>?)",
+      "UPDATE submissions SET status='approved',updated_at=? WHERE id=? AND status='review' AND EXISTS(SELECT 1 FROM repositories r WHERE r.id=submissions.repository_id AND r.active=1 AND r.consent_at>0 AND r.owner_id=? AND r.installation_id=? AND NOT EXISTS(SELECT 1 FROM blocked_publishers WHERE publisher_id IN (submissions.publisher_id,r.owner_id))) AND EXISTS(SELECT 1 FROM packages WHERE id=? COLLATE BINARY AND repository_id=?) AND NOT EXISTS(SELECT 1 FROM submissions WHERE package_id=? COLLATE NOCASE AND version=? AND status IN ('approved','withdrawn') AND id<>?)",
     ).bind(
       now(),
       row.id,

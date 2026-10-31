@@ -5,9 +5,11 @@ export type Route =
       category: string;
       sort: string;
       number: number;
+      publisher: string;
+      maxSize: string;
     }
   | { page: "package"; id: string; version: string }
-  | { page: "publish" | "moderate" | "help" }
+  | { page: "publish" | "moderate" | "help" | "settings" }
   | { page: "guides"; id: string; section: number };
 export function parseRoute(hash: string): Route {
   const [path, search = ""] = hash.replace(/^#/, "").split("?"),
@@ -32,17 +34,30 @@ export function parseRoute(hash: string): Route {
         category: "",
         sort: "name",
         number: 1,
+        publisher: "",
+        maxSize: "",
       };
     }
   }
-  if (path === "publish" || path === "moderate" || path === "help")
+  if (
+    path === "publish" ||
+    path === "moderate" ||
+    path === "help" ||
+    path === "settings"
+  )
     return { page: path };
   const number = Number(query.get("page") || 1);
   return {
     page: "packages",
     query: query.get("q") || "",
     category: query.get("category") || "",
-    sort: query.get("sort") === "recent" ? "recent" : "name",
+    sort: ["recent", "size"].includes(query.get("sort") || "")
+      ? query.get("sort")!
+      : "name",
+    publisher: query.get("publisher") || "",
+    maxSize: /^[1-9][0-9]*$/.test(query.get("max_size") || "")
+      ? query.get("max_size")!
+      : "",
     number: Number.isSafeInteger(number) && number > 0 ? number : 1,
   };
 }
@@ -51,11 +66,18 @@ export function catalogLink(
   category = "",
   sort = "name",
   page = 1,
+  publisher = "",
+  maxSize = "",
 ) {
-  return (
-    "#packages?" +
-    new URLSearchParams({ q: query, category, sort, page: String(page) })
-  );
+  const params = new URLSearchParams({
+    q: query,
+    category,
+    sort,
+    page: String(page),
+  });
+  if (publisher) params.set("publisher", publisher);
+  if (maxSize) params.set("max_size", maxSize);
+  return "#packages?" + params;
 }
 export function packageLink(id: string, version = "") {
   return (

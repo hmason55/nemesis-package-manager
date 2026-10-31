@@ -18,6 +18,7 @@ jobs:
       - run: npm ci
       - run: npm run check
       - run: npm test
+      - run: node --test tools/companion_search.test.cjs
       - run: npm run build
       - run: npm audit --audit-level=high
       - uses: actions/upload-artifact@v6

@@ -1,5 +1,7 @@
 # Cloud deployment status
 
+For the live-search, package-artwork and publisher-block update, apply D1 migration `0003_publisher_blocks_icons.sql` before deploying the new Worker. It adds only a blocklist table and nullable icon key; existing package versions and ZIP bytes are unchanged. Deploy the updated trusted validator from merged `main` before testing a new ZIP containing artwork. Pages publishes the matching website. An older Worker cannot expose the new Settings/management capabilities by itself.
+
 Staging was provisioned and tested on 2026-10-30 using authenticated Wrangler.
 Production has not been provisioned; complete the staging publishing and client
 acceptance checks before creating production resources.

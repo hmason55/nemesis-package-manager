@@ -1,4 +1,5 @@
-import { Env, Submission, requireValue } from "./types";
+import { Env, Submission, MAX_ZIP, requireValue } from "./types";
+import { iconUrl, serveIcon } from "./icons";
 const component = (value: string) =>
   encodeURIComponent(value).replace(
     /[!'()*]/g,
@@ -11,6 +12,7 @@ export function publicVersion(row: Submission, origin: string) {
     version: row.version,
     sha256: row.sha256,
     size: row.size,
+    icon_url: iconUrl(row, origin),
     release_id: row.release_id,
     asset_id: row.asset_id,
     download_url:
@@ -28,12 +30,26 @@ export async function catalog(request: Request, env: Env): Promise<Response> {
   if (!parts.length || !parts[0]) {
     const page = Math.max(1, Number(url.searchParams.get("page") || 1)),
       query = (url.searchParams.get("q") || "").slice(0, 160).toLowerCase(),
-      category = url.searchParams.get("category");
+      category = url.searchParams.get("category"),
+      publisher = (url.searchParams.get("publisher") || "")
+        .trim()
+        .toLowerCase(),
+      maximum = url.searchParams.get("max_size"),
+      maxSize = maximum ? Number(maximum) : null;
     const sort = url.searchParams.get("sort") || "name";
-    requireValue(["name", "recent"].includes(sort), "Invalid sort order");
+    requireValue(
+      ["name", "recent", "size"].includes(sort),
+      "Invalid sort order",
+    );
+    requireValue(publisher.length <= 100, "Invalid publisher");
+    requireValue(
+      maxSize === null ||
+        (Number.isSafeInteger(maxSize) && maxSize > 0 && maxSize <= MAX_ZIP),
+      "Invalid maximum download size",
+    );
     requireValue(Number.isSafeInteger(page) && page <= 10000, "Invalid page");
     const rows = await env.DB.prepare(
-      "SELECT p.*,r.full_name,u.login,(SELECT version FROM submissions WHERE package_id=p.id AND status='approved' ORDER BY updated_at DESC,id DESC LIMIT 1) AS latest_published_version,(SELECT MAX(updated_at) FROM submissions WHERE package_id=p.id AND status='approved') AS published_at,(SELECT COUNT(*) FROM submissions WHERE package_id=p.id AND status='approved') AS version_count FROM packages p JOIN repositories r ON r.id=p.repository_id LEFT JOIN publishers u ON u.id=r.owner_id WHERE EXISTS(SELECT 1 FROM submissions s WHERE s.package_id=p.id AND s.status='approved') ORDER BY p.id",
+      "SELECT p.*,r.full_name,r.owner_id,u.login,(SELECT version FROM submissions WHERE package_id=p.id AND status='approved' ORDER BY updated_at DESC,id DESC LIMIT 1) AS latest_published_version,(SELECT size FROM submissions WHERE package_id=p.id AND status='approved' ORDER BY updated_at DESC,id DESC LIMIT 1) AS latest_size,(SELECT icon_key FROM submissions WHERE package_id=p.id AND status='approved' ORDER BY updated_at DESC,id DESC LIMIT 1) AS latest_icon_key,(SELECT MAX(updated_at) FROM submissions WHERE package_id=p.id AND status='approved') AS published_at,(SELECT COUNT(*) FROM submissions WHERE package_id=p.id AND status='approved') AS version_count FROM packages p JOIN repositories r ON r.id=p.repository_id LEFT JOIN publishers u ON u.id=r.owner_id WHERE EXISTS(SELECT 1 FROM submissions s WHERE s.package_id=p.id AND s.status='approved') ORDER BY p.id",
     ).all<any>();
     const packages = rows.results.map((row) => ({
       id: row.id,
@@ -43,20 +59,53 @@ export async function catalog(request: Request, env: Env): Promise<Response> {
       latest_published_version: row.latest_published_version,
       published_at: row.published_at,
       version_count: row.version_count,
+      latest_size: row.latest_size,
+      publisher_id: row.owner_id,
+      avatar_url:
+        "https://avatars.githubusercontent.com/" +
+        "u/" +
+        row.owner_id +
+        "?s=80",
+      icon_url: iconUrl(
+        {
+          ...row,
+          package_id: row.id,
+          version: row.latest_published_version,
+          icon_key: row.latest_icon_key,
+        },
+        url.origin,
+      ),
     }));
     const categories = [
       ...new Set<string>(packages.flatMap((row) => row.categories)),
     ].sort((a, b) => a.localeCompare(b));
+    const publishers = [
+      ...new Set<string>(packages.map((row) => row.publisher)),
+    ].sort((a, b) => a.localeCompare(b));
     const filtered = packages.filter(
       (row) =>
-        (row.id + " " + row.name + " " + row.description)
+        [
+          row.id,
+          row.name,
+          row.description,
+          row.repository,
+          row.publisher,
+          ...row.categories,
+        ]
+          .join(" ")
           .toLowerCase()
           .includes(query) &&
-        (!category || row.categories.includes(category)),
+        (!category || row.categories.includes(category)) &&
+        (!publisher || row.publisher.toLowerCase() === publisher) &&
+        (maxSize === null || row.latest_size <= maxSize),
     );
     if (sort === "recent")
       filtered.sort(
         (a, b) => b.published_at - a.published_at || a.id.localeCompare(b.id),
+      );
+    else if (sort === "size")
+      filtered.sort(
+        (a, b) => a.latest_size - b.latest_size || a.id.localeCompare(b.id),
       );
     return Response.json({
       schema_version: 1,
@@ -65,12 +114,13 @@ export async function catalog(request: Request, env: Env): Promise<Response> {
       next_page: filtered.length > page * 50 ? page + 1 : null,
       total: filtered.length,
       categories,
+      publishers,
       sort,
     });
   }
   const [id, versions, version, download] = parts;
   const pkg = await env.DB.prepare(
-    "SELECT p.*,r.full_name FROM packages p JOIN repositories r ON r.id=p.repository_id WHERE p.id=?",
+    "SELECT p.*,r.full_name,r.owner_id FROM packages p JOIN repositories r ON r.id=p.repository_id WHERE p.id=?",
   )
     .bind(id)
     .first<any>();
@@ -82,6 +132,7 @@ export async function catalog(request: Request, env: Env): Promise<Response> {
       .bind(id, version)
       .first<Submission>();
     requireValue(row, "Approved version not found", 404);
+    if (download === "icon" && parts.length === 4) return serveIcon(env, row);
     if (download === "download" && parts.length === 4) {
       const object = await env.PACKAGES.get(row.object_key);
       requireValue(object, "Package object unavailable", 503);
@@ -114,6 +165,9 @@ export async function catalog(request: Request, env: Env): Promise<Response> {
     id: pkg.id,
     ...JSON.parse(pkg.metadata),
     repository: pkg.full_name,
+    avatar_url:
+      "https://avatars.githubusercontent.com/" + "u/" + pkg.owner_id + "?s=80",
+    icon_url: iconUrl(rows.results[0], url.origin),
     versions: rows.results.map((row) => publicVersion(row, url.origin)),
   });
 }

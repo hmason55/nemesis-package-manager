@@ -182,6 +182,12 @@ Installed versions come from NEMESIS manifests when readable. After a successful
 
 ## Illustrated online guides
 
+### Find packages as you type
+
+The registry website and Companion update search results as you type. Narrow the registry by category, GitHub publisher, or maximum download size, and sort by package name, publication date, or smallest download. Size refers to the latest published ZIP, not every historical version. Use the clear/reset controls to widen your search. Companion also searches packages already on the selected USB drive without contacting the registry.
+
+In the vehicle, the browser's **Search packages** field filters the current tab. Cloud browsing refreshes after a short pause; **Installed** remains available offline. **Filters** offers package type and sort order, while **Clear** resets search text. Compatibility declarations remain advisory and do not hide or block packages.
+
 Open [NEMESIS user and publisher guides](https://hmason55.github.io/nemesis-package-manager/#guides) for vehicle Settings/source choice, manual and registry USB preparation, compatibility warnings, and GitHub publisher onboarding. The hosted guides include labeled example illustrations and recovery steps. Package Manager itself retains its dedicated update workflow.
 
 ### Registry connection and publication

@@ -35,6 +35,7 @@ export interface Submission {
   sha256: string;
   size: number;
   object_key: string;
+  icon_key?: string | null;
   report: string;
   created_at: number;
 }

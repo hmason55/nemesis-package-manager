@@ -150,8 +150,8 @@ export const guides: Guide[] = [
       {
         title: "Find the right release",
         steps: [
-          "Use Packages search and category filters. Sort by name or recently published; recently published does not necessarily mean a newer version.",
-          "Open a package, check publisher and repository links, then select an exact approved version. Read Overview, Compatibility, Release notes, and Versions.",
+          "Start typing in Packages search to see results update automatically. Filter by category, publisher, or maximum download size; sort by name, recently published, or smallest download. Recently published does not necessarily mean a newer version.",
+          "Open a package, check publisher and repository links, then select an exact approved version. Read Overview, Compatibility, Release notes, and Versions. To compare support declarations with your device, optionally save a device profile in Settings; mismatches remain advisory.",
           "Download the installer ZIP for manual Companion import, browse the same release inside Companion, or use Cloud Registry in the vehicle.",
           "Check integrity information when sharing a package link. A withdrawn release stops new registry downloads and must not silently redirect you to another version.",
         ],
@@ -172,7 +172,7 @@ export const guides: Guide[] = [
         title: "Connect your GitHub repository",
         steps: [
           "Choose Publish → Sign in with GitHub. Authorize the registry App for your GitHub identity. Reloading the site may require signing in again because the registry token stays in memory.",
-          "Use the Install GitHub App link in the publisher screen. Select the account and only the public repositories you want to publish. The App requires read-only Contents and Metadata access.",
+          "Use Connect repository on GitHub in the publisher screen. Select the account and only the public repositories you want to publish. The App requires read-only Contents and Metadata access.",
           "Return to Publish and register the public owner/repository name. Your signed-in user must have write, maintain, or administrator permission on it.",
           "If the repository was transferred, App access removed, or permissions changed, restore the intended App installation/access and re-register to reauthorize publishing.",
         ],
@@ -192,7 +192,7 @@ export const guides: Guide[] = [
         title: "Confirm your submission and follow validation",
         steps: [
           "In Publish, choose the registered repository, release, and exact installer asset. When several ZIPs exist, explicitly select the right one.",
-          "Enter the exact internal ID/version, a useful name/description, categories, release notes, and optional compatibility declarations. Review the ZIP filename and destination release identity.",
+          "Enter the exact internal ID/version and a useful name/description. Expand More package details for optional categories, release notes, and compatibility declarations. A square icon.png at the repository root supplies a custom package icon; otherwise the GitHub publisher avatar is used. Review the ZIP filename and destination release identity.",
           "Acknowledge that you have permission to redistribute the ZIP through the registry, then submit at the final confirmation step.",
           "Follow status: Queued → Validating → Finishing publication → Published. Trusted validation downloads the exact asset, checks all archive bytes/identity, and never runs package scripts or repository code. Successful validation publishes automatically; no administrator approval is required.",
           "If validation fails, read the report and fix the artifact. Administrators can retry failed jobs. A rejected or corrected artifact may require a new release asset and version. A repository or publisher may have up to 20 active queued/validating/finishing jobs; if the queue is full, wait for jobs to finish before submitting more.",

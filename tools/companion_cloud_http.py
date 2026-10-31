@@ -28,6 +28,9 @@ def cloud_get(handler, route):
             query.get("q", [""])[0],
             query.get("category", [""])[0],
             int(query.get("page", ["1"])[0]),
+            publisher=query.get("publisher", [""])[0],
+            max_size=int(query["max_size"][0]) if query.get("max_size") else None,
+            sort=query.get("sort", ["name"])[0],
         )
     elif route.path == "/api/cloud/package":
         result = annotate(jobs.registry().package(query.get("id", [""])[0]), profile)

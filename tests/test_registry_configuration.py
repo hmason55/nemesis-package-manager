@@ -8,9 +8,38 @@ from unittest.mock import Mock, patch
 from tools.companion_server import CompanionServer
 from tools.registry_client import DEFAULT_REGISTRY_URL, RegistryClient
 from tools.usb_companion import main
+from urllib.parse import urlsplit, parse_qs
 
 
 class RegistryConfigurationTests(unittest.TestCase):
+    def test_catalog_filters_are_encoded_and_no_size_limit_is_implicit(self):
+        client = RegistryClient(DEFAULT_REGISTRY_URL)
+        client.json = Mock(return_value={"packages": []})
+        client.packages(
+            "a+b",
+            "Utilities",
+            2,
+            publisher="Publisher",
+            max_size=10485760,
+            sort="recent",
+        )
+        query = parse_qs(urlsplit(client.json.call_args.args[0]).query)
+        self.assertEqual(
+            query,
+            {
+                "q": ["a+b"],
+                "category": ["Utilities"],
+                "page": ["2"],
+                "publisher": ["Publisher"],
+                "max_size": ["10485760"],
+                "sort": ["recent"],
+            },
+        )
+        client.packages()
+        self.assertNotIn(
+            "max_size", parse_qs(urlsplit(client.json.call_args.args[0]).query)
+        )
+
     def test_https_initializes_only_when_explicitly_browsing_and_is_reused(self):
         opener = Mock()
         opener.open.side_effect = [

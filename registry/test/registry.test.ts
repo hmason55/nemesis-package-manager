@@ -58,6 +58,7 @@ beforeAll(async () => {
 beforeEach(async () => {
   bindings.ADMIN_IDS = "1";
   for (const table of [
+    "blocked_publishers",
     "artifact_parts",
     "artifact_uploads",
     "audit",
@@ -96,6 +97,204 @@ beforeEach(async () => {
   await bindings.PACKAGES.put("sha256/" + sha + ".zip", "zip");
 });
 describe("public catalog and moderation", () => {
+  it("blocks accounts and repository owners without introducing a publication gate", async () => {
+    await bindings.DB.prepare(
+      "INSERT INTO publishers VALUES(2,'blocked-user')",
+    ).run();
+    await bindings.DB.prepare(
+      "INSERT INTO repositories VALUES(11,'blocked-user/repo',21,2,1,1)",
+    ).run();
+    expect(
+      (await call("/v1/admin/publishers/2/block", "POST", { reason: "Abuse" }))
+        .status,
+    ).toBe(401);
+    expect(
+      (
+        await call(
+          "/v1/admin/publishers/1/block",
+          "POST",
+          { reason: "Self" },
+          token,
+        )
+      ).status,
+    ).toBe(400);
+    const stale = await bindings.DB.prepare(
+      "SELECT * FROM submissions WHERE id=?",
+    )
+      .bind(submission)
+      .first<any>();
+    await bindings.DB.prepare("UPDATE submissions SET publisher_id=2").run();
+    expect(
+      (
+        await call(
+          "/v1/admin/publishers/2/block",
+          "POST",
+          { reason: "Abusive publishing" },
+          token,
+        )
+      ).status,
+    ).toBe(200);
+    expect(
+      (
+        await (
+          await call("/v1/admin/blocks", "GET", undefined, token)
+        ).json<any[]>()
+      )[0].login,
+    ).toBe("blocked-user");
+    await expect(
+      publishValidated(bindings, { ...stale, publisher_id: 2 }),
+    ).rejects.toMatchObject({ status: 403 });
+    const repo = await bindings.DB.prepare(
+      "SELECT * FROM repositories WHERE id=11",
+    ).first<any>();
+    await expect(
+      createSubmission(bindings, repo, null, {}),
+    ).rejects.toMatchObject({ status: 403 });
+    await expect(createSubmission(bindings, repo, 1, {})).rejects.toMatchObject(
+      { status: 403 },
+    );
+    const userToken = "56".repeat(32);
+    await bindings.DB.prepare("INSERT INTO sessions VALUES(?,2,?,?)")
+      .bind(
+        await hash(userToken),
+        await seal(bindings, "github-token"),
+        now() + 3600,
+      )
+      .run();
+    expect(
+      (await call("/v1/publisher/me", "GET", undefined, userToken)).status,
+    ).toBe(403);
+    expect(
+      (
+        await call(
+          "/v1/admin/publishers/2/unblock",
+          "POST",
+          { reason: "Resolved" },
+          token,
+        )
+      ).status,
+    ).toBe(200);
+    expect(
+      (await call("/v1/publisher/me", "GET", undefined, userToken)).status,
+    ).toBe(200);
+    expect(
+      (
+        await bindings.DB.prepare("SELECT status FROM submissions WHERE id=?")
+          .bind(submission)
+          .first<any>()
+      ).status,
+    ).toBe("rejected");
+    expect(
+      (
+        await (
+          await call("/v1/admin/blocks", "GET", undefined, token)
+        ).json<any[]>()
+      ).length,
+    ).toBe(0);
+  });
+  it("cannot publish if a publisher is blocked during the external authorization check", async () => {
+    await bindings.DB.prepare("UPDATE submissions SET publisher_id=NULL").run();
+    const row = await bindings.DB.prepare(
+      "SELECT * FROM submissions WHERE id=?",
+    )
+      .bind(submission)
+      .first<any>();
+    vi.mocked(github).mockImplementationOnce(async () => {
+      await bindings.DB.prepare(
+        "INSERT INTO blocked_publishers VALUES(1,'Concurrent block',1,99)",
+      ).run();
+      return { id: 10, owner: { id: 1 }, private: false };
+    });
+    await expect(publishValidated(bindings, row)).rejects.toMatchObject({
+      status: 409,
+    });
+    expect(
+      (await call("/v1/packages/example.app/versions/1.2/download")).status,
+    ).toBe(404);
+  });
+  it("uploads private package icons and removes every public version without approval", async () => {
+    const raw = new Uint8Array(45);
+    raw.set([
+      137, 80, 78, 71, 13, 10, 26, 10, 0, 0, 0, 13, 73, 72, 68, 82, 0, 0, 0, 1,
+      0, 0, 0, 1,
+    ]);
+    const digest = Array.from(
+      new Uint8Array(await crypto.subtle.digest("SHA-256", raw)),
+      (v) => v.toString(16).padStart(2, "0"),
+    ).join("");
+    const upload = (checksum = digest, bytes = raw) =>
+      worker.fetch(
+        new Request(
+          "https://registry.test/internal/jobs/" + submission + "/icon",
+          {
+            method: "PUT",
+            headers: {
+              Authorization: "Bearer validator-secret",
+              "Content-Length": String(bytes.length),
+              "X-Checksum-SHA256": checksum,
+            },
+            body: bytes,
+          },
+        ),
+        bindings,
+      );
+    expect((await upload()).status).toBe(409);
+    await bindings.DB.prepare(
+      "UPDATE submissions SET status='validating'",
+    ).run();
+    expect((await upload("00".repeat(32))).status).toBe(400);
+    expect((await upload(digest, new Uint8Array(44))).status).toBe(400);
+    const oversized = raw.slice();
+    new DataView(oversized.buffer).setUint32(16, 513);
+    expect((await upload(digest, oversized)).status).toBe(400);
+    expect((await upload()).status).toBe(200);
+    expect(
+      (await call("/v1/packages/example.app/versions/1.2/icon")).status,
+    ).toBe(404);
+    expect(
+      (
+        await call(
+          "/internal/jobs/" + submission + "/complete",
+          "POST",
+          { package_id: "example.app", version: "1.2" },
+          "validator-secret",
+        )
+      ).status,
+    ).toBe(200);
+    const list = await (await call("/v1/packages")).json<any>();
+    expect(list.packages[0].icon_url).toBe(
+      "https://registry.test/v1/packages/example.app/versions/1.2/icon",
+    );
+    expect(list.packages[0].avatar_url).toBe(
+      "https://avatars.githubusercontent.com/u/1?s=80",
+    );
+    const icon = await call("/v1/packages/example.app/versions/1.2/icon");
+    expect(icon.status).toBe(200);
+    expect(icon.headers.get("Content-Type")).toBe("image/png");
+    expect(icon.headers.get("X-Content-Type-Options")).toBe("nosniff");
+    expect(new Uint8Array(await icon.arrayBuffer())).toEqual(raw);
+    await bindings.DB.prepare(
+      "INSERT INTO submissions(id,package_id,repository_id,publisher_id,release_id,asset_id,version,metadata,status,sha256,size,object_key,created_at,updated_at) SELECT ?,package_id,repository_id,publisher_id,31,41,'2.0',metadata,'approved',sha256,size,object_key,2,2 FROM submissions WHERE id=?",
+    )
+      .bind("98".repeat(32), submission)
+      .run();
+    expect(
+      (
+        await call(
+          "/v1/admin/packages/example.app/remove",
+          "POST",
+          { reason: "Broken package" },
+          token,
+        )
+      ).status,
+    ).toBe(200);
+    for (const suffix of ["1.2/icon", "1.2/download", "2.0/download"])
+      expect(
+        (await call("/v1/packages/example.app/versions/" + suffix)).status,
+      ).toBe(404);
+    await publishPending(bindings);
+    expect((await (await call("/v1/packages")).json<any>()).total).toBe(0);
+  });
   it("does not let a stale publication finisher restore older listing metadata", async () => {
     const stale = await bindings.DB.prepare(
       "SELECT * FROM submissions WHERE id=?",
@@ -377,6 +576,97 @@ describe("public catalog and moderation", () => {
     expect(empty.total).toBe(0);
     expect(empty.categories).toEqual(["utilities"]);
     expect((await call("/v1/packages?sort=unknown")).status).toBe(400);
+  });
+  it("combines publisher and size filters before pagination and keeps discovery facets", async () => {
+    await bindings.DB.prepare("UPDATE submissions SET status='approved'").run();
+    await bindings.DB.prepare(
+      "INSERT INTO publishers VALUES(2,'OtherOwner')",
+    ).run();
+    await bindings.DB.prepare(
+      "INSERT INTO repositories VALUES(11,'OtherOwner/tools',21,2,1,1)",
+    ).run();
+    for (let i = 0; i < 55; i++) {
+      const id = "extra." + String(i).padStart(2, "0"),
+        details = JSON.stringify({
+          ...metadata,
+          name: id,
+          categories: ["tools"],
+        });
+      await bindings.DB.prepare("INSERT INTO packages VALUES(?,11,?)")
+        .bind(id, details)
+        .run();
+      await bindings.DB.prepare(
+        "INSERT INTO submissions(id,package_id,repository_id,publisher_id,release_id,asset_id,version,metadata,status,sha256,size,object_key,report,created_at,updated_at) VALUES(?,?,11,2,30,?,'1.0',?,'approved',?,?,?,'validated',1,?)",
+      )
+        .bind(
+          String(i).padStart(64, "0"),
+          id,
+          i + 100,
+          details,
+          sha,
+          i + 10,
+          "sha256/" + sha + ".zip",
+          i + 10,
+        )
+        .run();
+    }
+    const result = await (
+      await call(
+        "/v1/packages?publisher=otherOWNER&category=tools&sort=size&page=2&max_size=64",
+      )
+    ).json<any>();
+    expect(result.total).toBe(55);
+    expect(result.packages.map((p: any) => p.id)).toEqual([
+      "extra.50",
+      "extra.51",
+      "extra.52",
+      "extra.53",
+      "extra.54",
+    ]);
+    expect(result.next_page).toBe(null);
+    expect(result.publishers).toEqual(["OtherOwner", "publisher"]);
+    expect(result.categories).toEqual(["tools", "utilities"]);
+    const small = await (
+      await call("/v1/packages?publisher=otherowner&max_size=12&sort=size")
+    ).json<any>();
+    expect(small.total).toBe(3);
+    expect(small.packages.map((p: any) => p.latest_size)).toEqual([10, 11, 12]);
+    const search = await (
+      await call("/v1/packages?q=otherowner%2Ftools&max_size=10")
+    ).json<any>();
+    expect(search.packages.map((p: any) => p.id)).toEqual(["extra.00"]);
+    await bindings.DB.prepare(
+      "UPDATE submissions SET status='withdrawn' WHERE repository_id=11",
+    ).run();
+    const withdrawn = await (
+      await call("/v1/packages?publisher=otherowner")
+    ).json<any>();
+    expect(withdrawn.total).toBe(0);
+    expect(withdrawn.publishers).toEqual(["publisher"]);
+  });
+  it("bounds download-size filters and uses the latest public version only", async () => {
+    await bindings.DB.prepare("UPDATE submissions SET status='approved'").run();
+    await bindings.DB.prepare(
+      "INSERT INTO submissions(id,package_id,repository_id,publisher_id,release_id,asset_id,version,metadata,status,sha256,size,object_key,report,created_at,updated_at) SELECT ?,package_id,repository_id,publisher_id,31,41,'2.0',metadata,'approved',sha256,100,object_key,report,2,2 FROM submissions WHERE id=?",
+    )
+      .bind("97".repeat(32), submission)
+      .run();
+    expect(
+      (await (await call("/v1/packages?max_size=3")).json<any>()).total,
+    ).toBe(0);
+    await bindings.DB.prepare(
+      "UPDATE submissions SET status='withdrawn' WHERE version='2.0'",
+    ).run();
+    expect(
+      (await (await call("/v1/packages?max_size=3")).json<any>()).packages[0]
+        .latest_size,
+    ).toBe(3);
+    for (const value of ["0", "-1", "2.5", "NaN", "Infinity", "536870913"]) {
+      expect((await call("/v1/packages?max_size=" + value)).status).toBe(400);
+    }
+    expect(
+      (await call("/v1/packages?publisher=" + "a".repeat(101))).status,
+    ).toBe(400);
   });
   it("rejects a second approved artifact for the same immutable version", async () => {
     await bindings.DB.prepare(

@@ -13,9 +13,21 @@ paths:
         - { name: q, in: query, schema: { type: string, maxLength: 160 } }
         - { name: category, in: query, schema: { type: string } }
         - {
+            name: publisher,
+            in: query,
+            description: Exact GitHub publisher login (case insensitive),
+            schema: { type: string, maxLength: 100 },
+          }
+        - {
+            name: max_size,
+            in: query,
+            description: Maximum ZIP bytes for the most recently published version; other versions may differ,
+            schema: { type: integer, minimum: 1, maximum: 536870912 },
+          }
+        - {
             name: sort,
             in: query,
-            schema: { type: string, enum: [name, recent], default: name },
+            schema: { type: string, enum: [name, recent, size], default: name },
           }
         - {
             name: page,
@@ -41,7 +53,13 @@ paths:
                   next_page: { type: [integer, "null"] }
                   total: { type: integer, minimum: 0 }
                   categories: { type: array, items: { type: string } }
-                  sort: { type: string, enum: [name, recent] }
+                  publishers:
+                    {
+                      type: array,
+                      items: { type: string },
+                      description: Publishers with publicly available packages; independent of active filters,
+                    }
+                  sort: { type: string, enum: [name, recent, size] }
         "304": { description: ETag unchanged }
   /v1/packages/{id}:
     parameters: [{ $ref: "#/components/parameters/Id" }]
@@ -100,6 +118,95 @@ paths:
             X-Checksum-SHA256: { schema: { type: string } }
           content:
             { application/zip: { schema: { type: string, format: binary } } }
+        "404": { $ref: "#/components/responses/NotFound" }
+  /v1/packages/{id}/versions/{version}/icon:
+    parameters:
+      [
+        { $ref: "#/components/parameters/Id" },
+        { $ref: "#/components/parameters/Version" },
+      ]
+    get:
+      operationId: getPackageIcon
+      responses:
+        "200":
+          description: Optional validated still PNG, maximum 256 KiB and 512 by 512 pixels. Only served while this exact version is public; no-store and nosniff.
+          content: { image/png: { schema: { type: string, format: binary } } }
+        "404": { $ref: "#/components/responses/NotFound" }
+  /v1/admin/blocks:
+    get:
+      operationId: listBlockedPublishers
+      security: [{ registrySession: [] }]
+      responses:
+        "200":
+          {
+            description: "Administrator-only array of publisher_id, login, reason, created_at and actor_id. Blocking prevents future publishing; existing published versions remain until separately removed.",
+          }
+  /v1/admin/publishers/{publisher_id}/{action}:
+    parameters:
+      - {
+          name: publisher_id,
+          in: path,
+          required: true,
+          schema: { type: integer, minimum: 1 },
+        }
+      - {
+          name: action,
+          in: path,
+          required: true,
+          schema: { type: string, enum: [block, unblock] },
+        }
+    post:
+      operationId: managePublisherBlock
+      security: [{ registrySession: [] }]
+      requestBody:
+        required: true
+        content:
+          {
+            application/json:
+              {
+                schema:
+                  {
+                    type: object,
+                    required: [reason],
+                    properties:
+                      {
+                        reason: { type: string, minLength: 1, maxLength: 2000 },
+                      },
+                  },
+              },
+          }
+      responses:
+        "200":
+          {
+            description: "Administrator-only block/unblock. Blocks stop pending work and new submissions by the GitHub user or repositories they own, including webhooks. Unblocking does not resume stopped work. Administrators cannot be blocked.",
+          }
+  /v1/admin/packages/{id}/remove:
+    parameters: [{ $ref: "#/components/parameters/Id" }]
+    post:
+      operationId: removePackage
+      security: [{ registrySession: [] }]
+      requestBody:
+        required: true
+        content:
+          {
+            application/json:
+              {
+                schema:
+                  {
+                    type: object,
+                    required: [reason],
+                    properties:
+                      {
+                        reason: { type: string, minLength: 1, maxLength: 2000 },
+                      },
+                  },
+              },
+          }
+      responses:
+        "200":
+          {
+            description: Administrator withdraws all public versions and stops pending submissions for this package. Registry downloads and icons stop immediately; existing client copies are unaffected.,
+          }
         "404": { $ref: "#/components/responses/NotFound" }
   /auth/start:
     get:
@@ -420,6 +527,13 @@ components:
                 id: { type: string },
                 repository: { type: string },
                 publisher: { type: string },
+                publisher_id: { type: integer, minimum: 1 },
+                avatar_url: { type: string, format: uri },
+                icon_url:
+                  {
+                    type: string,
+                    description: Optional public version icon URL; empty means use publisher avatar,
+                  },
                 latest_published_version:
                   {
                     type: string,
@@ -431,6 +545,13 @@ components:
                     description: Unix seconds of most recent publication,
                   },
                 version_count: { type: integer, minimum: 1 },
+                latest_size:
+                  {
+                    type: integer,
+                    minimum: 1,
+                    maximum: 536870912,
+                    description: ZIP bytes of the most recently published version,
+                  },
               },
           }
     Version:
@@ -453,6 +574,11 @@ components:
             sha256: { type: string, pattern: "^[a-f0-9]{64}$" }
             size: { type: integer, minimum: 1, maximum: 536870912 }
             download_url: { type: string, format: uri }
+            icon_url:
+              {
+                type: string,
+                description: Optional validated PNG URL; empty means use publisher avatar,
+              }
             release_id: { type: integer }
             asset_id: { type: integer }
     SubmissionInput:

@@ -47,6 +47,7 @@ def smoke(executable):
                     ("/", b"USB companion"),
                     ("/app.js", b"X-Companion-Token"),
                     ("/cloud.js", b"/api/cloud/start"),
+                    ("/cloud-search.js", b"NemesisCloudSearch"),
                     ("/style.css", b":root"),
                     ("/api/state", b"drives"),
                     (

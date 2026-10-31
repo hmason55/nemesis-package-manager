@@ -1,5 +1,13 @@
 # Cloud registry: development, deployment, and operation
 
+## Package artwork and publisher management
+
+Publishing requires a GitHub account with permission to publish from the connected public repository. Every valid release publishes automatically after technical checks; there is no maintainer approval queue. Maintainers can **Remove package** to withdraw every public version and stop pending submissions, or **Block repository owner** to prevent new publishing from that GitHub identity and its repositories. The API also checks a blocked submitting collaborator. Blocking alone leaves existing releases available; remove those separately when appropriate. Removal disables registry downloads and icons but cannot recall copies already downloaded. Unblocking permits future submissions without silently restarting stopped validation jobs. Publish a new release asset or ask an administrator to recover a stopped job when retrying the same asset.
+
+To add listing artwork, include an optional `icon.png` alongside `NEMESIS.data` inside the directly installable ZIP (including its supported common directory prefix). Use a still, non-interlaced PNG, at most **512 × 512 pixels** and **256 KiB**. The trusted validator checks PNG framing, CRCs, dimensions and bounded decompression, then copies the image into private hash-addressed R2 storage. Invalid supplied artwork fails validation; nothing executes. Public image URLs check the exact version's current publication status and stop working after withdrawal. Legacy releases without artwork use the publisher's GitHub avatar, with a local icon fallback if images cannot load. Existing approved ZIPs are never modified; add artwork in a new version.
+
+The website's **Settings** page stores optional appearance and device-profile preferences locally. Normal browsing and publishing require no profile configuration. Search updates as users type; category, publisher, maximum latest-version download size and sorting apply before pagination.
+
 The registry includes the GitHub Pages website (`website/`), Cloudflare Worker
 (`registry/`), D1 migrations, a private R2 package store, trusted Actions
 validation, and optional clients in both existing applications. The API contract
