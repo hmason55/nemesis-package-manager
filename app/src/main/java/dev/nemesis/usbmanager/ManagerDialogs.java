@@ -27,7 +27,7 @@ final class ManagerDialogs {
     }
     static Dialog show(final Activity activity, String title, String body, String positive,
                        final Runnable confirmed, String secondary, final Runnable secondaryAction) {
-        final Dialog dialog = new Dialog(activity);
+        final Dialog dialog = new Dialog(activity, android.R.style.Theme_Holo_Dialog);
         dialog.requestWindowFeature(Window.FEATURE_NO_TITLE);
         dialog.setTitle(title);
         LinearLayout root = new LinearLayout(activity);

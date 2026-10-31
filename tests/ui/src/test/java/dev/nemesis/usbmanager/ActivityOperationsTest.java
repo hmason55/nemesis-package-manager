@@ -112,7 +112,87 @@ public class ActivityOperationsTest {
     private void open() {
         controller = Robolectric.buildActivity(MainActivity.class).create().start().resume().visible();
         activity = controller.get();
+        Dialog source = ShadowDialog.getLatestDialog();
+        if (source != null && source.isShowing() && find(source.getWindow().getDecorView(), "Continue") != null) {
+            dialogClick("Continue");
+            ShadowLooper.idleMainLooper();
+        }
         await(() -> !((Boolean) field("busy")));
+    }
+
+    @Test public void firstRunPickerAcceptsSelectionBeforeAnyPackageScan() {
+        controller = Robolectric.buildActivity(MainActivity.class).create().start().resume().visible();
+        activity = controller.get();
+        Dialog source = ShadowDialog.getLatestDialog();
+        assertTrue(source.isShowing());
+        assertFalse((Boolean) field("busy"));
+        assertTrue("Startup must wait for the source choice", Commands.calls.isEmpty());
+        android.widget.RadioButton cloud = source.findViewById(1001);
+        android.widget.RadioButton usb = source.findViewById(1002);
+        cloud.performClick();
+        assertTrue(cloud.isChecked());
+        usb.performClick();
+        assertTrue(usb.isChecked());
+        dialogClick("Continue");
+        ShadowLooper.idleMainLooper();
+        assertFalse(source.isShowing());
+        await(() -> !((Boolean) field("busy")));
+        assertFalse(Commands.calls.isEmpty());
+    }
+
+    @Test public void cancellingFirstRunPickerStillLoadsPackages() {
+        controller = Robolectric.buildActivity(MainActivity.class).create().start().resume().visible();
+        activity = controller.get();
+        dialogClick("Cancel");
+        ShadowLooper.idleMainLooper();
+        await(() -> !((Boolean) field("busy")));
+        assertEquals(3, ((BaseAdapter) field("adapter")).getCount());
+    }
+
+    @Test public void sourceAndSettingsControlsStayReadableWithLightActivityTheme() {
+        controller = Robolectric.buildActivity(MainActivity.class);
+        controller.get().setTheme(android.R.style.Theme_Holo_Light_NoActionBar);
+        controller.create().start().resume().visible();
+        activity = controller.get();
+        Dialog source = ShadowDialog.getLatestDialog();
+        assertDarkControl(source.findViewById(1001));
+        assertDarkControl(source.findViewById(1002));
+        assertDarkControl(find(source.getWindow().getDecorView(), "Don’t show again on startup"));
+        dialogClick("Continue");
+        ShadowLooper.idleMainLooper();
+        await(() -> !((Boolean) field("busy")));
+        find(activity.findViewById(android.R.id.content), "Settings").performClick();
+        Dialog settings = ShadowDialog.getLatestDialog();
+        assertDarkControl(find(settings.getWindow().getDecorView(), MainActivity.DEFAULT_REGISTRY_URL));
+        assertDarkControl(find(settings.getWindow().getDecorView(), "Save"));
+        dialogClick("Cancel");
+        ShadowLooper.idleMainLooper();
+        await(() -> !((Boolean) field("busy")));
+        find(activity.findViewById(android.R.id.content), "Filters").performClick();
+        Dialog filters = ShadowDialog.getLatestDialog();
+        android.widget.Spinner type = findSpinner(filters.getWindow().getDecorView());
+        assertNotNull(type);
+        assertDarkControl((TextView) type.getAdapter().getView(0, null, type));
+    }
+
+    private android.widget.Spinner findSpinner(View view) {
+        if (view instanceof android.widget.Spinner) return (android.widget.Spinner) view;
+        if (view instanceof ViewGroup) {
+            ViewGroup group = (ViewGroup) view;
+            for (int i = 0; i < group.getChildCount(); i++) {
+                android.widget.Spinner found = findSpinner(group.getChildAt(i));
+                if (found != null) return found;
+            }
+        }
+        return null;
+    }
+
+    private void assertDarkControl(TextView control) {
+        assertNotNull(control);
+        assertTrue(android.graphics.Color.red(control.getCurrentTextColor()) > 200);
+        android.util.TypedValue background = new android.util.TypedValue();
+        assertTrue(control.getContext().getTheme().resolveAttribute(android.R.attr.colorBackground, background, true));
+        assertTrue(android.graphics.Color.red(background.data) < 100);
     }
 
     private TextView find(View view, String text) {

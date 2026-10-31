@@ -56,6 +56,7 @@ public final class MainActivity extends Activity {
     private boolean destroyed;
     private boolean cloudSelected;
     private boolean sourcePrompted;
+    private boolean choosingSource;
     static final String DEFAULT_REGISTRY_URL = "https://nemesis-registry-staging.hmason55.workers.dev";
     private String cloudQuery = "";
     private android.widget.EditText browserSearch;
@@ -87,7 +88,7 @@ public final class MainActivity extends Activity {
     private final int MUTED = Color.rgb(165, 178, 197);
     private final Runnable monitorOperation = new Runnable() {
         public void run() {
-            if (!resumed || destroyed || isFinishing()) return;
+            if (!resumed || destroyed || isFinishing() || choosingSource) return;
             updateButtons();
             if (operations.isRunning()) {
                 handler.postDelayed(this, 500);
@@ -111,8 +112,8 @@ public final class MainActivity extends Activity {
         super.onResume();
         resumed = true;
         handler.removeCallbacks(monitorOperation);
-        monitorOperation.run();
         if (!sourcePrompted && getPreferences(MODE_PRIVATE).getBoolean("show_source_prompt", !getPreferences(MODE_PRIVATE).contains("source"))) { sourcePrompted = true; chooseSource(); }
+        monitorOperation.run();
     }
     @Override protected void onPause() {
         resumed = false;
@@ -202,9 +203,9 @@ public final class MainActivity extends Activity {
             });
         }
         root.addView(categories);
-        browserSearch = new android.widget.EditText(this); browserSearch.setSingleLine(true); browserSearch.setTextSize(16);
+        browserSearch = keyboardField(this); browserSearch.setSingleLine(true); browserSearch.setTextSize(16);
         browserSearch.setHint("Search packages"); browserSearch.setContentDescription("Search packages by name, ID, description or publisher");
-        browserSearch.setImeOptions(android.view.inputmethod.EditorInfo.IME_ACTION_SEARCH | android.view.inputmethod.EditorInfo.IME_FLAG_NO_EXTRACT_UI);
+        browserSearch.setImeOptions(android.view.inputmethod.EditorInfo.IME_ACTION_SEARCH | android.view.inputmethod.EditorInfo.IME_FLAG_NO_EXTRACT_UI | android.view.inputmethod.EditorInfo.IME_FLAG_NO_FULLSCREEN);
         title.setTextSize(18); title.setLayoutParams(new LinearLayout.LayoutParams(dp(145), -2));
         header.addView(browserSearch, 1, new LinearLayout.LayoutParams(0, dp(48), 1));
         Button clearSearch = button("Clear"), filters = button("Filters");
@@ -338,17 +339,18 @@ public final class MainActivity extends Activity {
         return selected >= 0 && selected < items.size() ? items.get(selected) : null;
     }
     private void showBrowserFilters() {
-        LinearLayout panel = new LinearLayout(this); panel.setOrientation(LinearLayout.VERTICAL); panel.setPadding(dp(20),dp(8),dp(20),dp(8));
+        android.app.AlertDialog.Builder builder = new android.app.AlertDialog.Builder(this, android.app.AlertDialog.THEME_HOLO_DARK);
+        LinearLayout panel = new LinearLayout(builder.getContext()); panel.setOrientation(LinearLayout.VERTICAL); panel.setPadding(dp(20),dp(8),dp(20),dp(8));
         final android.widget.Spinner type = browserChoice(panel, "Package type", new String[] {"All types", "Installers", "Scripts"}, browserType);
         final android.widget.Spinner order = browserChoice(panel, "Sort packages", new String[] {"Name A–Z", "Name Z–A", "Smallest download first"}, browserSort);
         TextView hint = text("Filters apply to loaded packages in either source. Unknown sizes appear last. Installed and Scripts tabs remain available offline.",14,MUTED);panel.addView(hint);
-        final android.app.AlertDialog dialog = new android.app.AlertDialog.Builder(this).setTitle("Package filters").setView(panel).setPositiveButton("Apply",new android.content.DialogInterface.OnClickListener(){public void onClick(android.content.DialogInterface d,int which){browserType=type.getSelectedItemPosition();browserSort=order.getSelectedItemPosition();filterItems(null);}}).setNeutralButton("Reset",new android.content.DialogInterface.OnClickListener(){public void onClick(android.content.DialogInterface d,int which){browserType=0;browserSort=0;browserSearch.setText("");filterItems(null);}}).setNegativeButton("Cancel",null).create();
+        final android.app.AlertDialog dialog = builder.setTitle("Package filters").setView(panel).setPositiveButton("Apply",new android.content.DialogInterface.OnClickListener(){public void onClick(android.content.DialogInterface d,int which){browserType=type.getSelectedItemPosition();browserSort=order.getSelectedItemPosition();filterItems(null);}}).setNeutralButton("Reset",new android.content.DialogInterface.OnClickListener(){public void onClick(android.content.DialogInterface d,int which){browserType=0;browserSort=0;browserSearch.setText("");filterItems(null);}}).setNegativeButton("Cancel",null).create();
         dialogs.add(dialog);dialog.show();
     }
     private android.widget.Spinner browserChoice(LinearLayout panel,String label,String[] options,int selected) {
         TextView caption=text(label,16,TEXT);panel.addView(caption);
-        android.widget.Spinner choice=new android.widget.Spinner(this);choice.setContentDescription(label);
-        android.widget.ArrayAdapter<String> values=new android.widget.ArrayAdapter<String>(this,android.R.layout.simple_spinner_item,options);values.setDropDownViewResource(android.R.layout.simple_spinner_dropdown_item);choice.setAdapter(values);choice.setSelection(selected);panel.addView(choice);return choice;
+        android.widget.Spinner choice=new android.widget.Spinner(panel.getContext());choice.setContentDescription(label);
+        android.widget.ArrayAdapter<String> values=new android.widget.ArrayAdapter<String>(panel.getContext(),android.R.layout.simple_spinner_item,options);values.setDropDownViewResource(android.R.layout.simple_spinner_dropdown_item);choice.setAdapter(values);choice.setSelection(selected);panel.addView(choice);return choice;
     }
     private boolean unavailable() { return busy || operations.isRunning(); }
     private void updateButtons() {
@@ -594,7 +596,7 @@ public final class MainActivity extends Activity {
         handler.removeCallbacks(browserReload); final int generation = ++scanGeneration;
         final String address = registryUrl();
         scanRunning = true; busy = true; updateButtons();
-        final android.app.ProgressDialog loading = new android.app.ProgressDialog(this);
+        final android.app.ProgressDialog loading = new android.app.ProgressDialog(this, android.app.AlertDialog.THEME_HOLO_DARK);
         loading.setTitle("Loading published versions"); loading.setMessage("Checking the registry. Installed package management works offline."); loading.setCancelable(true);
         loading.setOnCancelListener(new android.content.DialogInterface.OnCancelListener() { public void onCancel(android.content.DialogInterface dialog) { if (generation == scanGeneration) { scanGeneration++;scanRunning=false;busy=false;updateButtons(); } } });
         dialogs.add(loading);loading.show();
@@ -645,7 +647,7 @@ public final class MainActivity extends Activity {
             labels[i] = item.version + " — " + PackagePresentation.action(item);
             if (item.remote == null && item.target != null) labels[i] += " — " + item.target.getParentFile().getName() + "/" + item.target.getName();
         }
-        android.app.AlertDialog dialog = new android.app.AlertDialog.Builder(this).setTitle("Choose package version").setItems(labels, new android.content.DialogInterface.OnClickListener() { public void onClick(android.content.DialogInterface dialog, int which) {
+        android.app.AlertDialog dialog = new android.app.AlertDialog.Builder(this, android.app.AlertDialog.THEME_HOLO_DARK).setTitle("Choose package version").setItems(labels, new android.content.DialogInterface.OnClickListener() { public void onClick(android.content.DialogInterface dialog, int which) {
             PackageScanner.Item item = versions.get(which);
             if (PackagePresentation.canInstall(item)) installVersion(item);
             else message("Version not selected", "This version is already installed, older, locked, or its installed state is unavailable. Choose a newer version or check its details.");
@@ -662,14 +664,16 @@ public final class MainActivity extends Activity {
     private void showSettings() { sourceDialog(true); }
     private void sourceDialog(final boolean settings) {
         if (!resumed || destroyed || operations.isRunning()) return;
-        final android.widget.LinearLayout panel = new android.widget.LinearLayout(this); panel.setOrientation(LinearLayout.VERTICAL); panel.setPadding(dp(20), dp(8), dp(20), dp(8));
-        final android.widget.RadioGroup sources = new android.widget.RadioGroup(this);
-        android.widget.RadioButton cloud = new android.widget.RadioButton(this); cloud.setId(1001); cloud.setText("Cloud Registry — browse and download packages"); sources.addView(cloud);
-        android.widget.RadioButton usb = new android.widget.RadioButton(this); usb.setId(1002); usb.setText("USB Storage — packages and scripts, available offline"); sources.addView(usb); sources.check(cloudSelected ? 1001 : 1002); panel.addView(sources);
-        final android.widget.CheckBox remember = new android.widget.CheckBox(this); remember.setText("Don’t show again on startup"); remember.setChecked(!getPreferences(MODE_PRIVATE).getBoolean("show_source_prompt", !getPreferences(MODE_PRIVATE).contains("source"))); panel.addView(remember);
-        LinearLayout advanced = new LinearLayout(this); advanced.setOrientation(LinearLayout.VERTICAL);
-        final android.widget.EditText address = new android.widget.EditText(this); address.setHint("Registry HTTPS address"); address.setSingleLine(true); address.setInputType(android.text.InputType.TYPE_CLASS_TEXT | android.text.InputType.TYPE_TEXT_VARIATION_URI); address.setText(registryUrl()); address.setContentDescription("Registry HTTPS address"); addSetting(advanced, address);
-        final android.widget.EditText profile = new android.widget.EditText(this); profile.setHint("Vehicle / firmware notes (optional)"); profile.setText(getPreferences(MODE_PRIVATE).getString("profile", android.os.Build.MODEL + " / " + android.os.Build.DISPLAY)); profile.setSingleLine(true); profile.setContentDescription("Vehicle / firmware notes (optional)"); addSetting(advanced, profile);
+        final android.app.AlertDialog.Builder builder = new android.app.AlertDialog.Builder(this, android.app.AlertDialog.THEME_HOLO_DARK);
+        final Context dialogContext = builder.getContext();
+        final android.widget.LinearLayout panel = new android.widget.LinearLayout(dialogContext); panel.setOrientation(LinearLayout.VERTICAL); panel.setPadding(dp(20), dp(8), dp(20), dp(8));
+        final android.widget.RadioGroup sources = new android.widget.RadioGroup(dialogContext);
+        android.widget.RadioButton cloud = new android.widget.RadioButton(dialogContext); cloud.setId(1001); cloud.setText("Cloud Registry — browse and download packages"); sources.addView(cloud);
+        android.widget.RadioButton usb = new android.widget.RadioButton(dialogContext); usb.setId(1002); usb.setText("USB Storage — packages and scripts, available offline"); sources.addView(usb); sources.check(cloudSelected ? 1001 : 1002); panel.addView(sources);
+        final android.widget.CheckBox remember = new android.widget.CheckBox(dialogContext); remember.setText("Don’t show again on startup"); remember.setChecked(!getPreferences(MODE_PRIVATE).getBoolean("show_source_prompt", !getPreferences(MODE_PRIVATE).contains("source"))); panel.addView(remember);
+        LinearLayout advanced = new LinearLayout(dialogContext); advanced.setOrientation(LinearLayout.VERTICAL);
+        final android.widget.EditText address = keyboardField(dialogContext); address.setHint("Registry HTTPS address"); address.setSingleLine(true); address.setInputType(android.text.InputType.TYPE_CLASS_TEXT | android.text.InputType.TYPE_TEXT_VARIATION_URI); address.setText(registryUrl()); address.setContentDescription("Registry HTTPS address"); addSetting(advanced, address);
+        final android.widget.EditText profile = keyboardField(dialogContext); profile.setHint("Vehicle / firmware notes (optional)"); profile.setText(getPreferences(MODE_PRIVATE).getString("profile", android.os.Build.MODEL + " / " + android.os.Build.DISPLAY)); profile.setSingleLine(true); profile.setContentDescription("Vehicle / firmware notes (optional)"); addSetting(advanced, profile);
         final android.widget.EditText vehicle = profileField(advanced, "Vehicle model (optional)", "device_vehicle");
         final android.widget.EditText firmware = profileField(advanced, "Firmware version (optional)", "device_firmware");
         final android.widget.EditText nemesis = profileField(advanced, "NEMESIS version (optional)", "device_nemesis");
@@ -677,12 +681,18 @@ public final class MainActivity extends Activity {
         panel.setFocusableInTouchMode(true);
         for (int i = 0; i < advanced.getChildCount(); i++) if (advanced.getChildAt(i) instanceof android.widget.EditText) configureEditor((android.widget.EditText) advanced.getChildAt(i));
         if (settings) panel.addView(advanced);
-        android.widget.ScrollView scroll = new android.widget.ScrollView(this); scroll.addView(panel);
-        final android.app.AlertDialog dialog = new android.app.AlertDialog.Builder(this).setTitle(settings ? "Package Manager settings" : "Choose package source").setView(scroll).setPositiveButton(settings ? "Save" : "Continue", null).setNegativeButton("Cancel", null).setNeutralButton(settings ? "Hide keyboard" : null, null).create();
+        android.widget.ScrollView scroll = new android.widget.ScrollView(dialogContext); scroll.addView(panel);
+        final android.app.AlertDialog dialog = builder.setTitle(settings ? "Package Manager settings" : "Choose package source").setView(scroll).setPositiveButton(settings ? "Save" : "Continue", null).setNegativeButton("Cancel", new android.content.DialogInterface.OnClickListener() {
+            public void onClick(android.content.DialogInterface ignored, int which) { hideKeyboard(panel); }
+        }).setNeutralButton(settings ? "Hide keyboard" : null, null).create();
+        dialog.setOnCancelListener(new android.content.DialogInterface.OnCancelListener() {
+            public void onCancel(android.content.DialogInterface ignored) { hideKeyboard(panel); }
+        });
+        choosingSource = true;
         dialogs.add(dialog); dialog.show();
         if (settings) dialog.getButton(android.app.AlertDialog.BUTTON_NEUTRAL).setOnClickListener(new View.OnClickListener() { public void onClick(View view) { hideKeyboard(panel); } });
         dialog.getWindow().setSoftInputMode(android.view.WindowManager.LayoutParams.SOFT_INPUT_STATE_ALWAYS_HIDDEN | android.view.WindowManager.LayoutParams.SOFT_INPUT_ADJUST_RESIZE);
-        dialog.setOnDismissListener(new android.content.DialogInterface.OnDismissListener() { public void onDismiss(android.content.DialogInterface ignored) { hideKeyboard(panel); dialogs.remove(dialog); } });
+        dialog.setOnDismissListener(new android.content.DialogInterface.OnDismissListener() { public void onDismiss(android.content.DialogInterface ignored) { hideKeyboard(panel); dialogs.remove(dialog); choosingSource = false; monitorOperation.run(); } });
         panel.requestFocus();
         dialog.getButton(android.app.AlertDialog.BUTTON_POSITIVE).setOnClickListener(new View.OnClickListener() { public void onClick(View view) {
             if (unavailable() && !scanRunning) { android.widget.Toast.makeText(MainActivity.this, "Wait for the current action to finish", android.widget.Toast.LENGTH_SHORT).show(); return; }
@@ -690,19 +700,39 @@ public final class MainActivity extends Activity {
             if (settings || nextCloud) try { new CloudPackageSource(address.getText().toString().trim(), getCacheDir()); } catch (Exception error) { address.setError("Enter the registry HTTPS address"); return; }
             cloudSelected = nextCloud; cloudQuery = nextCloud ? browserQuery : ""; browserSearch.setText(cloudQuery);
             android.content.SharedPreferences.Editor edit = getPreferences(MODE_PRIVATE).edit().putString("registry_url", address.getText().toString().trim()).putString("profile", profile.getText().toString());
-            edit.putString("source", cloudSelected ? "cloud" : "usb").putBoolean("show_source_prompt", !remember.isChecked()).putString("device_vehicle", vehicle.getText().toString().trim()).putString("device_firmware", firmware.getText().toString().trim()).putString("device_nemesis", nemesis.getText().toString().trim()); edit.apply(); hideKeyboard(panel); dialog.dismiss(); refreshBrowser();
+            edit.putString("source", cloudSelected ? "cloud" : "usb").putBoolean("show_source_prompt", !remember.isChecked()).putString("device_vehicle", vehicle.getText().toString().trim()).putString("device_firmware", firmware.getText().toString().trim()).putString("device_nemesis", nemesis.getText().toString().trim()); edit.apply(); hideKeyboard(panel); dialog.dismiss(); if (settings) refreshBrowser();
         } });
     }
     private android.widget.EditText profileField(LinearLayout panel, String label, String key) {
         TextView caption = text(label, 16, TEXT); panel.addView(caption);
-        android.widget.EditText input = new android.widget.EditText(this); input.setSingleLine(true); input.setContentDescription(label);
+        android.widget.EditText input = keyboardField(panel.getContext()); input.setSingleLine(true); input.setContentDescription(label);
         input.setText(getPreferences(MODE_PRIVATE).getString(key, "")); panel.addView(input); return input;
     }
     private void addSetting(LinearLayout panel, android.widget.EditText field) {
         panel.addView(text(field.getHint().toString(), 14, MUTED)); panel.addView(field);
     }
+    private android.widget.EditText keyboardField(Context context) {
+        android.widget.EditText field = new android.widget.EditText(context) {
+            @Override public boolean onKeyPreIme(int keyCode, android.view.KeyEvent event) {
+                // Some head-unit keyboards swallow Back without closing their input window.
+                if (keyCode == android.view.KeyEvent.KEYCODE_BACK) {
+                    if (event.getAction() == android.view.KeyEvent.ACTION_UP && !event.isCanceled()) hideKeyboard(this);
+                    return true;
+                }
+                return super.onKeyPreIme(keyCode, event);
+            }
+        };
+        return field;
+    }
     private void configureEditor(android.widget.EditText field) {
-        field.setImeOptions(android.view.inputmethod.EditorInfo.IME_ACTION_DONE | android.view.inputmethod.EditorInfo.IME_FLAG_NO_EXTRACT_UI);
+        field.setImeOptions(android.view.inputmethod.EditorInfo.IME_ACTION_DONE | android.view.inputmethod.EditorInfo.IME_FLAG_NO_EXTRACT_UI | android.view.inputmethod.EditorInfo.IME_FLAG_NO_FULLSCREEN);
+        field.setOnKeyListener(new View.OnKeyListener() {
+            public boolean onKey(View view, int keyCode, android.view.KeyEvent event) {
+                if (keyCode != android.view.KeyEvent.KEYCODE_ENTER) return false;
+                if (event.getAction() == android.view.KeyEvent.ACTION_UP) hideKeyboard(view);
+                return true;
+            }
+        });
         field.setOnEditorActionListener(new TextView.OnEditorActionListener() {
             public boolean onEditorAction(TextView view, int actionId, android.view.KeyEvent event) {
                 if (actionId == android.view.inputmethod.EditorInfo.IME_ACTION_DONE || (event != null && event.getKeyCode() == android.view.KeyEvent.KEYCODE_ENTER)) {
@@ -713,20 +743,24 @@ public final class MainActivity extends Activity {
         });
     }
     private void hideKeyboard(View view) {
-        android.view.inputmethod.InputMethodManager keyboard = (android.view.inputmethod.InputMethodManager) getSystemService(INPUT_METHOD_SERVICE);
-        if (keyboard != null) keyboard.hideSoftInputFromWindow(view.getWindowToken(), 0);
         ViewGroup root = (ViewGroup) view.getRootView();
+        View focused = root.findFocus();
+        android.os.IBinder token = focused == null ? view.getWindowToken() : focused.getWindowToken();
+        // Release the editor before hiding the IME so a focus update cannot reopen it.
         int focusability = root.getDescendantFocusability();
         root.setDescendantFocusability(ViewGroup.FOCUS_BLOCK_DESCENDANTS);
+        if (focused != null) focused.clearFocus();
         root.setFocusableInTouchMode(true); root.requestFocus();
         root.setDescendantFocusability(focusability);
+        android.view.inputmethod.InputMethodManager keyboard = (android.view.inputmethod.InputMethodManager) view.getContext().getSystemService(INPUT_METHOD_SERVICE);
+        if (keyboard != null) keyboard.hideSoftInputFromWindow(token, 0);
     }
     private String compatibilityWarning(PackageRecord record) {
         return CompatibilityAdvisory.describe(record, getPreferences(MODE_PRIVATE).getString("device_vehicle", ""), getPreferences(MODE_PRIVATE).getString("device_firmware", ""), getPreferences(MODE_PRIVATE).getString("device_nemesis", ""));
     }
     private void download(final PackageScanner.Item selectedItem) {
         busy = true; updateButtons(); downloadCancelled.set(false);
-        final android.app.ProgressDialog dialog = new android.app.ProgressDialog(this); dialog.setTitle("Download " + selectedItem.title); dialog.setMessage("Verifying published release…"); dialog.setProgressStyle(android.app.ProgressDialog.STYLE_HORIZONTAL); dialog.setMax(100); dialog.setCancelable(false);
+        final android.app.ProgressDialog dialog = new android.app.ProgressDialog(this, android.app.AlertDialog.THEME_HOLO_DARK); dialog.setTitle("Download " + selectedItem.title); dialog.setMessage("Verifying published release…"); dialog.setProgressStyle(android.app.ProgressDialog.STYLE_HORIZONTAL); dialog.setMax(100); dialog.setCancelable(false);
         dialog.setButton(android.content.DialogInterface.BUTTON_NEGATIVE, "Cancel download", new android.content.DialogInterface.OnClickListener() { public void onClick(android.content.DialogInterface d, int which) { downloadCancelled.set(true); } });
         dialogs.add(dialog); dialog.show();
         new Thread(new Runnable() { public void run() {
