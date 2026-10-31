@@ -285,6 +285,37 @@ paths:
               description: "GitHub ID, login, administrator flag, and app installation URL",
             },
         }
+  /v1/publisher/packages:
+    get:
+      operationId: publisherPackages
+      security: [{ registrySession: [] }]
+      responses:
+        "200":
+          description: Packages personally published by the signed-in GitHub user that still have public versions. Repository registration alone does not grant removal rights. Returns id, repository_id, repository, metadata, and published_versions once per package.
+        "401": { description: Sign-in required }
+        "403": { description: Publisher account blocked }
+  /v1/publisher/packages/{id}/remove:
+    parameters: [{ $ref: "#/components/parameters/Id" }]
+    post:
+      operationId: removePublisherPackage
+      security: [{ registrySession: [] }]
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [reason]
+              properties:
+                reason: { type: string, minLength: 1, maxLength: 2000 }
+      responses:
+        "200":
+          description: Withdraw every published version and stop pending submissions in the owning repository, retaining package ID ownership, audit history and artifacts. Requires a successful personal publication and fresh GitHub repository authorization. GitHub releases and offline copies are unaffected. Maintainers may remove any package through the separate administrator route.
+        "400": { description: A nonblank reason is required }
+        "401": { description: Sign-in required }
+        "403":
+          description: Package not personally published by this user or repository authorization revoked
+        "404": { description: No public or pending package remains }
   /v1/publisher/repositories:
     get:
       operationId: publisherRepositories

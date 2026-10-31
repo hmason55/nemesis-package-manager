@@ -172,6 +172,8 @@ they conflict; read the warning before confirming.
 
 ## Withdrawal, backups, and incident response
 
+Signed-in publishers use **Publish > My published packages > Unpublish package** to withdraw packages they have personally published successfully. A repository registration or pending submission alone grants no removal rights. The publisher API verifies publication history against the session's GitHub ID and rechecks current GitHub repository permission, owner, and App installation. Its mutation is scoped to that package's owning repository. Maintainers retain the separate administrator route for any package. Both paths withdraw published versions, reject pending work, retain the package ID and audit trail, and leave GitHub releases and offline copies intact.
+
 Withdraw a version in **Manage registry**. Fresh API discovery excludes it immediately;
 metadata caches may retain it for up to 60 seconds. Its download endpoint checks
 approval on every request and is not cached. Existing downloads/offline copies

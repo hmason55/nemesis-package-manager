@@ -209,6 +209,15 @@ export const guides: Guide[] = [
         note: "Published version bytes are immutable. Use a new version when bytes change. Withdrawal stops new registry discovery/downloads; it does not uninstall packages or erase existing offline copies.",
       },
       {
+        title: "Unpublish your packages",
+        steps: [
+          "Sign in with the GitHub account that successfully published the package. Open Publish → My published packages and choose Unpublish package.",
+          "Confirm that all published versions will be withdrawn and pending publication stopped, then enter a reason. Only personally published packages are eligible; repository registration or collaboration alone is insufficient. Current GitHub repository permission and authorization are checked again.",
+          "Registry downloads stop, but GitHub releases, stored artifacts, audit history, package ID ownership, and existing offline copies remain. Published version bytes cannot be replaced. A newly published version can make the package visible again.",
+        ],
+        note: "Maintainers can use Manage registry → Remove package for any package. Unpublishing does not uninstall packages from vehicles.",
+      },
+      {
         title: "Synchronize and declare support",
         steps: [
           "New release webhooks can create submissions for registered packages. The scheduled synchronization is not instant; use the publisher’s manual synchronization/asset selection when appropriate.",

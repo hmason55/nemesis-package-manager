@@ -34,6 +34,14 @@ Validation reads the archive and checks paths, sizes, corruption, and exact iden
 
 See the [online publisher walkthrough](https://hmason55.github.io/nemesis-package-manager/#guides/publish) for onboarding and recovery, [supported layouts](RELEASE-LAYOUTS.md) for local USB formats, and [registry operation](CLOUD-REGISTRY.md) for deployment and validation details.
 
+## Unpublish your packages
+
+Sign in with the GitHub account that published the package and open **Publish > My published packages**. Choose **Unpublish package**, confirm the package ID and scope, and supply a reason. The registry withdraws all published versions and stops pending submissions for that package in its owning repository.
+
+Publishers can remove only packages they have personally published successfully; registering or collaborating on a repository alone does not grant this right. The server also rechecks current GitHub publishing permissions and repository authorization. Maintainers retain **Manage registry > Remove package** for any package.
+
+Unpublishing stops new registry downloads and icons. It does not delete GitHub releases, recall offline copies, uninstall vehicle packages, erase audit records, or release ownership of the package ID. Published versions remain immutable. A later newly published version can make the package visible again.
+
 ## If something goes wrong
 
 | What you see | Next step |
