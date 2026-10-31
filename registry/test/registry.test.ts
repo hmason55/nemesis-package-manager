@@ -97,6 +97,82 @@ beforeEach(async () => {
   await bindings.PACKAGES.put("sha256/" + sha + ".zip", "zip");
 });
 describe("public catalog and moderation", () => {
+  it("enforces blocked release authors and webhook actors through automatic publication", async () => {
+    const repo = await bindings.DB.prepare(
+      "SELECT * FROM repositories WHERE id=10",
+    ).first<any>();
+    const input = {
+      package_id: "actor.app",
+      version: "1",
+      metadata,
+      release_id: 31,
+      asset_id: 41,
+    };
+    const release = {
+      id: 31,
+      author: { id: 2 },
+      draft: false,
+      assets: [{ id: 41, name: "test.zip", size: 3, state: "uploaded" }],
+    };
+    await bindings.DB.prepare(
+      "INSERT INTO blocked_publishers VALUES(2,'Blocked release author',1,1)",
+    ).run();
+    vi.mocked(github).mockResolvedValueOnce(release);
+    await expect(
+      createSubmission(bindings, repo, 1, input),
+    ).rejects.toMatchObject({ status: 403 });
+    await bindings.DB.prepare(
+      "INSERT INTO blocked_publishers VALUES(3,'Blocked event actor',1,1)",
+    ).run();
+    vi.mocked(github).mockResolvedValueOnce({ ...release, author: { id: 4 } });
+    await expect(
+      createSubmission(bindings, repo, null, input, 3),
+    ).rejects.toMatchObject({ status: 403 });
+    await bindings.DB.prepare(
+      "DELETE FROM blocked_publishers WHERE publisher_id=3",
+    ).run();
+    vi.mocked(github).mockResolvedValueOnce({ ...release, author: { id: 4 } });
+    const created = await createSubmission(bindings, repo, null, input, 3);
+    await bindings.DB.prepare(
+      "UPDATE submissions SET status='review',sha256=?,size=3,object_key=? WHERE id=?",
+    )
+      .bind(sha, "sha256/" + sha + ".zip", created.id)
+      .run();
+    const row = await bindings.DB.prepare(
+      "SELECT * FROM submissions WHERE id=?",
+    )
+      .bind(created.id)
+      .first<any>();
+    expect(row.source_actor_id).toBe(3);
+    expect(row.release_author_id).toBe(4);
+    vi.mocked(github).mockImplementationOnce(async () => {
+      await bindings.DB.prepare(
+        "INSERT INTO blocked_publishers VALUES(3,'Concurrent event-actor block',1,1)",
+      ).run();
+      return { id: 10, owner: { id: 1 }, private: false };
+    });
+    await expect(publishValidated(bindings, row)).rejects.toMatchObject({
+      status: 409,
+    });
+    expect(
+      await bindings.DB.prepare(
+        "SELECT * FROM packages WHERE id='actor.app'",
+      ).first(),
+    ).toBe(null);
+    await call(
+      "/v1/admin/publishers/4/block",
+      "POST",
+      { reason: "Block release creator" },
+      token,
+    );
+    expect(
+      (
+        await bindings.DB.prepare("SELECT status FROM submissions WHERE id=?")
+          .bind(created.id)
+          .first<any>()
+      ).status,
+    ).toBe("rejected");
+  });
   it("blocks accounts and repository owners without introducing a publication gate", async () => {
     await bindings.DB.prepare(
       "INSERT INTO publishers VALUES(2,'blocked-user')",
@@ -1004,6 +1080,7 @@ describe("authentication and ingestion", () => {
   it("deduplicates signed release deliveries", async () => {
     const input = {
         action: "published",
+        sender: { id: 77 },
         repository: { id: 10 },
         release: { id: 31 },
       },
@@ -1034,6 +1111,13 @@ describe("authentication and ingestion", () => {
       (await call("/webhooks/github", "POST", input, undefined, headers))
         .status,
     ).toBe(202);
+    expect(
+      (
+        await bindings.DB.prepare(
+          "SELECT actor_id FROM release_events",
+        ).first<any>()
+      ).actor_id,
+    ).toBe(77);
     expect(
       (
         await bindings.DB.prepare(

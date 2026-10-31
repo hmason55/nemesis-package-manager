@@ -47,6 +47,7 @@ export async function createSubmission(
   repo: any,
   publisher: number | null,
   input: any,
+  eventActor: number | null = null,
 ) {
   const repositoryOwner =
     repo.owner_id ??
@@ -91,6 +92,11 @@ export async function createSubmission(
       token,
     );
   requireValue(!release.draft, "Draft releases cannot be published");
+  const releaseAuthor =
+    Number.isSafeInteger(release.author?.id) && release.author.id > 0
+      ? release.author.id
+      : null;
+  await publishingAllowed(env, eventActor, releaseAuthor);
   const asset = release.assets.find(
     (a: any) => a.id === Number(input.asset_id),
   );
@@ -110,7 +116,7 @@ export async function createSubmission(
   if (duplicate) return { id: duplicate.id, existing: true };
   const submission = random();
   const inserted = await env.DB.prepare(
-    "INSERT INTO submissions(id,package_id,repository_id,publisher_id,release_id,asset_id,version,metadata,status,created_at,updated_at) SELECT ?,?,?,?,?,?,?,?,'queued',?,? WHERE NOT EXISTS(SELECT 1 FROM blocked_publishers WHERE publisher_id IN (?,?)) AND (SELECT COUNT(*) FROM submissions WHERE repository_id=? AND status IN ('queued','validating','review'))<20 AND (? IS NULL OR (SELECT COUNT(*) FROM submissions WHERE publisher_id=? AND status IN ('queued','validating','review'))<20)",
+    "INSERT INTO submissions(id,package_id,repository_id,publisher_id,release_id,asset_id,version,metadata,status,created_at,updated_at,source_actor_id,release_author_id) SELECT ?,?,?,?,?,?,?,?,'queued',?,?,?,? WHERE NOT EXISTS(SELECT 1 FROM blocked_publishers WHERE publisher_id IN (?,?,?,?)) AND (SELECT COUNT(*) FROM submissions WHERE repository_id=? AND status IN ('queued','validating','review'))<20 AND (? IS NULL OR (SELECT COUNT(*) FROM submissions WHERE publisher_id=? AND status IN ('queued','validating','review'))<20)",
   )
     .bind(
       submission,
@@ -123,8 +129,12 @@ export async function createSubmission(
       JSON.stringify(details),
       now(),
       now(),
+      eventActor,
+      releaseAuthor,
       publisher,
       repositoryOwner ?? null,
+      eventActor,
+      releaseAuthor,
       repo.id,
       publisher,
       publisher,

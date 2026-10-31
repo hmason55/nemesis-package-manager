@@ -52,8 +52,15 @@ export async function manage(
           "INSERT INTO blocked_publishers VALUES(?,?,?,?) ON CONFLICT(publisher_id) DO UPDATE SET reason=excluded.reason,created_at=excluded.created_at,actor_id=excluded.actor_id",
         ).bind(id, reason, now(), user.publisher_id),
         env.DB.prepare(
-          "UPDATE submissions SET status='rejected',report=?,updated_at=? WHERE status IN ('queued','validating','review') AND (publisher_id=? OR repository_id IN (SELECT id FROM repositories WHERE owner_id=?))",
-        ).bind("Publishing stopped: account blocked. " + reason, now(), id, id),
+          "UPDATE submissions SET status='rejected',report=?,updated_at=? WHERE status IN ('queued','validating','review') AND (publisher_id=? OR source_actor_id=? OR release_author_id=? OR repository_id IN (SELECT id FROM repositories WHERE owner_id=?))",
+        ).bind(
+          "Publishing stopped: account blocked. " + reason,
+          now(),
+          id,
+          id,
+          id,
+          id,
+        ),
       ]);
     } else
       await env.DB.prepare(

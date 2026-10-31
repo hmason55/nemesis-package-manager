@@ -36,6 +36,8 @@ export interface Submission {
   size: number;
   object_key: string;
   icon_key?: string | null;
+  source_actor_id?: number | null;
+  release_author_id?: number | null;
   report: string;
   created_at: number;
 }
