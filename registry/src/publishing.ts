@@ -11,6 +11,7 @@ import {
 } from "./types";
 import { session, isAdmin, body, audit, random, service } from "./security";
 import { multipart } from "./uploads";
+import { publishValidated, publicationFailure } from "./publication";
 import {
   github,
   checkRepository,
@@ -48,6 +49,11 @@ export async function createSubmission(
   const id = packageId(input.package_id),
     version = versionText(input.version),
     details = metadata(input.metadata);
+  requireValue(
+    id.toLowerCase() !== "usb.package.manager",
+    "Package Manager uses its dedicated self-update workflow",
+    403,
+  );
   const owner = await env.DB.prepare(
     "SELECT id,repository_id FROM packages WHERE id=?",
   )
@@ -93,8 +99,8 @@ export async function createSubmission(
     .first<any>();
   if (duplicate) return { id: duplicate.id, existing: true };
   const submission = random();
-  await env.DB.prepare(
-    "INSERT INTO submissions(id,package_id,repository_id,publisher_id,release_id,asset_id,version,metadata,status,created_at,updated_at) VALUES(?,?,?,?,?,?,?,?,'queued',?,?)",
+  const inserted = await env.DB.prepare(
+    "INSERT INTO submissions(id,package_id,repository_id,publisher_id,release_id,asset_id,version,metadata,status,created_at,updated_at) SELECT ?,?,?,?,?,?,?,?,'queued',?,? WHERE (SELECT COUNT(*) FROM submissions WHERE repository_id=? AND status IN ('queued','validating','review'))<20 AND (? IS NULL OR (SELECT COUNT(*) FROM submissions WHERE publisher_id=? AND status IN ('queued','validating','review'))<20)",
   )
     .bind(
       submission,
@@ -107,8 +113,16 @@ export async function createSubmission(
       JSON.stringify(details),
       now(),
       now(),
+      repo.id,
+      publisher,
+      publisher,
     )
     .run();
+  requireValue(
+    inserted.meta.changes === 1,
+    "Pending submission limit reached; wait for validation to finish",
+    429,
+  );
   await audit(env, publisher || "webhook", "submission_created", submission);
   // A dispatch failure leaves a durable queued job for the scheduled retry.
   try {
@@ -246,73 +260,7 @@ export async function admin(request: Request, env: Env) {
     input = await body(request),
     report = String(input.reason || "").slice(0, 2000);
   if (action === "approve") {
-    requireValue(
-      row.status === "review" && row.object_key && row.sha256,
-      "Only validated submissions can be approved",
-      409,
-    );
-    const repo = await env.DB.prepare(
-      "SELECT * FROM repositories WHERE id=? AND active=1",
-    )
-      .bind(row.repository_id)
-      .first<any>();
-    requireValue(repo, "Repository authorization suspended", 403);
-    const live = await github(
-      "/repos/" + repo.full_name,
-      await installationToken(env, repo.installation_id),
-    );
-    requireValue(
-      live.id === repo.id &&
-        live.owner.id === repo.owner_id &&
-        live.private === false,
-      "Repository authorization changed",
-      403,
-    );
-    const object = await env.PACKAGES.head(row.object_key);
-    requireValue(
-      object && object.size === row.size,
-      "Validated artifact is unavailable",
-      409,
-    );
-    const claim = await env.DB.prepare(
-      "SELECT id,repository_id FROM packages WHERE id=?",
-    )
-      .bind(row.package_id)
-      .first<any>();
-    requireValue(
-      !claim || claim.repository_id === row.repository_id,
-      "Package ID already reserved",
-      409,
-    );
-    requireValue(
-      !claim || claim.id === row.package_id,
-      "Use the exact case of the registered package ID",
-      409,
-    );
-    const result = await env.DB.batch([
-      env.DB.prepare(
-        "INSERT INTO packages VALUES(?,?,?) ON CONFLICT(id) DO NOTHING",
-      ).bind(row.package_id, row.repository_id, row.metadata),
-      env.DB.prepare(
-        "UPDATE submissions SET status='approved',updated_at=? WHERE id=? AND status='review' AND EXISTS(SELECT 1 FROM packages WHERE id=? COLLATE BINARY AND repository_id=?) AND NOT EXISTS(SELECT 1 FROM submissions WHERE package_id=? COLLATE NOCASE AND version=? AND status IN ('approved','withdrawn') AND id<>?)",
-      ).bind(
-        now(),
-        row.id,
-        row.package_id,
-        row.repository_id,
-        row.package_id,
-        row.version,
-        row.id,
-      ),
-      env.DB.prepare(
-        "UPDATE packages SET metadata=? WHERE id=? AND repository_id=? AND EXISTS(SELECT 1 FROM submissions WHERE id=? AND status='approved')",
-      ).bind(row.metadata, row.package_id, row.repository_id, row.id),
-    ]);
-    requireValue(
-      result[1].meta.changes === 1,
-      "Approval conflicted with another submission",
-      409,
-    );
+    await publishValidated(env, row);
   } else {
     const allowed =
       action === "withdraw"
@@ -429,7 +377,17 @@ export async function validator(request: Request, env: Env) {
       )
       .run();
     await audit(env, "validator", "validation_passed", row.id);
-    return Response.json({ ok: true });
+    try {
+      await publishValidated(env, { ...row, status: "review" });
+    } catch (error) {
+      const status = await publicationFailure(env, row.id, error);
+      return Response.json(
+        { ok: status !== "failed", status },
+        { status: 202 },
+      );
+    }
+    await audit(env, "validator", "published", row.id);
+    return Response.json({ ok: true, status: "approved" });
   }
   if (request.method === "POST" && route[2] === "fail") {
     const input = await body(request);

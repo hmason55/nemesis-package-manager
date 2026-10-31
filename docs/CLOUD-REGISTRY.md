@@ -77,7 +77,7 @@ the website requires sign-in again. OAuth handoff codes expire in 60 seconds and
 require the originating browser verifier. Cookie-based cross-site API sessions
 are not required. An API encryption-key change invalidates outstanding sessions.
 
-## Publish and moderate
+## Publish automatically and manage releases
 
 Install the GitHub App on a public repository, sign in, and register it with
 redistribution consent. Write, maintain, or admin permission is required. Select
@@ -88,13 +88,23 @@ not accepted. Limits are 512 MiB compressed, 3 GiB declared expansion, 20,000
 members, and a 64 KiB package manifest. All members are read for CRC checks, but
 no package hooks are executed.
 
-Submission states are `queued → validating → review → approved`. Validation
-errors become `failed` and can be retried by an administrator. Rejection is
-terminal for that asset; submit a corrected release asset with a new ID.
-Approval claims the global package ID for that repository. Every later version
-also needs approval. An approved version's bytes cannot be replaced, including
-after withdrawal. Package descriptions and compatibility are versioned with
-submissions; changes reach the public listing only through approval.
+Submission states are `queued → validating → approved`. The legacy `review`
+status may appear briefly as **Finishing publication** while a validated artifact
+is finalized; it is not an administrator queue. The validator completion normally
+publishes immediately; scheduled processing retries/backfills validated legacy
+review rows through the same safe publication checks. An authorized GitHub publisher
+with repository write/maintain/admin permission and the required App installation
+publishes automatically after trusted validation. No maintainer approval is required. A repository or publisher may have up to 20
+active queued/validating/finishing jobs at a time; wait for jobs to finish before
+submitting more. The reserved `usb.package.manager` identity remains on its
+dedicated self-update workflow and cannot be published as a registry package.
+
+Validation and authorization failures remain private. A failed validation can be
+retried after its cause is resolved; a rejected asset requires a corrected release
+asset/version. Automatic publication claims the global package ID for that
+repository, rechecks exact ID casing/ownership, and never replaces published bytes.
+Package descriptions and compatibility changes travel through the same validated
+submission path. Withdrawal remains available for abuse or broken releases.
 
 Validation uploads above 64 MiB use 8 MiB R2 multipart requests, avoiding the
 Cloudflare request-body limit without changing the package size limit. The trusted
@@ -113,26 +123,30 @@ transfers, installation removal, suspension, and privatization suspend publishin
 re-register after authorization is verified again. Previously approved R2 copies
 remain available unless withdrawn.
 
-An administrator configured by numeric GitHub ID uses **Review** to inspect
-reports, ownership, hashes, and metadata. Validation success alone never publishes
-a package. Registry approval plus a hash is an integrity/trust assertion, not a
-publisher signature or a guarantee that package code is safe.
+An administrator configured by numeric GitHub ID uses **Manage registry** to
+inspect reports, ownership, hashes and metadata, retry failed validations, reject
+abusive pending submissions, and withdraw published versions. These are operational
+and anti-abuse controls, not a required publication gate. Trusted validation plus
+a hash establishes a byte/integrity match, not a publisher signature or a guarantee
+that package code is safe.
 
 ## Configure clients
 
-Companion from source:
+Companion uses the built-in staging registry by default. Open **Cloud registry**
+and browse without configuring an address or signing in. **Settings → Registry HTTPS address → Save registry**
+lets an operator select another HTTPS registry for the current session. Clearing
+the address and saving disconnects cloud browsing. Startup makes no registry
+request. An explicit empty CLI/environment override also disables the connection. Source and
+standalone launchers also accept `--registry-url` or `NEMESIS_REGISTRY_URL` as
+operator overrides. Manual imports and drive preparation work offline regardless
+of registry connectivity.
 
-```sh
-python -m tools.usb_companion --registry-url https://YOUR_WORKER.workers.dev
-```
-
-Standalone companion users can set environment variable `NEMESIS_REGISTRY_URL`
-before launching. Local imports work with no registry configured. Cloud preparation
-downloads to temporary computer storage, checks approval and bytes, then uses the
-same importer and data-preserving replacement as manual imports. Batch results are
-per package, not an all-or-nothing transaction. Cancellation stops before the next
-USB publication; an already-running directory swap finishes. Duplicate USB
-identities require an explicit destination. Loose ZIPs remain view-only.
+Cloud preparation downloads to temporary computer storage, checks current
+publication status and integrity, then uses the same importer and data-preserving
+replacement as manual imports. Batch results are per package, not an all-or-nothing
+transaction. Cancellation stops before the next USB publication; an already-running
+directory swap finishes. Duplicate USB identities require an explicit destination.
+Loose ZIPs remain view-only replacement targets.
 
 On the vehicle choose **Change Source**, enter the registry HTTPS address, and
 optionally save vehicle/firmware notes and a search term. Choose **Remember my
@@ -147,7 +161,7 @@ they conflict; read the warning before confirming.
 
 ## Withdrawal, backups, and incident response
 
-Withdraw a version in **Review**. Fresh API discovery excludes it immediately;
+Withdraw a version in **Manage registry**. Fresh API discovery excludes it immediately;
 metadata caches may retain it for up to 60 seconds. Its download endpoint checks
 approval on every request and is not cached. Existing downloads/offline copies
 cannot be recalled, and withdrawal does not uninstall anything on vehicles.
@@ -177,7 +191,7 @@ and revoke sessions if compromised. A D1 read failure fails downloads closed.
 
 Run Node checks/tests/build, Python and Java tests/coverage, API 19 UI tests, APK
 build, and standalone companion smoke tests on Windows and Linux. Then verify a
-real GitHub submission through staging approval, companion download, and vehicle
+real GitHub submission through trusted validation and automatic staging publication, companion download, and vehicle
 installation. Real hardware must establish TLS 1.2/certificate verification,
 available cache space, and NEMESIS access to the private cached ZIP **without USB**.
 Never bypass certificate or hostname verification. Simulator/host tests alone do

@@ -5,8 +5,26 @@ import { guides, renderGuides } from "./guides";
 import { parseRoute } from "./routes";
 import { advice, profileCheck } from "./compatibility";
 import fixtures from "../../contracts/fixtures/compatibility.json";
+import { statusLabels } from "./publish-view";
 
 describe("published task guides", () => {
+  it("explains automatic trusted publication without presenting a maintainer gate", () => {
+    const root = document.createElement("div");
+    renderGuides(root, "publish");
+    expect(root.textContent).toContain("publishes automatically");
+    expect(root.textContent).toContain("no administrator approval is required");
+    expect(root.textContent).not.toContain("Awaiting review");
+    expect(statusLabels.review).toBe("Finishing publication");
+    expect(statusLabels.approved).toBe("Published");
+    const companion = document.createElement("div");
+    renderGuides(companion, "companion-registry");
+    expect(companion.textContent).toContain(
+      "built-in staging registry address",
+    );
+    expect(companion.textContent).toContain(
+      "Manual imports remain available offline",
+    );
+  });
   it("keeps old help links and individual guide sections shareable", () => {
     expect(parseRoute("#help")).toEqual({ page: "guides", id: "", section: 0 });
     expect(parseRoute("#guides/publish?section=2")).toEqual({

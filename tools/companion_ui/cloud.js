@@ -1,6 +1,8 @@
 "use strict";
 (() => {
   const choices = [];
+  $("open-settings").onclick = () => $("companion-settings").showModal();
+  $("close-settings").onclick = () => $("companion-settings").close();
   let page = 1;
   const profileFields = ["vehicle", "firmware", "nemesis"];
   function profileQuery() { return Object.fromEntries(profileFields.map(field => [field, $("profile-" + field).value.trim()])); }
@@ -37,7 +39,7 @@
     choices.length = 0; $("cloud-packages").replaceChildren();
     for (const pkg of result.packages) { const details = await api("/api/cloud/package?" + new URLSearchParams({id: pkg.id, ...profileQuery()})); row(details, details.versions); }
     controls();
-    if (!result.packages.length) $("cloud-packages").append(textElement("p", "No approved packages found."));
+    if (!result.packages.length) $("cloud-packages").append(textElement("p", "No published packages found."));
     for (const [title, number] of [["Previous", page > 1 ? page - 1 : null], ["Next", result.next_page]]) if (number) { const b = textElement("button", title); b.onclick = () => operation("Loading registry…", () => search(number)); $("cloud-packages").append(b); }
   }
   $("cloud-search").onsubmit = event => { event.preventDefault(); operation("Loading registry…", () => search()); };
@@ -70,7 +72,7 @@
   }); };
   $("cloud-profile-apply").onclick = () => {
     try { localStorage.setItem("nemesis-device-profile", JSON.stringify(profileQuery())); } catch (_) { /* Browser storage is optional. */ }
-    operation("Updating compatibility advice…", () => search());
+    $("companion-settings").close(); operation("Updating compatibility advice…", () => search());
   };
   try { const saved = JSON.parse(localStorage.getItem("nemesis-device-profile") || "{}"); for (const field of profileFields) if (typeof saved[field] === "string") $("profile-" + field).value = saved[field].slice(0, 160); } catch (_) { /* Invalid profile must not break manual imports. */ }
   window.addEventListener("companion-state", controls);

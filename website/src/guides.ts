@@ -26,7 +26,7 @@ export const guides: Guide[] = [
           "Prefer USB or need offline access? Run USB Companion on your computer, select your drive, and prepare installers manually or from the registry.",
           "Downloading or copying an installer does not install it. Read its requirements and confirm installation in the parked vehicle.",
         ],
-        note: "Approval and a matching SHA-256 identify reviewed bytes. They do not guarantee that a community package is safe or compatible with your vehicle.",
+        note: "Trusted validation and a matching SHA-256 identify the published bytes. They do not guarantee that a community package is safe or compatible with your vehicle.",
       },
       {
         title: "Install Package Manager itself",
@@ -119,8 +119,8 @@ export const guides: Guide[] = [
       {
         title: "Connect and choose packages",
         steps: [
-          "Open Companion → Cloud registry → Registry connection, enter the registry HTTPS address and choose Connect registry. This connection is session-only; an operator may also preconfigure --registry-url or NEMESIS_REGISTRY_URL.",
-          "Optionally fill the vehicle, firmware and NEMESIS profile and choose Apply profile and refresh results. This profile is saved only in this browser. Select a USB drive. Search the registry, open package information, and review supported vehicles, firmware, NEMESIS versions, and release notes. Public browsing and downloads need no GitHub account.",
+          "Open Companion → Cloud registry. The built-in staging registry address is ready to use; no setup is needed for the default connection. To use another registry, open Settings in the top bar, enter Registry HTTPS address and choose Save registry. Clear the address and save to disconnect. Operators can also override the default with --registry-url or NEMESIS_REGISTRY_URL; an explicit empty value disables it. Startup does not contact the registry. Manual imports remain available offline.",
+          "In Settings, optionally fill Vehicle, Firmware and NEMESIS version and choose Apply profile and refresh results. This profile is saved only in this browser. Select a USB drive. Search the registry, open package information, and review supported vehicles, firmware, NEMESIS versions, and release notes. Public browsing and downloads need no GitHub account.",
           "Choose exact versions and select the packages to prepare. Use Check USB updates to compare the installers currently on that drive; this is not a query of versions installed in the vehicle.",
           "Choose a destination if several managed folders match an ID, then confirm Prepare selected versions.",
         ],
@@ -143,9 +143,9 @@ export const guides: Guide[] = [
     title: "Browse packages and choose versions",
     audience: "Everyone",
     intro:
-      "The registry lists administrator-approved releases. Browsing and downloading are public; sign-in is only needed to publish or moderate.",
+      "The registry lists validated releases from authorized GitHub publishers. Browsing and downloading are public; sign-in is needed to publish or manage the registry.",
     figure: "workflow.svg",
-    alt: "A publisher release moves through validation and review before it is visible in the public registry.",
+    alt: "A publisher release passes trusted validation and publishes automatically after authorization and ownership checks.",
     sections: [
       {
         title: "Find the right release",
@@ -164,9 +164,9 @@ export const guides: Guide[] = [
     title: "Publish a package with GitHub",
     audience: "Package publishers",
     intro:
-      "Publishers own their GitHub Releases; the registry validates the selected ZIP and serves approved copies from Cloudflare. Every package version requires review.",
+      "Publishers own their GitHub Releases; the registry validates the selected ZIP and serves validated copies from Cloudflare. Authorized publishers publish automatically after trusted validation, without a maintainer approval step.",
     figure: "publishing.svg",
-    alt: "Publisher selects a GitHub release ZIP, validator checks it, administrator reviews it, then approved bytes become public.",
+    alt: "Publisher selects a GitHub release ZIP; trusted validation checks it, ownership and authorization are verified, and validated bytes publish automatically.",
     sections: [
       {
         title: "Connect your GitHub repository",
@@ -181,7 +181,7 @@ export const guides: Guide[] = [
       {
         title: "Build a directly installable ZIP",
         steps: [
-          "Place the package’s NEMESIS.data manifest at the ZIP root, or inside one enclosing directory, with the exact internal package id and version. Keep that ID stable across versions.",
+          "Place the package’s NEMESIS.data manifest at the ZIP root, or inside one enclosing directory, with the exact internal package id and version. Keep that ID stable across versions. The reserved usb.package.manager ID uses the separate Package Manager self-update workflow and cannot be published here.",
           "Include the files required by the package’s actual NEMESIS installation format. Do not submit a USB wrapper bundle, source folder, source-code ZIP, or standalone script as a cloud installer.",
           "Keep compressed size within 512 MiB and respect archive entry/expansion limits. Unsafe paths, links, duplicate/case-aliased members, corruption, or identity mismatches fail validation.",
           "Create a GitHub Release and upload the finished ZIP as a release asset. Publish the release; drafts are not accepted. A tag can suggest a version, but the manifest is authoritative.",
@@ -189,14 +189,14 @@ export const guides: Guide[] = [
         note: "Minimal identity example only, not a complete vehicle application: [nemesis] with id=example.app, name=Example, and version=1.0. Include the installation metadata and payload required by your package type.",
       },
       {
-        title: "Submit and review before publishing",
+        title: "Confirm your submission and follow validation",
         steps: [
           "In Publish, choose the registered repository, release, and exact installer asset. When several ZIPs exist, explicitly select the right one.",
           "Enter the exact internal ID/version, a useful name/description, categories, release notes, and optional compatibility declarations. Review the ZIP filename and destination release identity.",
-          "Acknowledge that you have permission to redistribute the ZIP through the registry, then submit at the final review step.",
-          "Follow status: Queued → Validating → Awaiting review → Approved. Validation downloads the exact asset, checks all archive bytes/identity, and never runs package scripts or repository code.",
-          "If validation fails, read the report and fix the artifact. Administrators can retry failed jobs. A rejected or corrected artifact may require a new release asset and version.",
-          "Approval reserves ownership of the global package ID. Every subsequent version and approved-listing metadata change also needs review.",
+          "Acknowledge that you have permission to redistribute the ZIP through the registry, then submit at the final confirmation step.",
+          "Follow status: Queued → Validating → Finishing publication → Published. Trusted validation downloads the exact asset, checks all archive bytes/identity, and never runs package scripts or repository code. Successful validation publishes automatically; no administrator approval is required.",
+          "If validation fails, read the report and fix the artifact. Administrators can retry failed jobs. A rejected or corrected artifact may require a new release asset and version. A repository or publisher may have up to 20 active queued/validating/finishing jobs; if the queue is full, wait for jobs to finish before submitting more.",
+          "Successful publication reserves ownership of the global package ID for the repository. Later versions and listing metadata changes use the same authorization, trusted validation, and automatic publication path.",
         ],
         note: "Approved version bytes are immutable. Use a new version when bytes change. Withdrawal stops new registry discovery/downloads; it does not uninstall packages or erase existing offline copies.",
       },

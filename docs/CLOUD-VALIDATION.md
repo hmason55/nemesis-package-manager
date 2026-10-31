@@ -64,7 +64,7 @@ from the initial implementation; native application code was unchanged in this
 follow-up. Those initial checks preceded cloud provisioning; staging has since
 been deployed as recorded in CLOUD-DEPLOYMENT.md.
 
-## Initial implementation validation
+## Historical initial implementation validation (superseded publishing policy)
 
 | Check | Result |
 | --- | --- |
@@ -110,3 +110,12 @@ Review follow-up regression checks cover canonical URL encoding shared by all
 three clients, concurrent package-ID casing claims, terminal release-sync events,
 USB folder defaults for every supported ID shape, and source-specific search.
 The cloud outage test also verifies installed state remains available.
+
+## Automatic publishing policy
+
+The current policy removes mandatory maintainer approval. Authorized GitHub
+publishers publish automatically after trusted validation and ownership checks.
+Earlier validation records mentioning review/approval describe the previous policy;
+they are retained as historical evidence, not the current publishing instructions.
+Current regression checks must cover automatic publication, immutable ownership,
+failed-validation privacy, and administrator withdrawal/anti-abuse controls.

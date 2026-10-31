@@ -9,7 +9,7 @@
 </head>
 <body>
   <main>
-    <header class="topbar"><h1>USB companion</h1><span class="local">● Local</span></header>
+    <header class="topbar"><h1>USB companion</h1><div class="actions"><button id="open-settings" type="button" class="secondary">Settings</button><span class="local">● Local</span></div></header>
     <details class="quick-guide"><summary>Quick guide</summary><ol><li>Select your USB drive.</li><li>Use <strong>Drive setup</strong> for Package Manager's first installation, then <strong>Add / update</strong> to copy community package releases.</li><li>Safely eject the drive. For community packages, open Package Manager in the vehicle, tap <strong>Refresh</strong>, and choose <strong>Install</strong> or <strong>Update</strong>.</li></ol><p>Copying a release to USB does not install it on the head unit. Package Manager cannot update itself: use the separate-drive NEMESIS instructions in <strong>Drive setup</strong>. Your existing data folder is kept when replacing an installer.</p></details>
     <section class="drive-bar" aria-label="USB drive">
       <div class="drive-selector"><label for="drive-select">USB drive</label><select id="drive-select"><option value="">Select a drive…</option></select></div>
@@ -67,11 +67,11 @@ path=usb.package.manager.zip</code></pre>
     </fieldset>
     <dialog id="remove-dialog" aria-labelledby="remove-title"><form id="remove-form"><h2 id="remove-title">Remove package from USB?</h2><p id="remove-description"></p><label class="check-label"><input id="delete-data" type="checkbox"> Also delete this package's USB data</label><p id="remove-data-note" class="hint"></p><div class="actions"><button id="cancel-remove" class="secondary" type="button">Cancel</button><button class="danger" type="submit">Remove from USB</button></div></form></dialog>
     <section class="panel" aria-label="Cloud registry">
-      <h2>Cloud registry</h2><p>Browse approved releases and prepare your USB drive. No GitHub account is needed. Install packages in the vehicle afterward.</p>
-      <details class="quick-guide"><summary>Registry connection and optional device profile</summary>
-        <form id="cloud-config"><label for="registry-url">Registry HTTPS address</label><div class="inline"><input id="registry-url" type="url" placeholder="https://your-registry.workers.dev"><button type="submit">Connect registry</button></div><p id="cloud-connection" role="status">Checking registry configuration…</p></form>
+      <h2>Cloud registry</h2><p>Browse published releases and prepare your USB drive. No GitHub account is needed. Install packages in the vehicle afterward.</p>
+      <dialog id="companion-settings" aria-labelledby="companion-settings-title"><div class="section-title"><h2 id="companion-settings-title">Companion settings</h2><button id="close-settings" type="button" class="secondary">Close settings</button></div>
+        <form id="cloud-config"><label for="registry-url">Registry HTTPS address</label><div class="inline"><input id="registry-url" type="url" placeholder="https://your-registry.workers.dev"><button type="submit">Save registry</button></div><p id="cloud-connection" role="status">Checking registry configuration…</p><p class="hint">The NEMESIS staging registry is configured by default. Custom addresses apply to this Companion session. Clear the address and save to disconnect; manual ZIP imports remain available offline.</p></form>
         <fieldset class="cloud-profile"><legend>Optional device information</legend><p class="hint">Used only for advisory comparisons. Saved in this browser; not a claim that a package is supported.</p><div class="form-grid"><div><label for="profile-vehicle">Vehicle</label><input id="profile-vehicle" maxlength="160" placeholder="e.g. IONIQ 5"></div><div><label for="profile-firmware">Firmware</label><input id="profile-firmware" maxlength="160" placeholder="Exact firmware identifier"></div><div><label for="profile-nemesis">NEMESIS version</label><input id="profile-nemesis" maxlength="160" placeholder="Exact version"></div></div><button id="cloud-profile-apply" type="button" class="secondary">Apply profile and refresh results</button></fieldset>
-      </details>
+      </dialog>
       <form id="cloud-search" class="inline"><label for="cloud-query">Search packages</label><input id="cloud-query"><button>Search registry</button><button id="cloud-updates" type="button">Check USB updates</button></form>
       <p id="cloud-selection" class="hint">Select packages and a USB drive to prepare downloads. Manual ZIP imports remain available above.</p><div id="cloud-packages"></div><div class="actions"><button id="cloud-prepare" type="button" disabled>Prepare selected versions</button><button id="cloud-cancel" type="button" disabled>Cancel downloads</button></div><progress id="cloud-meter" max="1" value="0" aria-label="Current package download" hidden></progress><pre id="cloud-progress" role="status" aria-live="polite"></pre>
     </section>

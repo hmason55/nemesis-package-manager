@@ -286,7 +286,7 @@ public final class MainActivity extends Activity {
                 "No scripts on USB." };
             empty.setText(emptyMessages[category]);
         }
-        if (!busy && cloudSelected && items.isEmpty() && scanError == null) empty.setText(category == PackagePresentation.SCRIPTS ? "Scripts are available from USB Storage.\nUse Settings to switch to USB." : category == PackagePresentation.UPDATES ? "No confirmed newer registry versions." : category == PackagePresentation.INSTALLED ? "No installed packages." : "No approved packages match your search.");
+        if (!busy && cloudSelected && items.isEmpty() && scanError == null) empty.setText(category == PackagePresentation.SCRIPTS ? "Scripts are available from USB Storage.\nUse Settings to switch to USB." : category == PackagePresentation.UPDATES ? "No confirmed newer registry versions." : category == PackagePresentation.INSTALLED ? "No installed packages." : "No published packages match your search.");
         updateButtons();
     }
     private PackageScanner.Item selection() {
@@ -560,7 +560,7 @@ public final class MainActivity extends Activity {
     }
     private void download(final PackageScanner.Item selectedItem) {
         busy = true; updateButtons(); downloadCancelled.set(false);
-        final android.app.ProgressDialog dialog = new android.app.ProgressDialog(this); dialog.setTitle("Download " + selectedItem.title); dialog.setMessage("Verifying approved release…"); dialog.setProgressStyle(android.app.ProgressDialog.STYLE_HORIZONTAL); dialog.setMax(100); dialog.setCancelable(false);
+        final android.app.ProgressDialog dialog = new android.app.ProgressDialog(this); dialog.setTitle("Download " + selectedItem.title); dialog.setMessage("Verifying published release…"); dialog.setProgressStyle(android.app.ProgressDialog.STYLE_HORIZONTAL); dialog.setMax(100); dialog.setCancelable(false);
         dialog.setButton(android.content.DialogInterface.BUTTON_NEGATIVE, "Cancel download", new android.content.DialogInterface.OnClickListener() { public void onClick(android.content.DialogInterface d, int which) { downloadCancelled.set(true); } });
         dialogs.add(dialog); dialog.show();
         new Thread(new Runnable() { public void run() {
@@ -574,7 +574,7 @@ public final class MainActivity extends Activity {
                 runOnUiThread(new Runnable() { public void run() {
                     busy = false; dialog.dismiss(); if (destroyed || downloadCancelled.get()) return; updateButtons();
                     String profile = getPreferences(MODE_PRIVATE).getString("profile", android.os.Build.MODEL + " / " + android.os.Build.DISPLAY);
-                    confirm("Install " + acquired.title + " " + acquired.version + "?", "Download verified against registry approval.\n\nYour device: " + profile + "\n\n" + acquired.remote.compatibility + "\n\n" + compatibilityWarning(acquired.remote) + "\n\nCompatibility is advisory. A mismatch or missing information does not establish support. Check the publisher's requirements before continuing.\n\n" + acquired.remote.releaseNotes, "Install", new Runnable() { public void run() { startOperation(acquired, null); } });
+                    confirm("Install " + acquired.title + " " + acquired.version + "?", "Download verified against published registry metadata.\n\nYour device: " + profile + "\n\n" + acquired.remote.compatibility + "\n\n" + compatibilityWarning(acquired.remote) + "\n\nCompatibility is advisory. A mismatch or missing information does not establish support. Check the publisher's requirements before continuing.\n\n" + acquired.remote.releaseNotes, "Install", new Runnable() { public void run() { startOperation(acquired, null); } });
                 } });
             } catch (final Exception error) { runOnUiThread(new Runnable() { public void run() { busy = false; dialog.dismiss(); if (!destroyed) { updateButtons(); message("Download not completed", error.getMessage()); } } }); }
         } }, "nemesis-cloud-download").start();

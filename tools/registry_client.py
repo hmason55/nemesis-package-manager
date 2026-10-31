@@ -2,10 +2,26 @@
 
 import json
 import re
+import os
 from urllib.parse import quote, urlencode, urlsplit
 from urllib.request import HTTPRedirectHandler, Request, build_opener
 
 from tools.registry_artifact import MAX_DOWNLOAD, validate_artifact
+
+DEFAULT_REGISTRY_URL = "https://nemesis-registry-staging.hmason55.workers.dev"
+
+
+def configured_registry_url(value=None):
+    """Apply the built-in default only when no explicit override was supplied.
+
+    An explicitly empty CLI/environment value deliberately disables cloud use.
+    Constructing the client validates this address but performs no network IO.
+    """
+    return (
+        os.environ.get("NEMESIS_REGISTRY_URL", DEFAULT_REGISTRY_URL)
+        if value is None
+        else value
+    )
 
 
 class NoRedirect(HTTPRedirectHandler):
@@ -35,8 +51,19 @@ class RegistryClient:
         ):
             raise ValueError("Configure an HTTPS registry URL.")
         self.base = base.rstrip("/")
-        self.opener = opener or build_opener(NoRedirect())
-        self.opener.addheaders = [("User-Agent", "NEMESIS-USB-Companion")]
+        self._opener = opener
+
+    @property
+    def opener(self):
+        """Initialize HTTPS only for explicit browsing or download operations.
+
+        Manual/offline preparation must work even when the host's TLS provider
+        is unavailable. Startup and Settings reads only validate URL syntax.
+        """
+        if self._opener is None:
+            self._opener = build_opener(NoRedirect())
+        self._opener.addheaders = [("User-Agent", "NEMESIS-USB-Companion")]
+        return self._opener
 
     def json(self, path):
         """Bound JSON memory use and request fresh approval from intermediaries."""

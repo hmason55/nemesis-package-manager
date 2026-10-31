@@ -7,8 +7,8 @@ Ctrl+C closes the listening socket; nothing is installed as a background service
 
 import argparse
 import webbrowser
-import os
 from tools.companion_server import CompanionServer
+from tools.registry_client import configured_registry_url
 
 
 def main():
@@ -22,8 +22,8 @@ def main():
     parser.add_argument("--usb", help="Preselect an existing drive or mount path")
     parser.add_argument(
         "--registry-url",
-        default=os.environ.get("NEMESIS_REGISTRY_URL", ""),
-        help="Optional HTTPS cloud registry API URL",
+        default=configured_registry_url(),
+        help="HTTPS registry override (default: built-in staging registry; empty disables cloud)",
     )
     parser.add_argument(
         "--no-browser",
@@ -31,8 +31,7 @@ def main():
         help="Print the URL without opening a browser",
     )
     args = parser.parse_args()
-    options = {"registry_url": args.registry_url} if args.registry_url else {}
-    with CompanionServer(args.port, args.usb, **options) as server:
+    with CompanionServer(args.port, args.usb, registry_url=args.registry_url) as server:
         print(
             "NEMESIS USB companion\n"
             + server.url

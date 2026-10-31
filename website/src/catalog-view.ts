@@ -326,7 +326,7 @@ export function renderPackage(
     el("code", selected.sha256, "hash"),
     el(
       "p",
-      "Downloads are checked against the registry-approved artifact.",
+      "Downloads are checked against the validated registry artifact.",
       "hint",
     ),
   );
