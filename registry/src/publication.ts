@@ -90,8 +90,11 @@ export async function publishValidated(env: Env, row: Submission) {
       row.version,
       row.id,
     ),
+    // D1 runs this batch sequentially in one transaction. Only this batch's
+    // successful review -> approved transition may replace listing metadata;
+    // an older finisher must not restore metadata after a newer publication.
     env.DB.prepare(
-      "UPDATE packages SET metadata=? WHERE id=? AND repository_id=? AND EXISTS(SELECT 1 FROM submissions WHERE id=? AND status='approved')",
+      "UPDATE packages SET metadata=? WHERE changes()=1 AND id=? AND repository_id=? AND EXISTS(SELECT 1 FROM submissions WHERE id=? AND status='approved')",
     ).bind(row.metadata, row.package_id, row.repository_id, row.id),
   ]);
   requireValue(

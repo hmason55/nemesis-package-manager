@@ -3,7 +3,7 @@ import { beforeAll, beforeEach, describe, it, expect, vi } from "vitest";
 import worker from "../src/index";
 import { hash, seal, challenge } from "../src/security";
 import { Env, now, metadata as parseMetadata } from "../src/types";
-import { publishPending } from "../src/publication";
+import { publishPending, publishValidated } from "../src/publication";
 import { createSubmission } from "../src/publishing";
 import { HttpError } from "../src/types";
 import { publicVersion } from "../src/catalog";
@@ -96,6 +96,44 @@ beforeEach(async () => {
   await bindings.PACKAGES.put("sha256/" + sha + ".zip", "zip");
 });
 describe("public catalog and moderation", () => {
+  it("does not let a stale publication finisher restore older listing metadata", async () => {
+    const stale = await bindings.DB.prepare(
+      "SELECT * FROM submissions WHERE id=?",
+    )
+      .bind(submission)
+      .first<any>();
+    await publishValidated(bindings, stale);
+    const second = "91".repeat(32),
+      latestMetadata = {
+        ...metadata,
+        name: "Newer package listing",
+        description: "Latest validated description",
+      };
+    await bindings.DB.prepare(
+      "INSERT INTO submissions(id,package_id,repository_id,publisher_id,release_id,asset_id,version,metadata,status,sha256,size,object_key,report,created_at,updated_at) SELECT ?,package_id,repository_id,publisher_id,31,41,'2.0',?,'review',sha256,size,object_key,report,created_at,updated_at FROM submissions WHERE id=?",
+    )
+      .bind(second, JSON.stringify(latestMetadata), submission)
+      .run();
+    const current = await bindings.DB.prepare(
+      "SELECT * FROM submissions WHERE id=?",
+    )
+      .bind(second)
+      .first<any>();
+    await publishValidated(bindings, current);
+    await expect(publishValidated(bindings, stale)).rejects.toMatchObject({
+      status: 409,
+    });
+    const listing = await (await call("/v1/packages/example.app")).json<any>();
+    expect(listing.name).toBe(latestMetadata.name);
+    expect(listing.description).toBe(latestMetadata.description);
+    expect(
+      (
+        await bindings.DB.prepare("SELECT status FROM submissions WHERE id=?")
+          .bind(second)
+          .first<any>()
+      ).status,
+    ).toBe("approved");
+  });
   it("publishes legacy validated submissions after fresh authorization without moderator action", async () => {
     await publishPending(bindings);
     expect(
