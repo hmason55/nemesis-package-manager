@@ -3,7 +3,7 @@ import { renderManagement } from "./management";
 import { searchControl } from "./search-control";
 import { icon } from "./icons";
 import { renderGuides } from "./guides";
-import { API, api, setToken } from "./client";
+import { API, api, setToken, hasSession } from "./client";
 import { parseRoute, catalogLink } from "./routes";
 import { el, action, link, external, heading } from "./ui";
 import { renderCatalog, renderPackage } from "./catalog-view";
@@ -280,11 +280,22 @@ void run(async () => {
     const verifier = sessionStorage.getItem("nemesis_verifier");
     sessionStorage.removeItem("nemesis_verifier");
     const result = await api("/auth/exchange", { code, verifier });
-    setToken(result.token);
-    user = await api("/v1/publisher/me");
-    $("signin").hidden = true;
-    $("signout").hidden = false;
-    $("moderate").hidden = !user.admin;
+    setToken(result.token, result.expires_in);
+  }
+  if (hasSession()) {
+    try {
+      user = await api("/v1/publisher/me");
+      $("signin").hidden = true;
+      $("signout").hidden = false;
+      $("moderate").hidden = !user.admin;
+    } catch {
+      notify(
+        hasSession()
+          ? "Your sign-in could not be verified. Refresh the page to try again."
+          : "Your session has expired. Sign in again to publish or manage packages.",
+        true,
+      );
+    }
   }
   await renderRoute();
 });

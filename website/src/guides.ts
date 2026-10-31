@@ -179,7 +179,7 @@ export const guides: Guide[] = [
       {
         title: "Connect your GitHub repository",
         steps: [
-          "Choose Publish → Sign in with GitHub. Authorize the registry App for your GitHub identity. Reloading the site may require signing in again because the registry token stays in memory.",
+          "Choose Publish → Sign in with GitHub. Authorize the registry App for your GitHub identity. Your sign-in stays available while navigating and reloading this tab, until you sign out or the one-hour session expires.",
           "Use Connect repository on GitHub in the publisher screen. Select the account and only the public repositories you want to publish. The App requires read-only Contents and Metadata access.",
           "Return to Publish and register the public owner/repository name. Your signed-in user must have write, maintain, or administrator permission on it.",
           "If the repository was transferred, App access removed, or permissions changed, restore the intended App installation/access and re-register to reauthorize publishing.",
