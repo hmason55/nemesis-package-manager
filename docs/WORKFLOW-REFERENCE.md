@@ -1,6 +1,6 @@
 # Detailed workflow reference
 
-This optional reference collects the detailed Mermaid diagrams for the two apps, their screen organization, USB files, and update handoffs. Start with the [illustrated user guide](USER-GUIDE.md) for numbered instructions and screen examples.
+This optional reference collects the detailed Mermaid diagrams for the registry website, USB companion, vehicle app, USB files, and update handoffs. Start with the [illustrated user guide](USER-GUIDE.md) for numbered instructions and screen examples.
 
 Screen maps group controls by purpose and follow their order from top to bottom; they are not exact screenshots. Arrows in a screen map show navigation or reading order, not automatic actions. These diagrams describe workflows and file organization; they are not code architecture diagrams.
 
@@ -8,7 +8,10 @@ Screen maps group controls by purpose and follow their order from top to bottom;
 
 ```mermaid
 flowchart LR
-    releases["Download trusted releases<br/>on your computer"] --> companion["USB companion<br/>Prepare files"]
+    registry["Registry website<br/>Find a published package and exact version"] --> companion["USB companion<br/>Download and verify, or import local ZIP"]
+    local["Trusted local release ZIP"] --> companion
+    registry --> cloud["Vehicle: Cloud Registry<br/>Choose release, download and verify"]
+    cloud --> manager
     companion --> usb["USB drive<br/>Carry releases and data"]
     usb --> manager["Package Manager<br/>Choose action in vehicle"]
     manager --> nemesis["NEMESIS<br/>Apply action on head unit"]
@@ -16,6 +19,7 @@ flowchart LR
 
 | Reference topic | Diagram and explanation |
 | --- | --- |
+| Browse or publish releases online | [Registry website](#registry-website) |
 | Find a control on the computer | [Companion screen](#companion-screen) |
 | Find a package or action in the vehicle | [Package Manager screen](#package-manager-screen) |
 | Understand which files go where | [USB drive layout](#usb-drive-layout) |
@@ -24,20 +28,38 @@ flowchart LR
 | Update Package Manager itself | [Package Manager updates](#package-manager-updates) |
 | Understand what happens to installers and data | [Installers and data](#installers-and-data) |
 
+## Registry website
+
+```mermaid
+flowchart LR
+    search["Packages: live search<br/>Category, publisher, maximum ZIP size, sort"] --> package["Package page<br/>Choose exact Version"]
+    package --> read["Overview, Compatibility,<br/>Versions, Release notes, Integrity information"]
+    read --> download["Download installer ZIP<br/>Import with companion; confirm in vehicle"]
+    publish["Publish: GitHub sign-in<br/>Connect and register public repository"] --> asset["Choose published release and installer ZIP<br/>Confirm ID, version and redistribution permission"]
+    asset --> validate["Queued then Validating<br/>Trusted checks; no package code execution"]
+    validate --> outcome{"Validation and authorization pass?"}
+    outcome -->|Yes| live["Publish automatically<br/>No separate maintainer approval"]
+    outcome -->|No| report["Private failure report<br/>Correct artifact or authorization"]
+```
+
+Browsing and downloading need no account. Profiles and compatibility declarations are advisory. Published bytes are immutable; changed bytes require a new version. See the [registry guide](REGISTRY-GUIDE.md) for numbered steps.
+
 ## Companion screen
 
 Open the companion on your computer with the USB drive connected. Select the drive before choosing a task; check its path and available space so you know where files will be copied.
 
 ```mermaid
 flowchart TB
-    header["USB companion<br/>Quick guide"]
-    drive["USB drive selector and Refresh<br/>Drive not listed? lets you enter a path"]
+    header["USB companion<br/>Settings | Guides | Quick guide"]
+    header --> settings["Settings<br/>Drive not listed? | Automatic launch<br/>Registry address | Optional device profile"]
+    drive["USB drive selector and Refresh<br/>Check path and available space"]
     summary["Drive summary and status<br/>Available space, Package Manager, launcher"]
     tabs["Tabs: Packages | Add / update | Drive setup"]
     header --- drive --- summary --- tabs
-    tabs --> packages["Packages<br/>Filter installers, scripts, or issues<br/>Package | On USB | Type | Status<br/>Details / View issue<br/>Replace on USB | Remove | Add package"]
+    tabs --- cloud["Cloud registry panel below USB workspace<br/>Live search | Filter results | Check USB updates<br/>Select exact versions and destination<br/>Prepare selected versions | Cancel downloads"]
+    tabs --> packages["Packages<br/>Live search; filter installers, scripts, or issues<br/>Package | On USB | Type | Status<br/>Details / View issue<br/>Replace on USB | Remove | Add package"]
     tabs --> edit["Add / update<br/>Add a new package or<br/>Update an existing package<br/>Choose release ZIP and destination<br/>Add package or Update package"]
-    tabs --> setup["Drive setup<br/>Choose manager release bundle<br/>USB version and newer-release link<br/>Automatic USB launch toggle<br/>Set up drive, Update manager, or Repair manager"]
+    tabs --> setup["Drive setup<br/>Choose manager release bundle<br/>USB version and newer-release link<br/>Set up drive, Update manager, or Repair manager"]
 ```
 
 - **Packages** answers “what is on this drive?” **On USB** is the installer's version, not the version installed in the vehicle. **Needs attention** helps find layout errors; expand **View issue** to read them, or **Details** for other package information. **Replace on USB** opens the update form for a managed package.
@@ -48,17 +70,24 @@ Loose installer ZIPs can be inspected and removed, but not replaced in place. Im
 
 ## Package Manager screen
 
-After first setup, open **NEMESIS Manager > Packages > Package Manager > Launch**. Insert your package drive and tap **Refresh** to read its files and the head unit's installed packages.
+After first setup, open **NEMESIS Manager > Packages > Package Manager > Launch**. Choose **Cloud Registry** or **USB Storage** at startup, or change the source in **Settings**. For USB, connect the prepared drive. Tap **Refresh** to read the selected source and installed state.
 
 ```mermaid
 flowchart TB
-    header["Package Manager<br/>Refresh | Help | Close"]
-    tabs["Tabs with counts<br/>Installed | Updates | Available | Scripts"]
-    list["Package list<br/>Name | Version<br/>Tap a row to select it"]
+    startup["Startup: Cloud Registry or USB Storage<br/>Don’t show again on startup | Continue"]
+    startup --> header["Package Manager | Search packages<br/>Settings | Refresh | Help | Close"]
+    header --> settings["Settings: source, registry address, optional profile<br/>Hide keyboard | Cancel | Save"]
+    tabs["Tabs with counts<br/>Installed | Updates | Available | Scripts<br/>Clear search | Filters: type and sort"]
+    list["Package list<br/>Name | Version<br/>One row per package ID; tap to select"]
     actions["Actions for the selected row<br/>Installed: Uninstall | Launch | Details<br/>Updates: Update | Details<br/>Available: Install | Details<br/>Scripts: Run script | Details"]
     header --- tabs --- list --- actions
     actions --> info["Details<br/>Versions, source paths,<br/>data and history paths, errors"]
-    actions --> confirm["Choose an available action<br/>Review and confirm"]
+    actions -->|Install or Update| versions["Multiple releases: choose version<br/>USB choices retain their own paths"]
+    versions --> acquire["Cloud: download and verify selected release<br/>USB: use selected local installer"]
+    acquire --> confirm["Review requirements and confirm installation"]
+    info --> versions
+    actions -->|Uninstall or Run script| direct["Review and confirm selected action"]
+    direct --> wait
     confirm --> wait["For installs, updates, uninstalls, and scripts:<br/>wait for the operation overlay and result popup"]
     wait --> result["Read the result<br/>Open popup Details for diagnostic output"]
 ```
@@ -66,11 +95,11 @@ flowchart TB
 | Tab | What you find | What Version means |
 | --- | --- | --- |
 | **Installed** (opens first) | Packages installed on the head unit, including ones without an installer on this drive | Installed version |
-| **Updates** | Installed packages with a confirmed newer installer on USB | Installed version to USB version, such as `0.5 -> 0.6` |
-| **Available** | USB installers whose package IDs are not reported as installed | USB version |
+| **Updates** | Installed packages with a confirmed newer release in the selected source | Installed to source version, such as `1.4 → 1.5` |
+| **Available** | Installers whose IDs are not reported as installed | Selected source version |
 | **Scripts** | USB tasks you can explicitly choose to run | USB version, or Unknown when absent |
 
-A package with a confirmed update appears in both **Installed** and **Updates**, not **Available**. **Updates** checks the files on your drive; it does not search online. If installed-state detection fails, read the error and tap **Refresh** to retry before interpreting the categories.
+A package with a confirmed update appears in both **Installed** and **Updates**, not **Available**. **Updates** compares installed versions with the selected USB or registry source. Installed management remains available offline; Scripts uses USB. If installed-state detection fails, read the error and tap **Refresh** to retry before interpreting the categories.
 
 Only the actions for the active tab are shown. Installed leads with a yellow **Uninstall** button plus **Launch** and **Details**; Updates has **Update**, Available has **Install**, and Scripts has **Run script**, each with Details. Missing or unorderable versions do not enable a blind installation from Installed.
 
@@ -118,7 +147,7 @@ flowchart LR
         vehicle["Head unit fully booted<br/>Insert USB and approve NEMESIS execution prompt"]
         vehicle --> open["Launcher installs Package Manager if missing<br/>and opens it"]
         open --> disable["After successful launch<br/>Root descriptor is backed up and disabled unless automatic launch is enabled"]
-        disable --> install["Package Manager: Refresh, then Available<br/>Select a package, review Details, confirm Install"]
+        disable --> install["Package Manager: choose USB Storage<br/>Refresh, then Available<br/>Select a package, review Details, confirm Install"]
         install --> result["Keep USB connected until the result popup<br/>On success, find the package in Installed"]
     end
     computer --> car
@@ -126,7 +155,7 @@ flowchart LR
 
 The first execution prompt starts the manager launcher; it does not install every community package. Choose and confirm those separately. Scripts are under **Scripts** and use **Run script** instead of installation.
 
-On later visits, open **NEMESIS Manager > Packages > Package Manager > Launch**. The disabled root descriptor prevents the normal package drive from prompting to execute on each startup. If Package Manager is already installed, the launcher opens it; replacing the manager ZIP does not update the installed app. See the [setup guide](SETUP-WINDOWS.md) for detailed preparation and troubleshooting.
+On later visits, open **NEMESIS Manager > Packages > Package Manager > Launch**. The default disabled root descriptor prevents repeated execution prompts. Enabling automatic launch in companion Settings keeps it active instead. If Package Manager is already installed, the launcher opens it; replacing the manager ZIP does not update the installed app. See the [setup guide](SETUP-WINDOWS.md) for detailed preparation and troubleshooting.
 
 ## Community package updates
 
@@ -212,8 +241,9 @@ flowchart TD
     setup["Drive setup"] --> versions["Read USB manager version; check public releases"]
     versions --> newer{"Newer comparable release?"}
     newer -->|Yes| link["Open release page; download explicitly"]
+    newer -->|No| current["Show current or unavailable comparison"]
     newer -->|"Offline or unknown"| retry["Keep USB management available; retry later"]
-    setup --> toggle{"Run on USB insertion?"}
+    settings["Settings: USB options"] --> toggle{"Run on USB insertion?"}
     toggle -->|On| active["Enable NEMESIS.data and persistent launch setting"]
     toggle -->|Off| disabled["Back up as NEMESIS.data.disabled; remove launch setting"]
 ```

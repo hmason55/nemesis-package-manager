@@ -1,10 +1,16 @@
 # Updating packages
 
-Package Manager installs the files you put on the drive. It does not check online for new releases, download updates, or resolve dependencies and conflicts. Download the release you want on your PC first and check its compatibility and update instructions.
+Package Manager updates community packages from the selected source: USB Storage or Cloud Registry. Choose the release explicitly, read its compatibility and update instructions, and confirm installation in the parked vehicle. Dependencies and conflicts are not resolved automatically.
 
 For a walkthrough with screen examples, follow [Update a community package](USER-GUIDE.md#update-a-community-package). To update Package Manager itself, use [the separate instructions below](#update-package-manager).
 
-The Version column shows the installed release in Installed, the USB release in Available and Scripts, and both versions in Updates. Use **Update** on Updates for a confirmed newer installer. Installed shows **Uninstall**, **Launch**, and **Details**. Missing/unorderable versions do not enable a blind installation; see Details and the package instructions.
+The Version column shows the installed release in Installed, the selected source release in Available, the USB version in Scripts, and both versions in Updates. Use **Update** on Updates for a confirmed newer installer. Installed shows **Uninstall**, **Launch**, and **Details**. Missing/unorderable versions do not enable a blind installation; see Details and the package instructions.
+
+## Update from the registry
+
+Choose **Cloud Registry** in **Settings**, tap **Refresh**, and open **Updates** for confirmed newer releases. Select the package, read **Details**, choose a version if prompted, and tap **Update**. Wait for download verification, review the final confirmation, and wait for the NEMESIS result. For installed packages, **Details > Choose version** can look up published versions explicitly. Unknown ordering does not establish an update; older, equal, or locked releases keep their restrictions.
+
+The companion's **Check USB updates** compares registry releases against installers on USB. Preparing a newer ZIP there still requires a separate installation in the vehicle. See [cloud preparation](USB-COMPANION.md#prepare-packages-from-the-registry) and [head-unit validation requirements](CLOUD-VALIDATION.md).
 
 ## Update another package
 
@@ -22,7 +28,7 @@ The Version column shows the installed release in Installed, the USB release in 
    This replaces installer files under `E:\packages\Example\` while preserving its `data\` folder. It only prepares the drive; it does not install anything on the vehicle. Keep the folder name consistent instead of accumulating old installers for the same package.
 3. If preparing the drive manually, replace the old installer files and descriptor with the new release's files inside `packages/Example/`. Keep `data/` and any user exports. Do not overwrite the drive's root descriptor. For USB-ready bundles, extract the outer archive but keep the inner package ZIP compressed. See [release layouts](RELEASE-LAYOUTS.md).
 4. With the vehicle parked and the head unit running, insert the drive. Open **NEMESIS Manager > Packages > Package Manager > Launch** and tap **Refresh**.
-5. Select the package, check its installer version and **Details**, then tap **Update** and confirm. NEMESIS validates the installer and performs the update. There is normally no need to uninstall first.
+5. Open **Updates**, select the package, check its installer version and **Details**, then tap **Update** and confirm. NEMESIS validates the installer and performs the update. There is normally no need to uninstall first.
 6. Wait for the result popup. An overlay displays a spinner during installation, updates, uninstallation, and script execution. It indicates activity, not a percentage. Open popup **Details** for the exit code and output, then follow any package-specific restart or setup instructions.
 
 If the action says **Install**, NEMESIS did not report that installer's package ID as installed. Confirm that you selected the right release; matching display names do not establish matching IDs. If there is no installer on the drive, an installed-only entry cannot be updated until you add one. Execute-only scripts use **Run script**, not the package update flow.

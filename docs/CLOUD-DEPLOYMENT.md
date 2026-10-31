@@ -1,5 +1,7 @@
 # Cloud deployment status
 
+This is a **historical staging record from 2026-10-30**, with later implementation notes. It is not a fresh live-service audit or evidence that 1.0 cloud/hardware acceptance has passed. Use the [validation checklist](CLOUD-VALIDATION.md) to record new results before publication.
+
 For the live-search, package-artwork and publisher-block update, apply D1 migrations `0003_publisher_blocks_icons.sql` and `0004_release_actor_blocks.sql` before deploying the new Worker. They add a blocklist table, nullable icon key and retained GitHub release/event actor IDs; existing package versions and ZIP bytes are unchanged. Deploy the updated trusted validator from merged `main` before testing a new ZIP containing artwork. Pages publishes the matching website. An older Worker cannot expose the new Settings/management capabilities by itself.
 
 Staging was provisioned and tested on 2026-10-30 using authenticated Wrangler.
@@ -19,7 +21,7 @@ acceptance checks before creating production resources.
 | GitHub App ID | `5545234` |
 | GitHub App client ID | `Iv23liwVeSh326CoqlRW` |
 
-Both migrations (`0001_registry.sql` and `0002_multipart.sql`) are applied.
+At that checkpoint, migrations `0001_registry.sql` and `0002_multipart.sql` were applied. New deployments require all migrations, including `0003_publisher_blocks_icons.sql` and `0004_release_actor_blocks.sql`.
 No demo packages were seeded. R2 public access through `r2.dev` is disabled;
 downloads are served through the Worker's approval checks.
 
@@ -83,11 +85,11 @@ actual workflow dispatch remain to test once the workflow exists on GitHub.
 The GitHub validation environment and Pages settings cannot be inspected using
 the available connector; their configuration remains to be verified.
 
-The local workflows and site must reach
-`main` before GitHub can deploy them; both registry deployment workflows were
-confirmed absent from remote `main` after App installation. Follow [the setup checklist](CLOUD-SETUP-CHECKLIST.md)
-for the remaining account-owner steps. Keep credentials out of chat and website
-assets.
+At the initial provisioning checkpoint the deployment workflows were absent from
+remote `main`. They are now included in the implementation; that historical
+observation does not describe current deployment status. Follow [the setup
+checklist](CLOUD-SETUP-CHECKLIST.md) for the remaining account-owner checks.
+Keep credentials out of chat and website assets.
 
 ## Publishing policy update
 

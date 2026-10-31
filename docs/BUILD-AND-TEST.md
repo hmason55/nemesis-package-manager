@@ -65,9 +65,9 @@ In PowerShell, replace `bash gradlew` with `.\gradlew.bat`. See the [local valid
 
 ## Known limitations
 
-- The Android UI and USB read permissions are not hardware-tested.
+- Reported hardware coverage is limited to the vehicle/firmware listed in the [README](../README.md#firmware-compatibility-and-tested-vehicles). New UI, USB permission, and direct-cloud behavior still need their own acceptance evidence.
 - Version ordering supports numeric dotted releases and numeric `-build.N` suffixes. Other differing version formats remain unknown; unavailable installed manifests cannot establish update availability. Dependencies, conflict resolution, and automated batch installations are not implemented.
-- Android framework availability and permissions vary by Gen5W firmware; the first unit test is required to establish compatibility.
+- Android framework availability and permissions vary by Gen5W firmware; host tests and builds do not establish compatibility with another head unit.
 - Debug APKs are for development. See [release build configuration](RELEASING.md#release-build-configuration) for signed candidate builds.
 
 ## Slow or stalled command recovery
@@ -77,8 +77,8 @@ reads) time out after 30 seconds. A failed scan keeps installed state unavailabl
 check the command channel and tap Refresh to retry. Query timeouts do not apply to
 installers, scripts, launches, or uninstall operations.
 
-Package operations show elapsed time. After 60 seconds, the operation overlay explains that
-the operation is taking longer than usual; open its Details for monitoring and log guidance.
+Package operation Details shows elapsed time. After 60 seconds, Details also explains
+that the operation is taking longer than usual and provides monitoring and log guidance.
 Keep USB connected. Closing and reopening the activity continues monitoring in
 the same process. A missing or malformed manager-update result does not unlock
 other operations: a slow installer may still be working. Inspect the NEMESIS logs

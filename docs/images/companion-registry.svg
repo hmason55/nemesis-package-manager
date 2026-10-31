@@ -1,0 +1,35 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1024" height="700" viewBox="0 0 1024 700" role="img" aria-labelledby="title desc"><title id="title">USB companion: registry preparation</title><desc id="desc">Illustrative companion browser with Settings, drive selector and preparation steps.</desc><g font-family="Arial, Helvetica, sans-serif">
+<rect x="0" y="0" width="1024" height="700" rx="6" fill="#14181e"/>
+<text x="32" y="46" font-size="26" fill="#ebeef4" font-weight="700">USB companion</text>
+<rect x="714" y="18" width="132" height="48" rx="6" fill="#262d37" stroke="#5b748f"/>
+<text x="780.0" y="48" font-size="18" fill="#ebeef4" font-weight="400" text-anchor="middle">Settings</text>
+<text x="866" y="48" font-size="17" fill="#92c5ff" font-weight="400">Guides</text>
+<text x="946" y="48" font-size="14" fill="#a5b2c5" font-weight="400">● Local</text>
+<text x="32" y="78" font-size="15" fill="#a5b2c5" font-weight="400">Prepare packages. Keep your USB data.</text>
+<text x="32" y="134" font-size="25" fill="#ebeef4" font-weight="700">Cloud registry</text>
+<text x="32" y="168" font-size="18" fill="#a5b2c5" font-weight="400">Browse published releases. No GitHub account is needed.</text>
+<text x="32" y="210" font-size="16" fill="#a5b2c5" font-weight="400">Search registry packages</text>
+<rect x="32" y="226" width="650" height="48" rx="6" fill="#0d121a" stroke="#5b748f"/>
+<text x="46" y="256" font-size="17" fill="#a5b2c5" font-weight="400">example</text>
+<rect x="698" y="226" width="132" height="48" rx="6" fill="#262d37" stroke="#5b748f"/>
+<text x="764.0" y="256" font-size="18" fill="#ebeef4" font-weight="400" text-anchor="middle">Search</text>
+<rect x="846" y="226" width="146" height="48" rx="6" fill="#262d37" stroke="#5b748f"/>
+<text x="919.0" y="256" font-size="18" fill="#ebeef4" font-weight="400" text-anchor="middle">Clear text</text>
+<text x="32" y="316" font-size="18" fill="#92c5ff" font-weight="400">▸ Filter results</text>
+<rect x="750" y="288" width="242" height="48" rx="6" fill="#262d37" stroke="#5b748f"/>
+<text x="871.0" y="318" font-size="17" fill="#ebeef4" font-weight="400" text-anchor="middle">Check USB updates</text>
+<rect x="32" y="362" width="960" height="218" rx="6" fill="#121821" stroke="#5b748f"/>
+<text x="56" y="404" font-size="23" fill="#ebeef4" font-weight="700">☑ Example Player</text>
+<text x="56" y="438" font-size="17" fill="#a5b2c5" font-weight="400">example.player • publisher/example-player</text>
+<rect x="56" y="466" width="360" height="48" rx="6" fill="#0d121a" stroke="#5b748f"/>
+<text x="70" y="496" font-size="17" fill="#a5b2c5" font-weight="400">Version: 1.5 ▾</text>
+<rect x="438" y="466" width="530" height="48" rx="6" fill="#0d121a" stroke="#5b748f"/>
+<text x="452" y="496" font-size="17" fill="#a5b2c5" font-weight="400">Destination: packages/Example-Player/ ▾</text>
+<text x="56" y="552" font-size="18" fill="#92c5ff" font-weight="400">▸ Version details — requirements and release notes</text>
+<rect x="32" y="598" width="460" height="48" rx="6" fill="#196389" stroke="#5b748f"/>
+<text x="262.0" y="628" font-size="18" fill="#ebeef4" font-weight="400" text-anchor="middle">Prepare selected versions</text>
+<rect x="506" y="598" width="486" height="48" rx="6" fill="#262d37" stroke="#5b748f"/>
+<text x="749.0" y="628" font-size="18" fill="#ebeef4" font-weight="400" text-anchor="middle">Cancel downloads</text>
+<rect x="0" y="660" width="1024" height="40" rx="0" fill="#14181e"/>
+<text x="24" y="686" font-size="14" fill="#a5b2c5" font-weight="400">Illustrative guide • Fictional packages and versions • Not a vehicle screenshot</text>
+</g></svg>

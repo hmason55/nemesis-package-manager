@@ -1,128 +1,80 @@
-# Local USB companion
+# USB companion guide
 
-The companion opens a local browser UI for preparing a USB drive and managing
-the release ZIPs on it. It works offline with downloaded releases and uses only
-Python's standard library. There is no frontend framework, Node runtime, account,
-database, background service, or cloud dependency.
+Prepare a package drive on your computer, then install the packages in your parked vehicle. The companion can import downloaded ZIPs, prepare published registry releases, replace installers while keeping USB data, and remove files from the drive. **Copying to USB does not install or uninstall anything on the head unit.**
 
-Start with the [illustrated setup steps](USER-GUIDE.md#get-started) to prepare a drive and install your first package in the vehicle.
+| Task | Go to |
+| --- | --- |
+| Download and open the companion | [Run a release download](#run-a-release-download) |
+| Set up a drive or import a ZIP | [Use the UI](#use-the-ui) |
+| Download published releases to USB | [Prepare packages from the registry](#prepare-packages-from-the-registry) |
+| Check manager releases or change automatic launch | [Manager release check, automatic launch, and removal](#manager-release-check-automatic-launch-and-removal) |
+| Update the installed manager | [Install or update Package Manager itself](#install-or-update-package-manager-itself) |
+| Recover after an interrupted copy | [Files and recovery](#files-and-recovery) |
 
 ## Run a release download
 
-Every new Package Manager release includes both standalone x86-64 builds:
+Get the matching archive from [Releases](https://github.com/hmason55/nemesis-package-manager/releases), then extract it:
 
-- **Windows:** download `nemesis-usb-companion-windows-x86_64.zip`, extract it,
-  and run `nemesis-usb-companion.exe`.
-- **Linux:** download `nemesis-usb-companion-linux-x86_64.tar.gz`, extract it,
-  and run `./nemesis-usb-companion`. If necessary, first run
-  `chmod +x nemesis-usb-companion`.
+| Computer | Download | Run |
+| --- | --- | --- |
+| Windows x86-64 | `nemesis-usb-companion-windows-x86_64.zip` | `nemesis-usb-companion.exe` |
+| Linux x86-64 | `nemesis-usb-companion-linux-x86_64.tar.gz` | `./nemesis-usb-companion` |
 
-The executable includes its Python runtime and UI assets. Users do **not** need
-to install Python, Node, pip packages, or a separate web server. A browser and the
-normal OS libraries are required. Linux builds target glibc-based distributions
-compatible with Ubuntu 22.04 or newer; Alpine/musl and ARM are not supported by
-these artifacts. Check downloads against the release's `SHA256SUMS` file.
+The executable includes Python and the UI assets. No Python, Node, pip packages, or separate web server is needed. Linux needs a glibc distribution compatible with Ubuntu 22.04 or newer; Alpine/musl and ARM are unsupported by these downloads. If needed, run `chmod +x nemesis-usb-companion`. Check the archive against the release's `SHA256SUMS`.
 
-The app opens a local URL automatically and uses a blue, black, and gray dark
-theme. Both executables are built and smoke-tested from the same commit as the
-head-unit packages. Publication waits for both builds, and checksums cover all
-the four application downloads plus public release evidence. Development downloads are prereleases; stable downloads require explicit publication after quality and artifact checks. See [release procedures](RELEASING.md). Existing releases are not modified retroactively.
-
-## Run from this repository
-
-Use Python 3.12 or newer. No pip installation is required to run from source.
-
-- **Windows:** double-click `usb-companion.cmd` in the repository root.
-- **Linux:** run `sh usb-companion.sh` from the repository root.
-- **Either platform:** run `python -m tools.usb_companion` (use `python3` on Linux).
-
-The app selects a free port and opens the browser automatically. Keep its terminal
-window open. Press Ctrl+C in that window to stop it. Closing the browser does not
-stop the server. To open the browser yourself or choose a port:
-
-```sh
-python -m tools.usb_companion --no-browser --port 8765
-```
-
-Open the **complete URL** printed in the terminal, including its session fragment.
-Only `127.0.0.1` is supported. The fragment authenticates API requests and changes
-on each launch. Do not share it with another user or web page.
+The companion opens a browser automatically. Keep its terminal window open; Ctrl+C stops the local server. Closing the browser alone does not stop it. Release artifacts for Windows, Linux, and the head unit come from the same commit. Development prereleases and explicitly published stable releases follow the [release procedures](RELEASING.md).
 
 ## Use the UI
 
-![Illustrative USB companion Packages screen showing a selected drive and a release on USB](images/companion-packages.svg)
+![Example companion package list with Settings, drive selection, search, replacement, and removal](images/companion-packages.svg)
 
-*Screen mockup with example drive and package data. **On USB** is the installer version, not the installed head-unit version. See the [illustrated user guide](USER-GUIDE.md#get-started) for the handoff to the vehicle.*
+*Illustrative screen with fictional packages. **On USB** is the installer version, not the version installed in the vehicle.*
 
-To replace a release, follow the [package update steps](USER-GUIDE.md#update-a-community-package). To update the installed Package Manager app, follow [Update Package Manager](UPDATING.md#update-package-manager).
+1. Select the USB drive and check its path and available space. **Refresh** discovers newly connected drives. If yours is missing, open **Settings > Drive not listed?**, enter its existing drive or mount path, and select it. The companion does not format drives.
+2. For first setup, open **Drive setup**, select `usb-package-manager-ready.zip`, and choose **Set up drive**. On an existing setup, **Update manager** replaces the stored installer; **Repair manager** restores a missing one. Both preserve launcher settings and leave the installed head-unit app unchanged.
+3. Open **Packages** to inspect the drive. **Search USB packages** filters immediately; the type filter shows installers, scripts, or **Needs attention**. Open **Details** for paths and descriptions or **View issue** for a layout error.
+4. Choose **Add package**, select a trusted release ZIP, and review the suggested folder name. **Change folder name** provides an override. Confirm **Add package** and wait for completion.
+5. To replace an installer, choose its **Replace on USB** action, select the new ZIP, and confirm **Update package**. You can also use **Add / update > Update an existing package**. The importer replaces old installer files and preserves the existing USB `data/` folder.
+6. Resolve any reported errors, wait for copying to finish, and safely eject the drive. In the vehicle, choose **USB Storage**, tap **Refresh**, and confirm **Install** or **Update**. See the [vehicle walkthrough](USER-GUIDE.md#get-started).
 
-1. Choose a drive from the **USB drive** selector. **Refresh** checks for
-   newly connected media. For USB enclosures reported as fixed disks or unusual
-   mounts, open **Drive not listed?** to enter the path. Check the selected path
-   and free space. The app does not partition or format drives.
-2. In **Drive setup**, choose `usb-package-manager-ready.zip` and click **Set up
-   drive**. First setup refuses existing launcher files and disabled backups.
-   On a prepared drive, this tab offers **Update manager** instead. Manager updates
-   replace only `manager/usb.package.manager.zip`, preserving launcher settings.
-   If that installer is missing but launcher files remain, use **Repair manager**
-   to restore it without reactivating a disabled launcher.
-   These actions only copy the installer to USB; they do not update the installed
-   app. After replacement or repair, Drive setup stays open and expands the
-   offline NEMESIS installation instructions described below.
-3. The **Packages** tab lists names, versions on USB, types, and validation status
-   in columns. Use the filter to show installers, scripts, or packages needing
-   attention. Expand **Details** for descriptions and file paths, or **View issue**
-   for error messages.
-4. Click **Add package**, choose a trusted release ZIP, and review its automatically
-   generated folder name. **Change folder name** exposes an optional override.
-   Click **Add package** to import it. Supported layouts use the shared importer,
-   which validates referenced ZIPs and scripts before publishing them.
-5. Click a package's **Replace on USB** action, or choose **Update an existing package**
-   in **Add / update** and select the package. Choose its new ZIP and confirm
-   **Update package**. Existing `data/` directories, including case aliases, are
-   preserved. Old installer files are replaced rather than mixed with the new
-   release. Changing drives clears pending file selections and update targets.
+Replacement requires matching internal package IDs. If an ID is unreadable, add the release in a new folder instead. Changing drives clears pending ZIP selections and targets; a change from another browser tab requires you to refresh and select the intended drive again.
 
-Replacement requires matching package IDs. If a release has no readable ID
-(including scripts without IDs), add it to a new folder instead; the previous
-installer and its data remain intact. A drive selection changed in another tab
-blocks copying until you refresh and select the intended drive again.
+Loose installer ZIPs can be inspected and removed, but cannot be replaced in place. Import them into a managed folder for future replacement. Data-only folders are omitted from the package list. **Unknown** means no readable package version; a USB wrapper's protocol version is not the installer version.
 
-The tabs support arrow keys, Home, and End. Loose ZIP installers can be removed but cannot be replaced in place;
-update selectors contain only folders supported by the directory importer.
-Hover over a control or focus it with Tab for a short tooltip; Escape dismisses it.
-**Quick guide** explains the steps on touchscreens too. After copying, the status
-shows what to do next in the vehicle.
+The tabs support arrow keys, Home, and End. Hover or focus a control for its tooltip; Escape dismisses it. **Quick guide** also works on touchscreens.
 
-Versions labeled **On USB** come from package manifests. They describe installers,
-not installed head-unit versions. The USB wrapper's protocol version is not used
-as the installer's version. Scripts and missing package versions display as
-**Unknown**. Broken
-layouts show an error alongside the package instead of disappearing from the list.
-Existing raw installer ZIPs directly under `packages/`, or inside a package folder
-without a descriptor, are also shown with their internal names and versions.
-Loose ZIPs are inspection-only in this UI; import a release into a new managed
-folder for future updates. Folders containing a descriptor remain a single package
-row, and data-only folders are ignored. Initial setup creates `packages/` even
-when no community packages are imported, so the head-unit app can find the drive.
-No release downloads, version ordering, firmware compatibility decisions, package
-execution, package removal, or vehicle connection are included in this version.
+## Prepare packages from the registry
 
-NEMESIS must already work on the head unit. After copying community packages,
-use the drive in the parked vehicle and confirm installation or update in
-Package Manager. Package Manager itself uses the separate procedure below.
+![Example Cloud registry panel with live search, version selection, and USB preparation](images/companion-registry.svg)
+
+1. Select your USB drive, then scroll to **Cloud registry** below the USB tabs. The built-in staging registry address is ready to use; browsing and downloads need no GitHub account.
+2. Type in **Search registry packages**. Results update after a short pause; Enter searches immediately. **Filter results** contains category, publisher, maximum download size, and sort order. **Reset filters** clears these and the search. Size filtering uses each package's latest published ZIP.
+3. Select a package to reveal its version and destination controls. Choose the exact version, read the release notes, and expand **Version details** for compatibility information. **Check USB updates** compares releases with installers on the selected drive, not installed head-unit versions.
+4. Choose the destination when several managed folders have the same package ID. Review the selections, then choose **Prepare selected versions** and confirm any replacement warnings.
+5. Wait for each download, verification, and USB copy. Read every package's result before ejecting; a batch can contain both successes and failures. In the vehicle, use **USB Storage** and confirm installation separately.
+
+The companion verifies publication status, byte size, SHA-256, archive safety, and internal ID/version before importing. **Cancel downloads** stops further work; a directory replacement already in progress finishes. Resolve a failed package's error before retrying it.
+
+In **Settings**, **Registry HTTPS address > Save registry** changes the connection for this companion session. Clear the address and save to disconnect. The optional vehicle, firmware, and NEMESIS profile is saved in this browser; choose **Apply profile and refresh results** after editing it. Compatibility warnings are advisory. Manual imports continue offline. For command-line overrides, use `--registry-url` or `NEMESIS_REGISTRY_URL`; an explicitly empty override disables the default. Startup itself does not contact the registry.
+
+## Manager release check, automatic launch, and removal
+
+**Drive setup** shows the manager installer version on USB and checks public GitHub release metadata, including development prereleases. A newer comparable version offers a release-page link; downloads are explicit. Use **Check for updates** to retry. USB management continues offline.
+
+![Drive setup example with installer version, release link, and separate installation instructions](images/companion-setup.svg)
+
+Open **Settings > Run Package Manager when this USB is inserted** to change automatic launch. First setup launches once by default and then disables its execution descriptor. Enabling this option keeps launch enabled on later insertions; NEMESIS may still ask for approval. Only a recognized manager launcher can be changed.
+
+On **Packages**, choose **Remove**, review the confirmation, then choose **Remove from USB**. **Also delete this package's USB data** starts unchecked. Keeping data leaves it in the original folder for a later import. Loose ZIP removal keeps shared data and sibling installers. The installed vehicle package stays unchanged.
+
+![USB removal confirmation with optional data deletion unchecked](images/companion-remove.svg)
 
 ## Install or update Package Manager itself
 
-**Update manager** replaces the installer on USB; **Repair manager** restores a
-missing installer. Neither action changes the app installed on the head unit.
-Package Manager is hidden from its own list and cannot update itself.
+**Update manager** and **Repair manager** change the USB installer only. Package Manager is hidden from its own package lists and cannot update itself.
 
-1. Copy `manager/usb.package.manager.zip` from your normal package drive to the
-   root of a **separate USB drive**, named `usb.package.manager.zip`. Keep it
-   compressed.
-2. On that separate drive, create a plain-text file named `NEMESIS.data` at its
-   root containing:
+1. Copy `manager/usb.package.manager.zip` from the package drive to the root of a **separate USB drive**. Keep it compressed and named `usb.package.manager.zip`.
+2. Create a plain-text `NEMESIS.data` at that separate drive's root:
 
    ```ini
    [nemesis]
@@ -131,59 +83,45 @@ Package Manager is hidden from its own list and cannot update itself.
    path=usb.package.manager.zip
    ```
 
-3. With the vehicle parked and the head unit fully booted, close Package Manager,
-   safely eject the separate drive from your computer, and insert it in the
-   vehicle. Approve NEMESIS's installation or update prompt, keep the drive
-   connected, and wait for completion.
-4. Open **NEMESIS Manager > Packages > Package Manager > Launch**. Return to your
-   normal package drive afterward, keeping its disabled root descriptor disabled.
-   Do not put the install descriptor on that drive.
+3. Safely eject it from your computer. With the vehicle parked and head unit fully booted, close Package Manager, insert the separate drive, and approve NEMESIS's installation/update prompt. Keep it connected until completion.
+4. Open **NEMESIS Manager > Packages > Package Manager > Launch**, then return to your normal package drive. Keep that drive's existing launch preference; do not replace its root descriptor with the install descriptor.
 
-The same instructions are embedded in **Drive setup**, so no internet connection
-is required. For first installation on a newly prepared drive, the normal
-launcher can install and open Package Manager after the NEMESIS execution prompt;
-that launcher does not update an already-installed copy. See also the
-[manager update guide](UPDATING.md#update-package-manager).
+These instructions are also available offline in **Drive setup**. A newly prepared normal drive can install and open a missing manager through its first-launch prompt; it does not update an existing installation. See [Updating packages](UPDATING.md#update-package-manager) for more detail.
 
 ## Files and recovery
 
-Uploads are streamed to a temporary file on the computer, with a 512 MiB per-ZIP
-limit. Installers are staged on the selected drive before replacement, so the
-drive needs enough free space for the new installer. Existing recordings are
-moved with directory renames rather than duplicated. Links and junctions in
-managed paths are rejected. No package scripts run on the computer.
+Local ZIP uploads are streamed to temporary computer storage with a 512 MiB per-ZIP limit. Installers are staged on the USB drive before replacement, so leave enough free space for the new installer. Existing USB data is moved with directory renames rather than duplicated. Managed paths reject links and junctions. No package scripts run on the computer.
 
-Ordinary replacement errors attempt to restore the previous package. Abrupt power
-loss, process termination, or unplugging during copying is not a transaction-safe
-operation. A hidden `.companion-*` directory may remain on the USB; keep it until
-you have inspected its `previous/` and `packages/` directories for installers and
-user data. If rollback itself fails, the app keeps that directory and reports its
-path. Keep independent backups of recordings and exports.
+Ordinary replacement errors attempt to restore the previous package. Unplugging, terminating the process, or losing power during copying can interrupt recovery. Keep any hidden `.companion-*` directory until you have inspected its `previous/` and `packages/` directories for installers and data. A failed rollback reports the retained path. Keep independent backups of important recordings and exports.
+
+## Run from this repository
+
+Use Python 3.12 or newer; runtime pip installation is unnecessary.
+
+- Windows: double-click `usb-companion.cmd`.
+- Linux: run `sh usb-companion.sh`.
+- Either: run `python -m tools.usb_companion` (`python3` on Linux).
+
+To choose a port without opening the browser:
+
+```sh
+python -m tools.usb_companion --no-browser --port 8765
+```
+
+Open the complete printed URL, including its session fragment. Only `127.0.0.1` is supported. The fragment authenticates API requests, changes on each launch, and should not be shared.
 
 ## Build a standalone app
 
-For distribution to users without Python, build the executable **on each target
-OS** with PyInstaller. PyInstaller is a build dependency only. The spec bundles
-the Python runtime, the shared import helpers, and the three static UI files:
+Build on each target OS with PyInstaller:
 
 ```sh
 python -m pip install -r packaging/requirements-companion.txt
 python -m PyInstaller --clean --noconfirm packaging/usb-companion.spec
 ```
 
-The output is `dist/nemesis-usb-companion.exe` on Windows or
-`dist/nemesis-usb-companion` on Linux. The terminal stays visible so users can stop
-the server and reopen its URL. The executable extracts its bundled runtime to a
-temporary directory at startup; it does not install a system service. Linux users
-may need to mark the downloaded executable as executable. Build Linux releases on
-the oldest supported distribution, then test on the distributions you distribute
-to. Native drive discovery and real removable-media behavior require testing on
-both operating systems before a release is advertised as validated.
+The spec bundles the runtime, import helpers, and UI assets. Output is `dist/nemesis-usb-companion.exe` on Windows or `dist/nemesis-usb-companion` on Linux. The executable extracts its runtime into a temporary directory and keeps a terminal open for the server URL and shutdown.
 
-The reusable **USB companion** Actions workflow tests and builds Windows x86-64
-and Linux x86-64 artifacts. The main build calls it for PRs and release commits;
-it can also be run manually without publishing. Linux builds use Ubuntu 22.04
-as their build baseline; they have not been validated on every distribution.
+The reusable **USB companion** workflow builds and smoke-tests Windows and Linux x86-64 artifacts. Linux uses Ubuntu 22.04 as its baseline. Test native drive discovery and real removable media on each supported OS before advertising validation.
 
 ## Development checks
 
@@ -192,33 +130,4 @@ python -m unittest discover -s tests -p 'test_usb_companion.py'
 python -m ruff format --check tools/companion_*.py tools/usb_companion.py tests/test_usb_companion.py
 ```
 
-Tests use temporary directories and a loopback HTTP server, never real USB media.
-
-
-## Manager release check, automatic launch, and removal
-
-**Drive setup** shows the Package Manager installer version on USB. It can check public GitHub release metadata (including development prereleases) and link to a newer comparable release. This uses an internet connection only for release metadata; copying and browsing USB files continue offline. No automatic downloads or head-unit updates occur.
-
-Use **Run Package Manager when this USB is inserted** to control its execution descriptor. Enabling also keeps automatic launch enabled after subsequent successful launches. Only a recognized manager launcher is changed; foreign root descriptors and custom launchers are rejected. Existing disabled backups are preserved. NEMESIS may still require confirmation.
-
-Use **Remove** on a package row to open a confirmation. **Also delete this package's USB data** is unchecked by default. Keeping data leaves it in the original package folder; importing the same folder later reuses it. Loose ZIP removal keeps shared data and sibling installers. This changes only USB files, never installed head-unit apps.
-
-See the [illustrated companion controls](USER-GUIDE.md#manage-the-usb-drive-on-your-computer).
-
-## Illustrated online guides
-
-Open [NEMESIS user and publisher guides](https://hmason55.github.io/nemesis-package-manager/#guides) for vehicle Settings/source choice, manual and registry USB preparation, compatibility warnings, and GitHub publisher onboarding. The hosted guides include labeled example illustrations and recovery steps. Package Manager itself retains its dedicated update workflow.
-
-### Registry connection and publication
-
-Routine setup is **select drive → prepare packages → eject and install**. The **Settings** dialog contains manual drive-path selection, automatic launch, registry connection and optional device profile controls. Search stays visible; open **Filter results** for extra filters and **Version details** for longer compatibility notes. Select a package to reveal its version and destination controls. Safety confirmations still appear before files are replaced or removed.
-
-Type in **Search registry packages** to update results automatically after a short pause. Enter searches immediately. Combine **Category**, **Publisher**, **Maximum download**, and **Sort by**; **Reset filters** clears the search and filters. The size filter applies to the latest published ZIP; inspect your selected version before preparing it. Selections apply to the visible results. On the **Packages** tab, **Search USB packages** filters the selected drive immediately, alongside the installer, script, and needs-attention filters. Manual imports still work offline.
-
-Companion has a built-in staging registry address, so Cloud registry browsing needs
-no connection setup or account by default. Settings → Registry HTTPS address → Save registry can override it;
-manual USB imports remain available offline. Publishers sign in with GitHub and
-connect their public repository/App installation. Successful trusted validation
-publishes their release automatically; there is no separate maintainer approval.
-Failed validation remains private, and administrators can withdraw broken or abusive
-releases. See the hosted publisher guide for the complete workflow.
+Tests use temporary directories and a loopback server, never real USB media. See the [registry guide](REGISTRY-GUIDE.md) for website browsing and publishing, and the [online guides](https://hmason55.github.io/nemesis-package-manager/#guides) for guided walkthroughs.

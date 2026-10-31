@@ -1,26 +1,27 @@
-<svg xmlns="http://www.w3.org/2000/svg" width="1024" height="612" viewBox="0 0 1024 612" role="img" aria-labelledby="title desc">
-  <title id="title">USB companion: Drive setup</title>
-  <desc id="desc">The USB manager version, a newer prerelease link, and an automatic-launch checkbox.</desc>
-  <g font-family="Arial, Helvetica, sans-serif">
-    <rect width="1024" height="612" fill="#14181e" />
-    <text x="20" y="595" font-size="14" fill="#a5b2c5">Illustrative mockup - Example data - Not a vehicle screenshot</text>
-    <text x="32" y="48" font-size="26" fill="#ebeef4" font-weight="700">USB companion</text>
-    <text x="32" y="92" font-size="22" fill="#ebeef4" font-weight="700">Drive setup</text>
-    <rect x="32" y="115" width="960" height="410" rx="6" fill="#121821" stroke="#5b748f" />
-    <text x="56" y="155" font-size="22" fill="#ebeef4" font-weight="700">Package Manager</text>
-    <text x="56" y="191" font-size="20" fill="#ebeef4" font-weight="400">On USB: 0.2.0-build.64</text>
-    <text x="56" y="229" font-size="18" fill="#a8d5ff" font-weight="400">Update available: 0.2.0-build.65 (prerelease)</text>
-    <text x="56" y="265" font-size="18" fill="#92c5ff" font-weight="400">Get the newer manager release</text>
-    <rect x="56" y="288" width="200" height="48" rx="6" fill="#202c3d" stroke="#5b748f" />
-    <text x="156.0" y="318" font-size="18" fill="#ebeef4" font-weight="400" text-anchor="middle">Check for updates</text>
-    <text x="56" y="375" font-size="18" fill="#ebeef4" font-weight="700">Manager release bundle</text>
-    <rect x="56" y="390" width="500" height="48" rx="6" fill="#262d37" stroke="#5b748f" />
-    <text x="72" y="420" font-size="18" fill="#ebeef4" font-weight="400">Choose usb-package-manager-ready.zip</text>
-    <rect x="590" y="390" width="240" height="48" rx="6" fill="#196389" stroke="#5b748f" />
-    <text x="710.0" y="420" font-size="18" fill="#ebeef4" font-weight="400" text-anchor="middle">Update manager</text>
-    <rect x="56" y="466" width="22" height="22" rx="6" fill="#92c5ff" stroke="#5b748f" />
-    <text x="62" y="484" font-size="18" fill="#081624" font-weight="700">x</text>
-    <text x="92" y="484" font-size="18" fill="#ebeef4" font-weight="400">Run Package Manager when this USB is inserted</text>
-    <text x="56" y="513" font-size="15" fill="#a5b2c5" font-weight="400">NEMESIS may still ask you to approve execution.</text>
-  </g>
-</svg>
+<svg xmlns="http://www.w3.org/2000/svg" width="1024" height="700" viewBox="0 0 1024 700" role="img" aria-labelledby="title desc"><title id="title">USB companion: Drive setup</title><desc id="desc">Illustrative companion browser with Settings, drive selector and preparation steps.</desc><g font-family="Arial, Helvetica, sans-serif">
+<rect x="0" y="0" width="1024" height="700" rx="6" fill="#14181e"/>
+<text x="32" y="46" font-size="26" fill="#ebeef4" font-weight="700">USB companion</text>
+<rect x="714" y="18" width="132" height="48" rx="6" fill="#262d37" stroke="#5b748f"/>
+<text x="780.0" y="48" font-size="18" fill="#ebeef4" font-weight="400" text-anchor="middle">Settings</text>
+<text x="866" y="48" font-size="17" fill="#92c5ff" font-weight="400">Guides</text>
+<text x="946" y="48" font-size="14" fill="#a5b2c5" font-weight="400">● Local</text>
+<text x="32" y="78" font-size="15" fill="#a5b2c5" font-weight="400">Prepare packages. Keep your USB data.</text>
+<text x="32" y="126" font-size="23" fill="#ebeef4" font-weight="700">Drive setup</text>
+<rect x="32" y="150" width="960" height="470" rx="6" fill="#121821" stroke="#5b748f"/>
+<text x="56" y="192" font-size="24" fill="#ebeef4" font-weight="700">Package Manager</text>
+<text x="56" y="232" font-size="20" fill="#ebeef4" font-weight="400">On USB: 1.0.0-build.64</text>
+<text x="56" y="272" font-size="18" fill="#92c5ff" font-weight="400">Update available: 1.0.0-build.65 (prerelease)</text>
+<text x="56" y="310" font-size="18" fill="#92c5ff" font-weight="400">View latest release</text>
+<rect x="56" y="334" width="220" height="48" rx="6" fill="#262d37" stroke="#5b748f"/>
+<text x="166.0" y="364" font-size="18" fill="#ebeef4" font-weight="400" text-anchor="middle">Check for updates</text>
+<text x="56" y="422" font-size="19" fill="#ebeef4" font-weight="700">Manager release bundle</text>
+<rect x="56" y="444" width="590" height="48" rx="6" fill="#0d121a" stroke="#5b748f"/>
+<text x="70" y="474" font-size="17" fill="#a5b2c5" font-weight="400">usb-package-manager-ready.zip</text>
+<rect x="662" y="444" width="306" height="48" rx="6" fill="#196389" stroke="#5b748f"/>
+<text x="815.0" y="474" font-size="18" fill="#ebeef4" font-weight="400" text-anchor="middle">Update manager</text>
+<text x="56" y="540" font-size="19" fill="#92c5ff" font-weight="400">▸ Install or update Package Manager through NEMESIS</text>
+<text x="56" y="578" font-size="18" fill="#a5b2c5" font-weight="400">Copying the installer does not update the installed app.</text>
+<text x="32" y="646" font-size="16" fill="#a5b2c5" font-weight="400">Automatic launch is under Settings &gt; USB options.</text>
+<rect x="0" y="660" width="1024" height="40" rx="0" fill="#14181e"/>
+<text x="24" y="686" font-size="14" fill="#a5b2c5" font-weight="400">Illustrative guide • Fictional packages and versions • Not a vehicle screenshot</text>
+</g></svg>
