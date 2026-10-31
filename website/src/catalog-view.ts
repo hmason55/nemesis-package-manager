@@ -264,7 +264,7 @@ export function renderPackage(
         "p",
         "Version " +
           requestedVersion +
-          " is not available. Select an approved version to continue.",
+          " is not available. Select an published version to continue.",
         "callout",
       ),
     );
@@ -371,7 +371,7 @@ export function renderPackage(
   const history = el("section");
   history.append(el("h2", "Versions"));
   const table = el("table");
-  table.append(el("caption", "Approved package versions"));
+  table.append(el("caption", "Published package versions"));
   const head = el("thead"),
     headRow = el("tr");
   for (const label of ["Version", "Size", "Action"]) {
@@ -413,7 +413,7 @@ export function renderPackage(
     external("Source repository", "https://github.com/" + data.repository),
     el("h3", "Package ID"),
     el("p", data.id, "break-word"),
-    el("h3", "Approved versions"),
+    el("h3", "Published versions"),
     el("p", String(versions.length)),
   );
   const verification = el("details");

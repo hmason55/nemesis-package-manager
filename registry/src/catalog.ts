@@ -131,7 +131,7 @@ export async function catalog(request: Request, env: Env): Promise<Response> {
     )
       .bind(id, version)
       .first<Submission>();
-    requireValue(row, "Approved version not found", 404);
+    requireValue(row, "Published version not found", 404);
     if (download === "icon" && parts.length === 4) return serveIcon(env, row);
     if (download === "download" && parts.length === 4) {
       const object = await env.PACKAGES.get(row.object_key);
