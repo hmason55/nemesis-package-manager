@@ -60,6 +60,11 @@ module.exports = async function publish({github, context, version, sourceSha = c
   if (!ref) await github.rest.git.createRef({...repo, ref: `refs/tags/${tag}`, sha: sourceSha});
   if (!release) {
     const notes = (await github.rest.repos.generateReleaseNotes({...repo, tag_name: tag, target_commitish: sourceSha})).data;
+    // Keep the first stable changelog usable after obsolete development tags are pruned.
+    for (const previous of releases) {
+      if (/^v\d+\.\d+\.\d+-build\.[1-9]\d*$/.test(previous.tag_name || '') && /^[a-f0-9]{40}$/.test(previous.target_commitish || ''))
+        notes.body = notes.body.replaceAll(`/compare/${previous.tag_name}...`, `/compare/${previous.target_commitish}...`);
+    }
     const signing = channel === 'stable' ? 'Stable release (release signed).' : 'Experimental development prerelease (debug signed).';
     release = (await github.rest.repos.createRelease({...repo, tag_name: tag, target_commitish: sourceSha,
       name: `Package Manager ${version}`, draft: true, prerelease: channel === 'development', make_latest: 'false',

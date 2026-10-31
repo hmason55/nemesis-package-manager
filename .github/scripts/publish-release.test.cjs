@@ -116,6 +116,17 @@ test('a main push publishes a signed stable release and records its run for idem
   assert.equal(f.state.published, 1);
 });
 
+test('first stable changelog uses immutable commits for development tags that cleanup removes', async t => {
+  const f = stableFixture(t), previous = 'e'.repeat(40);
+  f.state.previousReleases = [{id: 2, tag_name: 'v0.2.0-build.91', target_commitish: previous, prerelease: true}];
+  f.github.rest.repos.generateReleaseNotes = async () => ({data: {
+    body: 'Full Changelog: https://github.com/example/manager/compare/v0.2.0-build.91...v1.0.0'
+  }});
+  await publish(f);
+  assert.match(f.state.release.body, new RegExp(`/compare/${previous}\\.\\.\\.v1\\.0\\.0`));
+  assert.doesNotMatch(f.state.release.body, /compare\/v0\.2\.0-build\.91/);
+});
+
 test('quality failures, missing results, and stale results create no tags, release, or assets', async t => {
   for (const job of ['python-quality', 'java-quality', 'build', 'companion']) {
     for (const result of ['failure', 'cancelled', 'skipped', undefined]) {
