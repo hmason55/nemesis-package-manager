@@ -13,6 +13,7 @@ import { session, isAdmin, body, audit, random, service } from "./security";
 import { multipart } from "./uploads";
 import { publishValidated, publicationFailure } from "./publication";
 import { manage, publishingAllowed } from "./management";
+import { publisherPackages } from "./publisher-packages";
 import { uploadIcon } from "./icons";
 import {
   github,
@@ -164,6 +165,10 @@ export async function publisher(request: Request, env: Env) {
     url = new URL(request.url),
     path = url.pathname;
   await publishingAllowed(env, user.publisher_id);
+  const packages = await publisherPackages(request, env, user, (id) =>
+    repository(env, user, id),
+  );
+  if (packages) return packages;
   if (path === "/v1/publisher/me" && request.method === "GET")
     return Response.json({
       id: user.publisher_id,

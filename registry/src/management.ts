@@ -19,6 +19,33 @@ export async function publishingAllowed(
   }
 }
 
+export async function removePackage(
+  env: Env,
+  user: Session,
+  id: string,
+  reason: string,
+  repositoryId?: number,
+) {
+  requireValue(reason, "Supply a reason for this action");
+  const changed = await env.DB.prepare(
+    "UPDATE submissions SET status=CASE WHEN status='approved' THEN 'withdrawn' ELSE 'rejected' END,report=?,updated_at=? WHERE package_id=? AND status IN ('approved','queued','validating','review')" +
+      (repositoryId === undefined ? "" : " AND repository_id=?"),
+  )
+    .bind(
+      "Package removed: " + reason,
+      now(),
+      id,
+      ...(repositoryId === undefined ? [] : [repositoryId]),
+    )
+    .run();
+  requireValue(
+    changed.meta.changes > 0,
+    "No public or pending package found",
+    404,
+  );
+  await audit(env, user.publisher_id, "package_removed", id);
+}
+
 export async function manage(
   request: Request,
   env: Env,
@@ -71,17 +98,7 @@ export async function manage(
     await audit(env, user.publisher_id, block[2], String(id));
   } else {
     const id = packageId(decodeURIComponent(remove![1]));
-    const changed = await env.DB.prepare(
-      "UPDATE submissions SET status=CASE WHEN status='approved' THEN 'withdrawn' ELSE 'rejected' END,report=?,updated_at=? WHERE package_id=? AND status IN ('approved','queued','validating','review')",
-    )
-      .bind("Package removed: " + reason, now(), id)
-      .run();
-    requireValue(
-      changed.meta.changes > 0,
-      "No public or pending package found",
-      404,
-    );
-    await audit(env, user.publisher_id, "package_removed", id);
+    await removePackage(env, user, id, reason);
   }
   return Response.json({ ok: true });
 }

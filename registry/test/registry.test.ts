@@ -1,5 +1,13 @@
 import { env, applyD1Migrations } from "cloudflare:test";
-import { beforeAll, beforeEach, describe, it, expect, vi } from "vitest";
+import {
+  beforeAll,
+  beforeEach,
+  afterEach,
+  describe,
+  it,
+  expect,
+  vi,
+} from "vitest";
 import worker from "../src/index";
 import { hash, seal, challenge } from "../src/security";
 import { Env, now, metadata as parseMetadata } from "../src/types";
@@ -8,7 +16,7 @@ import { createSubmission } from "../src/publishing";
 import { HttpError } from "../src/types";
 import { publicVersion } from "../src/catalog";
 import { synchronize } from "../src/webhooks";
-import { github } from "../src/github";
+import { github, checkRepository } from "../src/github";
 import urlFixtures from "../../contracts/fixtures/url-components.json";
 vi.mock("../src/github", () => ({
   github: vi.fn(async (path: string) =>
@@ -96,6 +104,293 @@ beforeEach(async () => {
     .run();
   await bindings.PACKAGES.put("sha256/" + sha + ".zip", "zip");
 });
+describe("publisher package removal", () => {
+  const otherToken = "12".repeat(32);
+  beforeEach(async () => {
+    bindings.ADMIN_IDS = "99";
+    vi.mocked(checkRepository).mockResolvedValue({
+      repo: { id: 10, owner: { id: 1 }, private: false },
+      installation: { id: 20 },
+    });
+    await bindings.DB.prepare("UPDATE submissions SET status='approved'").run();
+    await bindings.DB.prepare(
+      "INSERT INTO publishers VALUES(2,'collaborator')",
+    ).run();
+    await bindings.DB.prepare(
+      "INSERT INTO repository_publishers VALUES(10,2)",
+    ).run();
+    await bindings.DB.prepare("INSERT INTO sessions VALUES(?,2,?,?)")
+      .bind(
+        await hash(otherToken),
+        await seal(bindings, "collaborator-token"),
+        now() + 3600,
+      )
+      .run();
+  });
+  afterEach(() => {
+    vi.mocked(checkRepository)
+      .mockReset()
+      .mockRejectedValue(new Error("Unauthorized repository"));
+  });
+  async function addVersion(
+    id: string,
+    version: string,
+    status: string,
+    publisher = 1,
+    repo = 10,
+  ) {
+    await bindings.DB.prepare(
+      "INSERT INTO submissions(id,package_id,repository_id,publisher_id,release_id,asset_id,version,metadata,status,sha256,size,object_key,created_at,updated_at) SELECT ?,package_id,?,?,31,?, ?,metadata,?,sha256,size,object_key,2,2 FROM submissions WHERE id=?",
+    )
+      .bind(
+        id,
+        repo,
+        publisher,
+        Number.parseInt(id.slice(0, 4), 16),
+        version,
+        status,
+        submission,
+      )
+      .run();
+  }
+  it("lists only personally published packages, once per ID, excluding unpublished work", async () => {
+    await addVersion("31".repeat(32), "2.0", "approved");
+    const response = await call(
+      "/v1/publisher/packages",
+      "GET",
+      undefined,
+      token,
+    );
+    expect(response.status).toBe(200);
+    expect(response.headers.get("Cache-Control")).toBe("no-store");
+    expect(await response.json()).toMatchObject([
+      { id: "example.app", repository: "owner/repo", published_versions: 2 },
+    ]);
+    await addVersion("32".repeat(32), "3.0", "queued", 2);
+    expect(
+      await (
+        await call("/v1/publisher/packages", "GET", undefined, otherToken)
+      ).json(),
+    ).toEqual([]);
+  });
+  it("withdraws owned versions and stops pending work without erasing artifacts, ownership, or another repository's jobs", async () => {
+    for (const [id, version, status] of [
+      ["31", "2", "approved"],
+      ["32", "3", "queued"],
+      ["33", "4", "validating"],
+      ["34", "5", "review"],
+    ])
+      await addVersion(id.repeat(32), version, status);
+    const stale = await bindings.DB.prepare(
+      "SELECT * FROM submissions WHERE id=?",
+    )
+      .bind("34".repeat(32))
+      .first<any>();
+    await bindings.DB.prepare(
+      "INSERT INTO repositories VALUES(11,'other/repo',21,2,1,1)",
+    ).run();
+    await addVersion("35".repeat(32), "6", "queued", 2, 11);
+    expect(
+      (
+        await call(
+          "/v1/publisher/packages/EXAMPLE.APP/remove",
+          "POST",
+          { reason: "  Retired package  " },
+          token,
+        )
+      ).status,
+    ).toBe(200);
+    const rows = await bindings.DB.prepare(
+      "SELECT status,report FROM submissions WHERE repository_id=10 ORDER BY version",
+    ).all<any>();
+    expect(rows.results.map((row) => row.status)).toEqual([
+      "withdrawn",
+      "withdrawn",
+      "rejected",
+      "rejected",
+      "rejected",
+    ]);
+    expect(
+      rows.results.every(
+        (row) => row.report === "Package removed: Retired package",
+      ),
+    ).toBe(true);
+    expect(
+      (
+        await bindings.DB.prepare(
+          "SELECT status FROM submissions WHERE repository_id=11",
+        ).first<any>()
+      ).status,
+    ).toBe("queued");
+    expect(
+      (await call("/v1/packages/example.app/versions/1.2/download")).status,
+    ).toBe(404);
+    expect((await (await call("/v1/packages")).json<any>()).total).toBe(0);
+    expect(
+      await (
+        await call("/v1/publisher/packages", "GET", undefined, token)
+      ).json(),
+    ).toEqual([]);
+    expect(
+      await bindings.DB.prepare(
+        "SELECT * FROM packages WHERE id='example.app'",
+      ).first(),
+    ).not.toBeNull();
+    expect(
+      await bindings.PACKAGES.head("sha256/" + sha + ".zip"),
+    ).not.toBeNull();
+    expect(
+      await bindings.DB.prepare(
+        "SELECT actor,action,subject FROM audit",
+      ).first(),
+    ).toMatchObject({
+      actor: "1",
+      action: "package_removed",
+      subject: "example.app",
+    });
+    await expect(publishValidated(bindings, stale)).rejects.toMatchObject({
+      status: 409,
+    });
+    expect(
+      (
+        await call(
+          "/v1/publisher/packages/example.app/remove",
+          "POST",
+          { reason: "Repeat" },
+          token,
+        )
+      ).status,
+    ).toBe(404);
+  });
+  it("rejects other publishers, even registered collaborators with pending submissions or spoofed ownership", async () => {
+    await addVersion("32".repeat(32), "3.0", "queued", 2);
+    expect(
+      (
+        await call(
+          "/v1/publisher/packages/example.app/remove",
+          "POST",
+          { reason: "Other package", publisher_id: 1, repository_id: 10 },
+          otherToken,
+        )
+      ).status,
+    ).toBe(403);
+    expect(
+      (
+        await bindings.DB.prepare("SELECT status FROM submissions WHERE id=?")
+          .bind(submission)
+          .first<any>()
+      ).status,
+    ).toBe("approved");
+    expect(await bindings.DB.prepare("SELECT * FROM audit").first()).toBeNull();
+  });
+  it("rechecks GitHub access, repository suspension and transfers before removal", async () => {
+    vi.mocked(checkRepository).mockRejectedValueOnce(
+      new HttpError(403, "Permission revoked"),
+    );
+    expect(
+      (
+        await call(
+          "/v1/publisher/packages/example.app/remove",
+          "POST",
+          { reason: "Retire" },
+          token,
+        )
+      ).status,
+    ).toBe(403);
+    vi.mocked(checkRepository).mockResolvedValueOnce({
+      repo: { id: 10, owner: { id: 2 } },
+      installation: { id: 20 },
+    });
+    expect(
+      (
+        await call(
+          "/v1/publisher/packages/example.app/remove",
+          "POST",
+          { reason: "Retire" },
+          token,
+        )
+      ).status,
+    ).toBe(403);
+    await bindings.DB.prepare(
+      "UPDATE repositories SET active=0 WHERE id=10",
+    ).run();
+    expect(
+      (
+        await call(
+          "/v1/publisher/packages/example.app/remove",
+          "POST",
+          { reason: "Retire" },
+          token,
+        )
+      ).status,
+    ).toBe(403);
+    expect(
+      (
+        await bindings.DB.prepare("SELECT status FROM submissions WHERE id=?")
+          .bind(submission)
+          .first<any>()
+      ).status,
+    ).toBe("approved");
+  });
+  it("requires a session, POST and a nonblank reason; maintainers can still remove anyone's package", async () => {
+    expect((await call("/v1/publisher/packages")).status).toBe(401);
+    expect(
+      (
+        await call("/v1/publisher/packages/example.app/remove", "POST", {
+          reason: "Retire",
+        })
+      ).status,
+    ).toBe(401);
+    expect(
+      (
+        await call(
+          "/v1/publisher/packages/example.app/remove",
+          "GET",
+          undefined,
+          token,
+        )
+      ).status,
+    ).toBe(405);
+    expect(
+      (
+        await call(
+          "/v1/publisher/packages/example.app/remove",
+          "POST",
+          { reason: "  " },
+          token,
+        )
+      ).status,
+    ).toBe(400);
+    expect(
+      (
+        await call(
+          "/v1/admin/packages/example.app/remove",
+          "POST",
+          { reason: "Not a maintainer" },
+          otherToken,
+        )
+      ).status,
+    ).toBe(403);
+    bindings.ADMIN_IDS = "2";
+    vi.mocked(checkRepository).mockRejectedValue(
+      new HttpError(403, "No publisher access"),
+    );
+    expect(
+      (
+        await call(
+          "/v1/admin/packages/example.app/remove",
+          "POST",
+          { reason: "Maintainer withdrawal" },
+          otherToken,
+        )
+      ).status,
+    ).toBe(200);
+    expect(
+      (await call("/v1/packages/example.app/versions/1.2/download")).status,
+    ).toBe(404);
+  });
+});
+
 describe("public catalog and moderation", () => {
   it("enforces blocked release authors and webhook actors through automatic publication", async () => {
     const repo = await bindings.DB.prepare(

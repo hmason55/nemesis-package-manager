@@ -1,4 +1,5 @@
 import { api, compatibility } from "./client";
+import { renderPublisherPackages } from "./publisher-packages";
 import {
   el,
   option,
@@ -59,12 +60,16 @@ export async function renderPublish(
     root.append(intro);
     return;
   }
-  const [repos, submissions, events] = await Promise.all([
+  const [repos, submissions, events, packages] = await Promise.all([
     api("/v1/publisher/repositories"),
     api("/v1/publisher/submissions"),
     api("/v1/publisher/events"),
+    api("/v1/publisher/packages"),
   ]);
   if (!controls.active()) return;
+  const publishedPackages = el("div");
+  root.append(publishedPackages);
+  renderPublisherPackages(publishedPackages, packages, controls);
   const connect = el("details", "", "connect-panel");
   connect.open = !repos.length;
   connect.append(
@@ -433,9 +438,14 @@ export async function renderPublish(
   async function poll() {
     if (!controls.active()) return;
     try {
-      const values = await api("/v1/publisher/submissions");
+      const [values, packages] = await Promise.all([
+        api("/v1/publisher/submissions"),
+        api("/v1/publisher/packages"),
+      ]);
       if (!controls.active()) return;
       renderStatus(values);
+      publishedPackages.replaceChildren();
+      renderPublisherPackages(publishedPackages, packages, controls);
       if (
         values.some((s: any) =>
           ["queued", "validating", "review"].includes(s.status),
