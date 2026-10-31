@@ -66,15 +66,16 @@ describe("optional advisory compatibility", () => {
   });
   it("shows mismatches without creating an installation or download gate", () => {
     localStorage.clear();
+    localStorage.setItem(
+      "nemesis-device-profile",
+      JSON.stringify({ vehicle: "IONIQ 5" }),
+    );
     const root = document.createElement("div");
     const download = document.createElement("a");
     download.href = "https://registry.test/download";
     download.textContent = "Download";
     root.append(download);
     profileCheck(root, { vehicles: ["EV6"], firmware: [], nemesis: "" });
-    const model = root.querySelector<HTMLInputElement>("[name=vehicle]")!;
-    model.value = "IONIQ 5";
-    root.querySelector<HTMLButtonElement>("button")!.click();
     expect(root.textContent).toContain("Compatibility warning");
     expect(root.textContent).toContain(
       "Downloads and installation remain available",
@@ -83,5 +84,7 @@ describe("optional advisory compatibility", () => {
       "https://registry.test/download",
     );
     expect(root.querySelector("[disabled]")).toBeNull();
+    expect(root.querySelector("input")).toBeNull();
+    expect(root.querySelector('a[href="#settings"]')).not.toBeNull();
   });
 });

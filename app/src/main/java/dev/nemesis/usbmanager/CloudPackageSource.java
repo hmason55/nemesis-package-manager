@@ -90,6 +90,17 @@ public final class CloudPackageSource implements PackageSource {
         if (!fresh.id.equals(record.id) || !fresh.version.equals(record.version) || !fresh.sha256.equals(record.sha256) || fresh.size != record.size) throw new IOException("Registry approval changed; refresh packages");
         return fresh;
     }
+    public List<PackageRecord> versions(String id) throws Exception {
+        JSONObject details = json("/v1/packages/" + escape(id));
+        JSONArray values = details.getJSONArray("versions");
+        ArrayList<PackageRecord> records = new ArrayList<PackageRecord>();
+        for (int i = 0; i < values.length(); i++) {
+            PackageRecord value = record(values.getJSONObject(i));
+            if (!id.equals(value.id)) throw new IOException("Registry package identity mismatch");
+            value.publisher = details.optString("publisher"); value.repository = details.optString("repository"); records.add(value);
+        }
+        return records;
+    }
     public PackageScanner.Item acquire(PackageRecord source, Progress progress) throws Exception {
         PackageRecord record = current(source);
         record.publisher = source.publisher; record.repository = source.repository;

@@ -1,3 +1,5 @@
+import { packageArt } from "./package-art";
+import { icon as svgIcon } from "./icons";
 import { compatibility } from "./client";
 import { profileCheck } from "./compatibility";
 import { catalogLink, packageLink } from "./routes";
@@ -23,6 +25,7 @@ export function renderCatalog(
   sort: string,
   page: number,
   navigate: (hash: string) => void,
+  options: { publisher?: string; maxSize?: string; filterOpen?: boolean } = {},
 ) {
   heading(
     root,
@@ -33,24 +36,85 @@ export function renderCatalog(
     filters = el("aside", "", "filters");
   filters.setAttribute("aria-label", "Package filters");
   const filterControls = el("details");
+  filterControls.dataset.catalogFilters = "";
   filterControls.open =
-    !!category || !window.matchMedia("(max-width:760px)").matches;
-  filterControls.append(el("summary", "Filter packages"));
+    options.filterOpen ?? !window.matchMedia("(max-width:760px)").matches;
+  const filterTitle = el("summary", "Filter packages");
+  filterTitle.prepend(svgIcon("filter"));
+  const activeCount = [category, options.publisher, options.maxSize].filter(
+    Boolean,
+  ).length;
+  if (activeCount)
+    filterTitle.append(el("span", activeCount + " active", "filter-count"));
+  filterControls.append(filterTitle);
   filters.append(filterControls);
   const categorySelect = selectField(filterControls, "Category");
+  categorySelect.dataset.catalogControl = "category";
   categorySelect.append(
     option("All categories", ""),
     ...(data.categories || []).map((x: string) => option(x, x)),
   );
+  if (
+    category &&
+    !Array.from(categorySelect.options).some((o) => o.value === category)
+  )
+    categorySelect.append(option(category, category));
   categorySelect.value = category;
-  const submit = action(
-    "Apply filters",
-    () => navigate(catalogLink(query, categorySelect.value, sort)),
-    "primary",
+  const publisherSelect = selectField(filterControls, "Publisher");
+  publisherSelect.dataset.catalogControl = "publisher";
+  publisherSelect.append(
+    option("All publishers", ""),
+    ...(data.publishers || []).map((value: string) => option(value, value)),
   );
+  if (
+    options.publisher &&
+    !Array.from(publisherSelect.options).some(
+      (o) => o.value.toLowerCase() === options.publisher!.toLowerCase(),
+    )
+  )
+    publisherSelect.append(option(options.publisher, options.publisher));
+  publisherSelect.value =
+    Array.from(publisherSelect.options).find(
+      (o) => o.value.toLowerCase() === (options.publisher || "").toLowerCase(),
+    )?.value || "";
+  const maximum = selectField(filterControls, "Maximum download size");
+  maximum.dataset.catalogControl = "max-size";
+  maximum.append(
+    option("Any size", ""),
+    ...[10, 50, 100, 250].map((mib) =>
+      option("Up to " + mib + " MiB", String(mib * 1024 * 1024)),
+    ),
+  );
+  if (
+    options.maxSize &&
+    !Array.from(maximum.options).some((o) => o.value === options.maxSize)
+  )
+    maximum.append(
+      option("Up to " + size(Number(options.maxSize)), options.maxSize),
+    );
+  maximum.value = options.maxSize || "";
+  const change = () =>
+    navigate(
+      catalogLink(
+        query,
+        categorySelect.value,
+        order.value,
+        1,
+        publisherSelect.value,
+        maximum.value,
+      ),
+    );
+  categorySelect.onchange =
+    publisherSelect.onchange =
+    maximum.onchange =
+      change;
   filterControls.append(
-    submit,
     link("Clear filters", catalogLink(query), "text-link"),
+    el(
+      "p",
+      "Filters apply immediately. Size refers to the latest published installer.",
+      "hint",
+    ),
   );
   const guidance = el("div", "", "help-box");
   guidance.append(
@@ -76,25 +140,40 @@ export function renderCatalog(
   order.append(
     option("Package name", "name"),
     option("Recently published", "recent"),
+    option("Smallest download", "size"),
   );
   order.value = sort;
-  order.onchange = () => navigate(catalogLink(query, category, order.value));
+  order.dataset.catalogControl = "sort";
+  order.onchange = () =>
+    navigate(
+      catalogLink(
+        query,
+        categorySelect.value,
+        order.value,
+        1,
+        publisherSelect.value,
+        maximum.value,
+      ),
+    );
   toolbar.prepend(count);
   results.append(toolbar);
   const list = el("ul", "", "package-list");
   for (const pkg of data.packages) {
     const row = el("li", "", "package-row"),
-      icon = el("div", pkg.name.slice(0, 1).toUpperCase(), "package-icon");
+      icon = el("div", "", "package-icon");
+    packageArt(icon, pkg);
     icon.setAttribute("aria-hidden", "true");
     const body = el("article"),
       h2 = el("h2");
-    h2.append(link(pkg.id, packageLink(pkg.id)));
+    h2.append(link(pkg.name || pkg.id, packageLink(pkg.id)));
     body.append(
       h2,
       el("p", "by " + (pkg.publisher || pkg.repository), "byline"),
     );
-    if (pkg.name !== pkg.id) body.append(el("p", pkg.name, "package-name"));
+    if (pkg.name !== pkg.id) body.append(el("p", pkg.id, "package-name"));
     const facts = el("p", "", "package-facts");
+    if (pkg.latest_size)
+      facts.append(el("span", size(pkg.latest_size) + " download"));
     if (pkg.latest_published_version)
       facts.append(
         el("span", "Latest published: " + pkg.latest_published_version),
@@ -122,7 +201,10 @@ export function renderCatalog(
     const empty = el("div", "", "empty-state");
     empty.append(
       el("h2", "No packages found"),
-      el("p", "Try a different search or clear the category filter."),
+      el(
+        "p",
+        "Try another search or clear the category, publisher or size filters.",
+      ),
       link("View all packages", catalogLink()),
     );
     results.append(empty);
@@ -133,7 +215,14 @@ export function renderCatalog(
     pagination.append(
       link(
         "← Previous",
-        catalogLink(query, category, sort, page - 1),
+        catalogLink(
+          query,
+          category,
+          sort,
+          page - 1,
+          options.publisher,
+          options.maxSize,
+        ),
         "button-link",
       ),
     );
@@ -142,7 +231,14 @@ export function renderCatalog(
     pagination.append(
       link(
         "Next →",
-        catalogLink(query, category, sort, data.next_page),
+        catalogLink(
+          query,
+          category,
+          sort,
+          data.next_page,
+          options.publisher,
+          options.maxSize,
+        ),
         "button-link",
       ),
     );
@@ -168,7 +264,7 @@ export function renderPackage(
         "p",
         "Version " +
           requestedVersion +
-          " is not available. Select an approved version to continue.",
+          " is not available. Select an published version to continue.",
         "callout",
       ),
     );
@@ -186,7 +282,8 @@ export function renderPackage(
       versions.find((v) => v.version === requestedVersion) || versions[0];
   root.append(link("← Packages", catalogLink(), "back-link"));
   const title = el("div", "", "package-title"),
-    icon = el("div", data.name.slice(0, 1).toUpperCase(), "package-icon large");
+    icon = el("div", "", "package-icon large");
+  packageArt(icon, data);
   icon.setAttribute("aria-hidden", "true");
   const text = el("div");
   heading(text, data.id, data.name !== data.id ? data.name : "");
@@ -274,7 +371,7 @@ export function renderPackage(
   const history = el("section");
   history.append(el("h2", "Versions"));
   const table = el("table");
-  table.append(el("caption", "Approved package versions"));
+  table.append(el("caption", "Published package versions"));
   const head = el("thead"),
     headRow = el("tr");
   for (const label of ["Version", "Size", "Action"]) {
@@ -316,7 +413,7 @@ export function renderPackage(
     external("Source repository", "https://github.com/" + data.repository),
     el("h3", "Package ID"),
     el("p", data.id, "break-word"),
-    el("h3", "Approved versions"),
+    el("h3", "Published versions"),
     el("p", String(versions.length)),
   );
   const verification = el("details");

@@ -15,6 +15,8 @@ describe("shareable registry routes", () => {
       category: "Utilities",
       sort: "recent",
       number: 2,
+      publisher: "",
+      maxSize: "",
     });
   });
   it("falls back safely for malformed paths, page numbers, and sort values", () => {
@@ -25,6 +27,8 @@ describe("shareable registry routes", () => {
       category: "",
       sort: "name",
       number: 1,
+      publisher: "",
+      maxSize: "",
     });
   });
 });

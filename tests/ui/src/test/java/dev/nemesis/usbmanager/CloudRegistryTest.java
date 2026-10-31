@@ -71,6 +71,10 @@ public class CloudRegistryTest {
             assertEquals(record.version,source().list("").get(0).version);
         }
     }
+    @Test public void installedPackageVersionsCanBeFetchedWithoutCatalogDiscovery()throws Exception{
+        List<PackageRecord> versions=source().versions(record.id);assertEquals(1,versions.size());assertEquals(record.version,versions.get(0).version);assertEquals(0,downloads);
+        try{source().versions("other.app");fail("Cannot substitute another identity");}catch(IOException expected){}
+    }
     @Test public void corruptionCancellationWithdrawalAndRedirectCannotProduceInstaller()throws Exception{
         CloudPackageSource source=source();try{source.acquire(record,progress(true));fail();}catch(IOException expected){}assertEquals(0,sourceCacheCount());
         archive=zip("wrong.app","1.2","install.sh");try{source.acquire(record,progress(false));fail();}catch(IOException expected){}assertEquals(0,sourceCacheCount());

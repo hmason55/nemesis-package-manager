@@ -11,6 +11,25 @@ from tools.companion_cloud_destinations import available_updates
 
 
 class CloudHttpTests(unittest.TestCase):
+    def test_rich_filters_reach_registry_without_losing_exact_values(self):
+        handler = Mock()
+        cloud_get(
+            handler,
+            urlsplit(
+                "/api/cloud/packages?q=sound%2B&category=Utilities&page=3&publisher=Publisher&max_size=10485760&sort=size"
+            ),
+        )
+        handler.server.cloud.registry.return_value.packages.assert_called_once_with(
+            "sound+",
+            "Utilities",
+            3,
+            publisher="Publisher",
+            max_size=10485760,
+            sort="size",
+        )
+        with self.assertRaises(ValueError):
+            cloud_get(handler, urlsplit("/api/cloud/packages?max_size=not-a-size"))
+
     def test_dispatches_reads_and_rejects_unknown_routes(self):
         handler = Mock()
         handler.server.cloud.registry.return_value.package.return_value = {
@@ -27,7 +46,7 @@ class CloudHttpTests(unittest.TestCase):
             self.assertTrue(cloud_get(handler, urlsplit("/api/cloud/" + route)))
         self.assertFalse(cloud_get(handler, urlsplit("/api/state")))
         handler.server.cloud.registry.return_value.packages.assert_called_once_with(
-            "test", "", 2
+            "test", "", 2, publisher="", max_size=None, sort="name"
         )
 
     def test_start_cancel_and_mutation_lock(self):

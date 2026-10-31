@@ -6,7 +6,7 @@
     <meta name="referrer" content="no-referrer" />
     <meta
       http-equiv="Content-Security-Policy"
-      content="default-src 'self'; connect-src 'self' https: http://localhost:8787; style-src 'self'; script-src 'self'; base-uri 'self'; object-src 'none'"
+      content="default-src 'self'; connect-src 'self' https: http://localhost:8787; img-src 'self' https:; style-src 'self'; script-src 'self'; base-uri 'self'; object-src 'none'"
     />
     <title>NEMESIS Package Registry</title>
     <meta
@@ -27,6 +27,7 @@
           <a id="browse" href="#packages">Packages</a
           ><a id="publish" href="#publish">Publish</a
           ><a id="help" href="#guides">Guides</a
+          ><a id="settings" href="#settings">Settings</a
           ><a id="moderate" href="#moderate" hidden>Manage registry</a>
         </nav>
         <div class="account">
@@ -42,10 +43,25 @@
           id="search-query"
           type="search"
           maxlength="160"
-          placeholder="Search packages…"
+          placeholder="Find packages, tools and more…"
+          aria-describedby="search-hint search-status"
           autocomplete="off"
-        /><button type="submit" class="primary">Search</button>
+        /><button id="search-clear" type="button" class="quiet" hidden>
+          Clear</button
+        ><button id="search-submit" type="submit" class="primary">
+          Search
+        </button>
       </form>
+      <p id="search-hint" class="search-hint">
+        Find your next NEMESIS package. Results update as you type.
+      </p>
+      <p
+        id="search-status"
+        class="sr-only"
+        role="status"
+        aria-live="polite"
+        aria-atomic="true"
+      ></p>
     </div>
     <div id="notice" role="status" aria-live="polite" aria-atomic="true"></div>
     <main id="content" tabindex="-1"></main>

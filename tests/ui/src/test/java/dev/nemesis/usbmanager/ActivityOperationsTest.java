@@ -248,6 +248,7 @@ public class ActivityOperationsTest {
         open();
         activity.getPreferences(0).edit().putString("registry_url","https://registry.test").apply();
         Field source=MainActivity.class.getDeclaredField("cloudSelected");source.setAccessible(true);source.set(activity,true);
+        ((android.widget.Button[])field("tabs"))[PackagePresentation.NOT_INSTALLED].performClick();
         Field search=MainActivity.class.getDeclaredField("cloudQuery");search.setAccessible(true);search.set(activity,"demo");
         click("refreshButton");await(() -> !((Boolean)field("busy")));
         assertEquals("demo",CloudListing.lastQuery);

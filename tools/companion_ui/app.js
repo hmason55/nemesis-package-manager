@@ -107,6 +107,7 @@ function availability() {
   $("select-form").querySelectorAll("input, button").forEach((el) => { el.disabled = busy || cloudRunning; });
   $("drive-select").disabled = busy || cloudRunning;
   $("refresh").disabled = busy;
+  $("auto-launch").disabled = busy || cloudRunning || !selected?.auto_launch?.available;
   window.dispatchEvent(new Event("companion-state"));
 }
 async function operation(label, action) {
@@ -190,7 +191,8 @@ function beginImport(folder = "") {
 function renderPackages() {
   const all = selected?.packages || [];
   const filter = $("package-filter").value;
-  const packages = all.filter(pkg => filter === "all" || (filter === "attention" ? !!pkg.error : pkg.kind === filter));
+  const query = $("package-query").value.trim().toLocaleLowerCase();
+  const packages = all.filter(pkg => (filter === "all" || (filter === "attention" ? !!pkg.error : pkg.kind === filter)) && [pkg.name,pkg.id,pkg.description,pkg.folder].filter(Boolean).join(" ").toLocaleLowerCase().includes(query));
   $("package-count").textContent = String(all.length);
   $("packages").replaceChildren();
   if (!packages.length) {
@@ -245,6 +247,7 @@ function renderPackages() {
 }
 function render(drive) {
   selected = drive;
+  $("auto-launch").disabled = true;
   driveOptions();
   $("drive-summary").hidden = !drive;
   if (drive) {
@@ -252,7 +255,7 @@ function render(drive) {
     $("space").textContent = `${(drive.free / 1024 ** 3).toFixed(1)} GiB of ${(drive.total / 1024 ** 3).toFixed(1)} GiB`;
     $("launcher").textContent = drive.launcher;
     $("auto-launch").checked = drive.auto_launch.enabled;
-    $("auto-launch").disabled = !drive.auto_launch.available;
+    $("auto-launch").disabled = busy || cloudRunning || !drive.auto_launch.available;
     const manager = drive.manager;
     $("manager-summary").textContent = manager.error ? "Needs attention" : manager.present ? manager.version || "Version unknown" : "Setup needed";
     $("manager-version").textContent = manager.present ? `On USB: ${manager.version || "Unknown"}` : "Setup needed";
@@ -298,8 +301,9 @@ function chooseDrive(path) {
     $("package-form").reset();
     $("manager-form").reset();
     $("folder-settings").open = false;
-    $("package-filter").value = "all";
+    $("package-filter").value = "all"; $("package-query").value = "";
     $("manual-drive").open = false;
+    if ($("companion-settings").open) $("companion-settings").close();
     render(drive);
     showTab(drive.manager.present ? "packages" : "setup", true);
     message(drive.manager.present ? "Drive selected. Ready to add or update packages." : "Drive selected. Add Package Manager in Drive setup.");
@@ -309,6 +313,7 @@ $("refresh").addEventListener("click", () => operation("Checking drives…", ref
 $("drive-select").addEventListener("change", () => chooseDrive($("drive-select").value));
 $("select-form").addEventListener("submit", (event) => { event.preventDefault(); chooseDrive($("drive-path").value.trim()); });
 $("package-filter").addEventListener("change", renderPackages);
+$("package-query").addEventListener("input", renderPackages);
 $("add-package").addEventListener("click", () => beginImport());
 $("cancel-import").addEventListener("click", () => showTab("packages", true));
 $("import-mode").addEventListener("change", () => { $("package-file").value = ""; syncImport(); });
@@ -348,7 +353,7 @@ $("package-form").addEventListener("submit", (event) => {
     if (overwrite && !confirm(`Replace the installer for ${target.name} on ${selected.path}?\n\nYour existing data folder will be kept.`)) { message("Update cancelled."); return; }
     const query = new URLSearchParams({ name, overwrite });
     const drive = await api(`/api/package?${query}`, file);
-    $("package-filter").value = "all";
+    $("package-filter").value = "all"; $("package-query").value = "";
     render(drive);
     $("package-form").reset();
     syncImport();

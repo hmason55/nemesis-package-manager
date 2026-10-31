@@ -12,6 +12,8 @@ import {
 import { session, isAdmin, body, audit, random, service } from "./security";
 import { multipart } from "./uploads";
 import { publishValidated, publicationFailure } from "./publication";
+import { manage, publishingAllowed } from "./management";
+import { uploadIcon } from "./icons";
 import {
   github,
   checkRepository,
@@ -45,7 +47,16 @@ export async function createSubmission(
   repo: any,
   publisher: number | null,
   input: any,
+  eventActor: number | null = null,
 ) {
+  const repositoryOwner =
+    repo.owner_id ??
+    (
+      await env.DB.prepare("SELECT owner_id FROM repositories WHERE id=?")
+        .bind(repo.id)
+        .first<any>()
+    )?.owner_id;
+  await publishingAllowed(env, publisher, repositoryOwner);
   const id = packageId(input.package_id),
     version = versionText(input.version),
     details = metadata(input.metadata);
@@ -81,6 +92,11 @@ export async function createSubmission(
       token,
     );
   requireValue(!release.draft, "Draft releases cannot be published");
+  const releaseAuthor =
+    Number.isSafeInteger(release.author?.id) && release.author.id > 0
+      ? release.author.id
+      : null;
+  await publishingAllowed(env, eventActor, releaseAuthor);
   const asset = release.assets.find(
     (a: any) => a.id === Number(input.asset_id),
   );
@@ -100,7 +116,7 @@ export async function createSubmission(
   if (duplicate) return { id: duplicate.id, existing: true };
   const submission = random();
   const inserted = await env.DB.prepare(
-    "INSERT INTO submissions(id,package_id,repository_id,publisher_id,release_id,asset_id,version,metadata,status,created_at,updated_at) SELECT ?,?,?,?,?,?,?,?,'queued',?,? WHERE (SELECT COUNT(*) FROM submissions WHERE repository_id=? AND status IN ('queued','validating','review'))<20 AND (? IS NULL OR (SELECT COUNT(*) FROM submissions WHERE publisher_id=? AND status IN ('queued','validating','review'))<20)",
+    "INSERT INTO submissions(id,package_id,repository_id,publisher_id,release_id,asset_id,version,metadata,status,created_at,updated_at,source_actor_id,release_author_id) SELECT ?,?,?,?,?,?,?,?,'queued',?,?,?,? WHERE NOT EXISTS(SELECT 1 FROM blocked_publishers WHERE publisher_id IN (?,?,?,?)) AND (SELECT COUNT(*) FROM submissions WHERE repository_id=? AND status IN ('queued','validating','review'))<20 AND (? IS NULL OR (SELECT COUNT(*) FROM submissions WHERE publisher_id=? AND status IN ('queued','validating','review'))<20)",
   )
     .bind(
       submission,
@@ -113,6 +129,12 @@ export async function createSubmission(
       JSON.stringify(details),
       now(),
       now(),
+      eventActor,
+      releaseAuthor,
+      publisher,
+      repositoryOwner ?? null,
+      eventActor,
+      releaseAuthor,
       repo.id,
       publisher,
       publisher,
@@ -141,6 +163,7 @@ export async function publisher(request: Request, env: Env) {
   const user = await session(request, env),
     url = new URL(request.url),
     path = url.pathname;
+  await publishingAllowed(env, user.publisher_id);
   if (path === "/v1/publisher/me" && request.method === "GET")
     return Response.json({
       id: user.publisher_id,
@@ -240,11 +263,13 @@ export async function admin(request: Request, env: Env) {
     403,
   );
   const path = new URL(request.url).pathname;
+  const managed = await manage(request, env, user);
+  if (managed) return managed;
   if (path === "/v1/admin/submissions" && request.method === "GET")
     return Response.json(
       (
         await env.DB.prepare(
-          "SELECT s.*,r.full_name AS repository,p.login AS publisher FROM submissions s JOIN repositories r ON r.id=s.repository_id LEFT JOIN publishers p ON p.id=s.publisher_id ORDER BY s.created_at DESC LIMIT 200",
+          "SELECT s.*,r.owner_id,r.full_name AS repository,p.login AS publisher FROM submissions s JOIN repositories r ON r.id=s.repository_id LEFT JOIN publishers p ON p.id=s.publisher_id ORDER BY s.created_at DESC LIMIT 200",
         ).all()
       ).results,
     );
@@ -297,7 +322,7 @@ export async function validator(request: Request, env: Env) {
   await service(request, env);
   const url = new URL(request.url),
     route = url.pathname.match(
-      /^\/internal\/jobs\/([a-f0-9]{64})(?:\/(claim|artifact|complete|fail|multipart\/(?:start|part\/\d+|complete|abort)))?$/,
+      /^\/internal\/jobs\/([a-f0-9]{64})(?:\/(claim|artifact|icon|complete|fail|multipart\/(?:start|part\/\d+|complete|abort)))?$/,
     );
   requireValue(route, "Not found", 404);
   const row = await env.DB.prepare(
@@ -309,7 +334,7 @@ export async function validator(request: Request, env: Env) {
   if (request.method === "POST" && route[2] === "claim") {
     requireValue(row.active, "Repository suspended", 409);
     const changed = await env.DB.prepare(
-      "UPDATE submissions SET status='validating',updated_at=? WHERE id=? AND status='queued'",
+      "UPDATE submissions SET status='validating',icon_key=NULL,updated_at=? WHERE id=? AND status='queued'",
     )
       .bind(now(), row.id)
       .run();
@@ -324,6 +349,8 @@ export async function validator(request: Request, env: Env) {
     });
   }
   requireValue(row.status === "validating", "Job is not validating", 409);
+  if (route[2] === "icon" && request.method === "PUT")
+    return uploadIcon(request, env, row);
   if (route[2]?.startsWith("multipart/"))
     return multipart(request, env, row, route[2].slice(10));
   if (request.method === "PUT" && route[2] === "artifact") {

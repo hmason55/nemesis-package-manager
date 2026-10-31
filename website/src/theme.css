@@ -801,3 +801,206 @@ td {
 .filters details[open] > summary {
   margin-bottom: 16px;
 }
+
+/* Discovery surfaces use the Companion palette with a clearer visual hierarchy. */
+.search-band {
+  background: linear-gradient(110deg, var(--panel), var(--callout));
+  border-bottom: 1px solid var(--border);
+  padding-bottom: 14px;
+}
+.search-hint {
+  max-width: 1180px;
+  margin: 0 auto;
+  color: var(--muted);
+  padding: 0 32px;
+  font-size: 14px;
+}
+#search {
+  position: relative;
+  gap: 8px;
+}
+#search-query {
+  border-radius: 10px;
+  min-height: 52px;
+  box-shadow: 0 3px 12px #00000012;
+}
+#search-clear {
+  min-height: 44px;
+}
+#search-submit {
+  border-radius: 8px;
+}
+.ui-icon {
+  width: 20px;
+  height: 20px;
+  display: inline-block;
+  vertical-align: middle;
+  fill: none;
+  stroke: currentColor;
+  stroke-width: 1.65;
+  stroke-linecap: round;
+  stroke-linejoin: round;
+  flex: none;
+  margin-right: 8px;
+}
+.package-icon .ui-icon {
+  width: 30px;
+  height: 30px;
+  margin: 0;
+}
+.package-icon {
+  background: var(--callout);
+  color: var(--blue);
+  border: 1px solid var(--border);
+  border-radius: 14px;
+}
+.package-row {
+  border: 1px solid var(--border);
+  border-radius: 12px;
+  margin-bottom: 14px;
+  padding: 24px;
+  background: var(--panel);
+  transition:
+    border-color 0.15s,
+    box-shadow 0.15s;
+}
+.package-row:hover {
+  border-color: var(--blue);
+  box-shadow: 0 6px 22px #00000015;
+}
+.package-row h2 {
+  font-size: 21px;
+}
+.package-name {
+  font-family: ui-monospace, monospace;
+  font-size: 13px;
+  overflow-wrap: anywhere;
+}
+.package-facts {
+  gap: 6px 18px;
+}
+.package-facts span {
+  padding: 2px 0;
+}
+.filters {
+  align-self: start;
+  border-radius: 12px;
+}
+.filters summary {
+  display: flex;
+  align-items: center;
+}
+.filters .form-field {
+  margin-bottom: 20px;
+}
+.filters .hint {
+  font-size: 12px;
+  margin-top: 18px;
+}
+.result-toolbar {
+  border-bottom: 1px solid var(--border);
+  padding-bottom: 12px;
+  margin-bottom: 20px;
+}
+.result-toolbar p {
+  font-weight: 600;
+}
+.empty-state {
+  border: 1px dashed var(--border);
+  border-radius: 14px;
+  padding: 40px 24px;
+  text-align: center;
+}
+@media (max-width: 760px) {
+  .search-hint {
+    padding: 0 16px;
+    font-size: 12px;
+  }
+  #search {
+    flex-wrap: wrap;
+  }
+  #search-query {
+    flex: 1;
+    min-width: 0;
+  }
+  #search-clear {
+    padding: 6px;
+  }
+  #search-submit {
+    padding: 8px 12px;
+  }
+  .package-row {
+    padding: 18px 14px;
+  }
+  .package-row h2 {
+    font-size: 19px;
+  }
+  .site-header .ui-icon {
+    width: 16px;
+    height: 16px;
+    margin-right: 5px;
+  }
+}
+
+.filter-count {
+  margin-left: auto;
+  font-size: 12px;
+  color: var(--muted);
+  font-weight: 400;
+  white-space: nowrap;
+}
+.filters summary {
+  gap: 6px;
+}
+@media (max-width: 480px) {
+  #search-query {
+    flex-basis: 100%;
+    width: 100%;
+    order: 0;
+  }
+  #search-clear {
+    order: 1;
+  }
+  #search-submit {
+    order: 2;
+    margin-left: auto;
+  }
+  .search-band #search {
+    gap: 10px;
+  }
+}
+
+.settings-card {
+  max-width: 760px;
+  margin: 22px 0;
+  padding: 22px;
+  border: 1px solid var(--border);
+  background: var(--panel);
+  border-radius: 12px;
+}
+.settings-card summary,
+.optional-package-details summary {
+  cursor: pointer;
+  font-weight: 600;
+  min-height: 44px;
+  display: flex;
+  align-items: center;
+}
+.settings-card .form-field {
+  margin: 18px 0;
+}
+.settings-card button {
+  margin: 8px 8px 0 0;
+}
+.package-icon img {
+  display: block;
+  max-width: 100%;
+  max-height: 100%;
+  border-radius: 10px;
+  object-fit: contain;
+}
+.optional-package-details {
+  margin-top: 18px;
+  padding-top: 10px;
+  border-top: 1px solid var(--border);
+}

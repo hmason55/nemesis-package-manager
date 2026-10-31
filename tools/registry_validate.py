@@ -2,7 +2,7 @@
 
 The Worker claims the submission before any download. This process reads a
 public release and exact asset ID, validates the complete ZIP, then uploads the
-same bytes to private R2. Publication always remains an administrator decision.
+same bytes to private R2. Successful validation publishes automatically.
 """
 
 import argparse
@@ -15,6 +15,7 @@ from urllib.request import Request, urlopen
 
 from tools.registry_artifact import MAX_DOWNLOAD, validate_artifact
 from tools.registry_upload import upload_large
+from tools.registry_icons import upload_package_icon
 
 
 def request_json(url, token, data):
@@ -79,7 +80,7 @@ def upload_artifact(job_url, token, archive, result):
     """Stream the verified file; R2 also enforces its supplied SHA-256 checksum.
 
     Content-Length comes from the inspected file, not user metadata. The Worker
-    keeps this object private until a separate moderation transition approves it.
+    keeps this object private until validation and publication finish.
     """
     if result["size"] > 64 * 1024 * 1024:
         return upload_large(job_url, token, archive, result, request_json)
@@ -105,7 +106,8 @@ def validate_job(base, token, job_id):
 
     Claim conflicts return before any work or failure callback, so a duplicate
     Actions dispatch cannot fail another runner's active job. A successful claim
-    owns the transition from validating to review. Backend timeouts make a lost
+    owns validation completion; the Worker then publishes automatically after
+    current authorization and package-ownership checks. Backend timeouts make a lost
     runner visible to administrators rather than leaving an invisible lease.
 
     The runner receives only IDs, never publisher-controlled commands or paths.
@@ -126,6 +128,7 @@ def validate_job(base, token, job_id):
                 archive, job["package_id"], job["version"], asset["size"]
             )
             upload_artifact(job_url, token, archive, result)
+            upload_package_icon(job_url, token, archive)
             request_json(job_url + "/complete", token, result)
     except Exception:
         # Do not persist signed URLs, credentials, or third-party error bodies.

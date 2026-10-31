@@ -16,7 +16,7 @@ export const statusLabels: Record<string, string> = {
   validating: "Validation in progress",
   review: "Finishing publication",
   approved: "Published",
-  rejected: "Rejected",
+  rejected: "Stopped",
   withdrawn: "Withdrawn",
   failed: "Validation failed",
 };
@@ -219,6 +219,19 @@ export async function renderPublish(
       "textarea",
     );
     notes.required = false;
+    const optional = el("details", "", "optional-package-details");
+    optional.append(
+      el("summary", "More package details (optional)"),
+      categories.parentElement!,
+      requirements,
+      notes.parentElement!,
+      el(
+        "p",
+        "For a custom package icon, add a square icon.png at the GitHub repository root. Otherwise the publisher’s GitHub avatar is used.",
+        "hint",
+      ),
+    );
+    sections[1].append(optional);
     const review = el("div");
     sections[2].append(
       review,

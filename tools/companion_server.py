@@ -114,6 +114,10 @@ class CompanionHandler(CompanionTransport):
                 "/": ("index.html", "text/html; charset=utf-8"),
                 "/app.js": ("app.js", "text/javascript; charset=utf-8"),
                 "/cloud.js": ("cloud.js", "text/javascript; charset=utf-8"),
+                "/cloud-search.js": (
+                    "cloud-search.js",
+                    "text/javascript; charset=utf-8",
+                ),
                 "/style.css": ("style.css", "text/css; charset=utf-8"),
             }
             if path not in assets:

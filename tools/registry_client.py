@@ -83,11 +83,22 @@ class RegistryClient:
                 raise ValueError("Registry response too large.")
             return json.loads(raw)
 
-    def packages(self, query="", category="", page=1):
+    def packages(
+        self, query="", category="", page=1, *, publisher="", max_size=None, sort="name"
+    ):
         """Return one catalog page; consumers choose when to load another page."""
         return self.json(
             "/v1/packages?"
-            + urlencode({"q": query, "category": category, "page": page})
+            + urlencode(
+                {
+                    "q": query,
+                    "category": category,
+                    "page": page,
+                    "publisher": publisher,
+                    "sort": sort,
+                    **({"max_size": max_size} if max_size is not None else {}),
+                }
+            )
         )
 
     def package(self, package_id):

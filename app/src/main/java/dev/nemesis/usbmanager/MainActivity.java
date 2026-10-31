@@ -57,6 +57,25 @@ public final class MainActivity extends Activity {
     private boolean cloudSelected;
     private boolean sourcePrompted;
     private String cloudQuery = "";
+    private android.widget.EditText browserSearch;
+    private String browserQuery = "";
+    private int browserType, browserSort;
+    private volatile int scanGeneration;
+    private boolean scanRunning;
+    private final Runnable browserReload = new Runnable() { public void run() { refreshBrowser(); } };
+    private void refreshBrowser() {
+        if (destroyed || operations.isRunning() || (busy && !scanRunning)) return;
+        handler.removeCallbacks(browserReload); busy = false; refresh();
+    }
+    private void searchChanged() {
+        browserQuery = browserSearch.getText().toString(); cloudQuery = browserQuery;
+        PackageScanner.Item item = selection(); filterItems(item == null ? null : PackagePresentation.key(item));
+        handler.removeCallbacks(browserReload);
+        if (cloudSelected && category != PackagePresentation.INSTALLED && category != PackagePresentation.SCRIPTS) {
+            scanGeneration++;
+            handler.postDelayed(browserReload, 250);
+        }
+    }
     private java.util.concurrent.atomic.AtomicBoolean downloadCancelled = new java.util.concurrent.atomic.AtomicBoolean();
     private static final OperationCoordinator operations = new OperationCoordinator();
     private final Handler handler = new Handler();
@@ -101,6 +120,7 @@ public final class MainActivity extends Activity {
     }
     @Override protected void onDestroy() {
         destroyed = true;
+        scanGeneration++; handler.removeCallbacks(browserReload);
         downloadCancelled.set(true);
         handler.removeCallbacks(monitorOperation);
         for (Dialog dialog : new ArrayList<Dialog>(dialogs)) dialog.dismiss();
@@ -156,14 +176,14 @@ public final class MainActivity extends Activity {
         title.setTypeface(Typeface.DEFAULT, Typeface.BOLD);
         header.addView(title, new LinearLayout.LayoutParams(0, -2, 1));
         Button changeSource = button("Settings"); changeSource.setTextSize(13);
-        header.addView(changeSource, spaced(dp(128), 48, 0, 6));
-        changeSource.setOnClickListener(new View.OnClickListener() { public void onClick(View view) { if (!unavailable()) chooseSource(); } });
+        header.addView(changeSource, spaced(dp(90), 48, 0, 6));
+        changeSource.setOnClickListener(new View.OnClickListener() { public void onClick(View view) { if (!unavailable() || scanRunning) chooseSource(); } });
         refreshButton = button("Refresh");
         Button help = button("Help");
         Button close = button("Close");
-        header.addView(refreshButton, spaced(dp(100), 48, 0, 12));
-        header.addView(help, spaced(dp(76), 48, 0, 12));
-        header.addView(close, spaced(dp(88), 48, 0, 20));
+        header.addView(refreshButton, spaced(dp(80), 48, 0, 6));
+        header.addView(help, spaced(dp(64), 48, 0, 6));
+        header.addView(close, spaced(dp(68), 48, 0, 6));
         root.addView(header);
         LinearLayout categories = new LinearLayout(this);
         categories.setPadding(0, dp(6), 0, dp(2));
@@ -175,10 +195,31 @@ public final class MainActivity extends Activity {
                 public void onClick(View view) {
                     if (category == index) return;
                     category = index; filterItems(null);
+                    handler.removeCallbacks(browserReload);
+                    if (cloudSelected) handler.postDelayed(browserReload, 250);
                 }
             });
         }
         root.addView(categories);
+        browserSearch = new android.widget.EditText(this); browserSearch.setSingleLine(true); browserSearch.setTextSize(16);
+        browserSearch.setHint("Search packages"); browserSearch.setContentDescription("Search packages by name, ID, description or publisher");
+        browserSearch.setImeOptions(android.view.inputmethod.EditorInfo.IME_ACTION_SEARCH);
+        title.setTextSize(18); title.setLayoutParams(new LinearLayout.LayoutParams(dp(145), -2));
+        header.addView(browserSearch, 1, new LinearLayout.LayoutParams(0, dp(48), 1));
+        Button clearSearch = button("Clear"), filters = button("Filters");
+        categories.addView(clearSearch, spaced(dp(72),48,0,6)); categories.addView(filters, spaced(dp(78),48,0,6));
+        clearSearch.setOnClickListener(new View.OnClickListener() { public void onClick(View view) { browserSearch.setText(""); } });
+        filters.setOnClickListener(new View.OnClickListener() { public void onClick(View view) { showBrowserFilters(); } });
+        browserSearch.addTextChangedListener(new android.text.TextWatcher() {
+            public void beforeTextChanged(CharSequence s,int start,int count,int after) { }
+            public void onTextChanged(CharSequence s,int start,int before,int count) { searchChanged(); }
+            public void afterTextChanged(android.text.Editable text) { }
+        });
+        browserSearch.setOnEditorActionListener(new TextView.OnEditorActionListener() { public boolean onEditorAction(TextView view,int actionId,android.view.KeyEvent event) {
+            if (actionId != android.view.inputmethod.EditorInfo.IME_ACTION_SEARCH && (event == null || event.getKeyCode() != android.view.KeyEvent.KEYCODE_ENTER)) return false;
+            refreshBrowser(); return true;
+        } });
+
         LinearLayout columns = new LinearLayout(this);
         columns.setPadding(dp(16), 0, dp(16), 0);
         columns.setGravity(Gravity.CENTER_VERTICAL);
@@ -261,18 +302,21 @@ public final class MainActivity extends Activity {
         items.clear(); selected = -1;
         Set<String> installedIds = new HashSet<String>();
         for (PackageScanner.Item item : allItems) {
-            if (!PackagePresentation.inCategory(item, category)) continue;
+            if (!PackagePresentation.inCategory(item, category) || !BrowserFilters.matches(item, browserQuery, browserType)) continue;
             if (category == PackagePresentation.INSTALLED && item.id != null && !installedIds.add(item.id)) continue;
             if (PackagePresentation.key(item).equals(previousKey)) selected = items.size();
             items.add(item);
         }
         for (int i = 0; i < tabs.length; i++) {
             int count = 0;
-            for (PackageScanner.Item item : allItems) if (PackagePresentation.inCategory(item, i)) count++;
+            for (PackageScanner.Item item : allItems) if (PackagePresentation.inCategory(item, i) && BrowserFilters.matches(item, browserQuery, browserType)) count++;
             tabs[i].setText(categoryNames[i] + " (" + count + ")");
             tabs[i].setSelected(i == category);
             tabs[i].setBackground(buttonBackground(i == category ? Color.rgb(25, 99, 137) : PANEL));
         }
+        Collections.sort(items, BrowserFilters.order(browserSort));
+        selected = -1; for (int i = 0; i < items.size(); i++) if (PackagePresentation.key(items.get(i)).equals(previousKey)) selected = i;
+        if (selected < 0 && !items.isEmpty()) selected = 0;
         adapter.notifyDataSetChanged();
         if (selected >= 0) list.setSelection(selected); else list.setSelection(0);
         if (busy) {
@@ -287,10 +331,24 @@ public final class MainActivity extends Activity {
             empty.setText(emptyMessages[category]);
         }
         if (!busy && cloudSelected && items.isEmpty() && scanError == null) empty.setText(category == PackagePresentation.SCRIPTS ? "Scripts are available from USB Storage.\nUse Settings to switch to USB." : category == PackagePresentation.UPDATES ? "No confirmed newer registry versions." : category == PackagePresentation.INSTALLED ? "No installed packages." : "No published packages match your search.");
+        if (!busy && scanError == null && items.isEmpty() && (browserQuery.trim().length() > 0 || browserType != 0)) empty.setText("No packages match these filters. Clear the search or reset Filters.");
         updateButtons();
     }
     private PackageScanner.Item selection() {
         return selected >= 0 && selected < items.size() ? items.get(selected) : null;
+    }
+    private void showBrowserFilters() {
+        LinearLayout panel = new LinearLayout(this); panel.setOrientation(LinearLayout.VERTICAL); panel.setPadding(dp(20),dp(8),dp(20),dp(8));
+        final android.widget.Spinner type = browserChoice(panel, "Package type", new String[] {"All types", "Installers", "Scripts"}, browserType);
+        final android.widget.Spinner order = browserChoice(panel, "Sort packages", new String[] {"Name A–Z", "Name Z–A", "Smallest download first"}, browserSort);
+        TextView hint = text("Filters apply to loaded packages in either source. Unknown sizes appear last. Installed and Scripts tabs remain available offline.",14,MUTED);panel.addView(hint);
+        final android.app.AlertDialog dialog = new android.app.AlertDialog.Builder(this).setTitle("Package filters").setView(panel).setPositiveButton("Apply",new android.content.DialogInterface.OnClickListener(){public void onClick(android.content.DialogInterface d,int which){browserType=type.getSelectedItemPosition();browserSort=order.getSelectedItemPosition();filterItems(null);}}).setNeutralButton("Reset",new android.content.DialogInterface.OnClickListener(){public void onClick(android.content.DialogInterface d,int which){browserType=0;browserSort=0;browserSearch.setText("");filterItems(null);}}).setNegativeButton("Cancel",null).create();
+        dialogs.add(dialog);dialog.show();
+    }
+    private android.widget.Spinner browserChoice(LinearLayout panel,String label,String[] options,int selected) {
+        TextView caption=text(label,16,TEXT);panel.addView(caption);
+        android.widget.Spinner choice=new android.widget.Spinner(this);choice.setContentDescription(label);
+        android.widget.ArrayAdapter<String> values=new android.widget.ArrayAdapter<String>(this,android.R.layout.simple_spinner_item,options);values.setDropDownViewResource(android.R.layout.simple_spinner_dropdown_item);choice.setAdapter(values);choice.setSelection(selected);panel.addView(choice);return choice;
     }
     private boolean unavailable() { return busy || operations.isRunning(); }
     private void updateButtons() {
@@ -321,7 +379,13 @@ public final class MainActivity extends Activity {
         if (unavailable() || destroyed) return;
         final PackageScanner.Item previous = selection();
         final String previousKey = previous == null ? null : PackagePresentation.key(previous);
-        busy = true; updateButtons();
+        final int generation = ++scanGeneration;
+        final boolean useCloud = cloudSelected;
+        final boolean installedOnly = category == PackagePresentation.INSTALLED;
+        final boolean scriptsOnly = category == PackagePresentation.SCRIPTS;
+        final String queryText = cloudQuery;
+        final String registryAddress = getPreferences(MODE_PRIVATE).getString("registry_url", "");
+        scanRunning = true; busy = true; updateButtons();
         scanError = null;
         empty.setText("Scanning for packages...");
         new Thread(new Runnable() {
@@ -331,16 +395,20 @@ public final class MainActivity extends Activity {
                     final ArrayList<PackageScanner.Item> next = new ArrayList<PackageScanner.Item>();
                     String loadError = null;
                     try {
-                        PackageSource source = cloudSelected ? cloudSource() : new UsbPackageSource(usb);
-                        for (PackageRecord record : source.list(cloudSelected ? cloudQuery : "")) next.add(record.local != null ? record.local : CloudPackageSource.item(record, null));
+                        if (!useCloud || (!installedOnly && !scriptsOnly)) {
+                            PackageSource source = useCloud ? new CloudPackageSource(registryAddress, getCacheDir()) : new UsbPackageSource(usb);
+                            for (PackageRecord record : source.list(useCloud ? queryText : "")) next.add(record.local != null ? record.local : CloudPackageSource.item(record, null));
+                        }
                     } catch (Exception error) { loadError = "Cloud registry unavailable: " + error.getMessage(); }
                     final String sourceError = loadError;
+                    if (generation != scanGeneration) return;
                     NemesisCli.Result query = NemesisCli.run("pkg-list");
                     final InstalledPackages registry = InstalledPackages.parse(query.rc, query.out);
                     if (registry.available() && !registry.names.isEmpty()) {
                         NemesisCli.Result versions = NemesisCli.query("root", "-c", registry.versionQuery());
                         registry.readVersions(versions.rc, versions.out);
                     }
+                    if (generation != scanGeneration) return;
                     InstalledVersionStore.apply(getApplicationContext(), registry);
                     Set<String> seen = new HashSet<String>();
                     for (PackageScanner.Item item : next) {
@@ -372,7 +440,8 @@ public final class MainActivity extends Activity {
                     });
                     runOnUiThread(new Runnable() {
                         public void run() {
-                            if (destroyed) return;
+                            if (destroyed || generation != scanGeneration) return;
+                            scanRunning = false;
                             allItems.clear(); allItems.addAll(next);
                             scanError = registry.error != null ? registry.error : sourceError;
                             empty.setText(usb == null ? "No packages found.\nInsert a USB drive with a packages/ folder, then tap Refresh." :
@@ -383,7 +452,8 @@ public final class MainActivity extends Activity {
                 } catch (final Exception error) {
                     runOnUiThread(new Runnable() {
                         public void run() {
-                            if (destroyed) return;
+                            if (destroyed || generation != scanGeneration) return;
+                            scanRunning = false;
                             scanError = error.toString();
                             allItems.clear(); busy = false; filterItems(null);
                             empty.setText("Could not read packages.\nCheck USB and tap Refresh, or tap here for Details.");
@@ -502,14 +572,42 @@ public final class MainActivity extends Activity {
         }
     }
     private void showDetails() {
-        PackageScanner.Item item = selection();
+        final PackageScanner.Item item = selection();
         if (item != null && !unavailable()) {
-            if (item.remote == null) message(PackagePresentation.name(item), PackagePresentation.details(item));
+            if (cloudSelected && item.installed && item.remote == null) {
+                showDialog(PackagePresentation.name(item), PackagePresentation.details(item), "OK", null, "Choose version", new Runnable() { public void run() { loadCloudVersions(item); } });
+            } else if (item.remote == null) message(PackagePresentation.name(item), PackagePresentation.details(item));
             else {
                 final String id = item.id;
                 showDialog(PackagePresentation.name(item), PackagePresentation.details(item), "OK", null, "Choose version", new Runnable() { public void run() { chooseCloudVersion(id); } });
             }
         }
+    }
+    private void loadCloudVersions(final PackageScanner.Item installed) {
+        if (unavailable() || destroyed) return;
+        handler.removeCallbacks(browserReload); final int generation = ++scanGeneration;
+        final String address = getPreferences(MODE_PRIVATE).getString("registry_url", "");
+        scanRunning = true; busy = true; updateButtons();
+        final android.app.ProgressDialog loading = new android.app.ProgressDialog(this);
+        loading.setTitle("Loading published versions"); loading.setMessage("Checking the registry. Installed package management works offline."); loading.setCancelable(true);
+        loading.setOnCancelListener(new android.content.DialogInterface.OnCancelListener() { public void onCancel(android.content.DialogInterface dialog) { if (generation == scanGeneration) { scanGeneration++;scanRunning=false;busy=false;updateButtons(); } } });
+        dialogs.add(loading);loading.show();
+        new Thread(new Runnable() { public void run() {
+            try {
+                final java.util.List<PackageRecord> records = new CloudPackageSource(address, getCacheDir()).versions(installed.id);
+                runOnUiThread(new Runnable() { public void run() {
+                    loading.dismiss();
+                    if (destroyed || generation != scanGeneration) return;
+                    scanRunning = false; busy = false; updateButtons();
+                    if (records.isEmpty()) { message("No published versions", "This installed package has no published versions in this registry."); return; }
+                    for (java.util.Iterator<PackageScanner.Item> it = allItems.iterator(); it.hasNext();) { PackageScanner.Item row = it.next(); if (row.remote != null && installed.id.equals(row.id)) it.remove(); }
+                    for (PackageRecord record : records) {
+                        PackageScanner.Item row = CloudPackageSource.item(record,null); row.installed=installed.installed;row.installedStateKnown=installed.installedStateKnown;row.installedVersion=installed.installedVersion;row.installedVersionSaved=installed.installedVersionSaved;row.locked=installed.locked;row.types=installed.types;allItems.add(row);
+                    }
+                    chooseCloudVersion(installed.id);
+                } });
+            } catch (final Exception error) { runOnUiThread(new Runnable() { public void run() { loading.dismiss();if (destroyed || generation != scanGeneration) return;scanRunning=false;busy=false;updateButtons();message("Could not load versions",error.getMessage()); } }); }
+        } }, "nemesis-version-discovery").start();
     }
     private void chooseCloudVersion(String id) {
         final ArrayList<PackageScanner.Item> versions = new ArrayList<PackageScanner.Item>();
@@ -532,7 +630,6 @@ public final class MainActivity extends Activity {
         android.widget.RadioButton usb = new android.widget.RadioButton(this); usb.setId(1002); usb.setText("USB Storage — packages and scripts, available offline"); sources.addView(usb); sources.check(cloudSelected ? 1001 : 1002); panel.addView(sources);
         final android.widget.CheckBox remember = new android.widget.CheckBox(this); remember.setText("Don’t show again on startup"); remember.setChecked(!getPreferences(MODE_PRIVATE).getBoolean("show_source_prompt", !getPreferences(MODE_PRIVATE).contains("source"))); panel.addView(remember);
         final android.widget.EditText address = new android.widget.EditText(this); address.setHint("Registry HTTPS address"); address.setSingleLine(true); address.setInputType(android.text.InputType.TYPE_CLASS_TEXT | android.text.InputType.TYPE_TEXT_VARIATION_URI); address.setText(getPreferences(MODE_PRIVATE).getString("registry_url", "")); panel.addView(address);
-        final android.widget.EditText search = new android.widget.EditText(this); search.setHint("Search cloud packages (optional)"); search.setSingleLine(true); search.setText(cloudQuery); panel.addView(search);
         final android.widget.EditText profile = new android.widget.EditText(this); profile.setHint("Vehicle / firmware notes (optional)"); profile.setText(getPreferences(MODE_PRIVATE).getString("profile", android.os.Build.MODEL + " / " + android.os.Build.DISPLAY)); panel.addView(profile);
         final android.widget.EditText vehicle = profileField(panel, "Vehicle model (optional)", "device_vehicle");
         final android.widget.EditText firmware = profileField(panel, "Firmware version (optional)", "device_firmware");
@@ -542,12 +639,12 @@ public final class MainActivity extends Activity {
         final android.app.AlertDialog dialog = new android.app.AlertDialog.Builder(this).setTitle("Package Manager settings — choose source").setView(scroll).setPositiveButton("Continue", null).setNegativeButton("Cancel", null).create();
         dialogs.add(dialog); dialog.show();
         dialog.getButton(android.app.AlertDialog.BUTTON_POSITIVE).setOnClickListener(new View.OnClickListener() { public void onClick(View view) {
-            if (unavailable()) { android.widget.Toast.makeText(MainActivity.this, "Wait for the current refresh to finish", android.widget.Toast.LENGTH_SHORT).show(); return; }
+            if (unavailable() && !scanRunning) { android.widget.Toast.makeText(MainActivity.this, "Wait for the current action to finish", android.widget.Toast.LENGTH_SHORT).show(); return; }
             boolean nextCloud = sources.getCheckedRadioButtonId() == 1001;
             if (nextCloud) try { new CloudPackageSource(address.getText().toString().trim(), getCacheDir()); } catch (Exception error) { address.setError("Enter the registry HTTPS address"); return; }
-            cloudSelected = nextCloud; cloudQuery = search.getText().toString();
+            cloudSelected = nextCloud; cloudQuery = nextCloud ? browserQuery : ""; browserSearch.setText(cloudQuery);
             android.content.SharedPreferences.Editor edit = getPreferences(MODE_PRIVATE).edit().putString("registry_url", address.getText().toString().trim()).putString("profile", profile.getText().toString());
-            edit.putString("source", cloudSelected ? "cloud" : "usb").putBoolean("show_source_prompt", !remember.isChecked()).putString("device_vehicle", vehicle.getText().toString().trim()).putString("device_firmware", firmware.getText().toString().trim()).putString("device_nemesis", nemesis.getText().toString().trim()); edit.apply(); dialog.dismiss(); refresh();
+            edit.putString("source", cloudSelected ? "cloud" : "usb").putBoolean("show_source_prompt", !remember.isChecked()).putString("device_vehicle", vehicle.getText().toString().trim()).putString("device_firmware", firmware.getText().toString().trim()).putString("device_nemesis", nemesis.getText().toString().trim()); edit.apply(); dialog.dismiss(); refreshBrowser();
         } });
     }
     private android.widget.EditText profileField(LinearLayout panel, String label, String key) {
@@ -581,16 +678,17 @@ public final class MainActivity extends Activity {
     }
     private void showHelp() {
         message("Help", "Getting started\n" +
-            "1. Insert your USB drive and tap Refresh.\n" +
+            "1. Choose Cloud Registry or USB Storage in Settings, then tap Refresh.\n" +
             "2. Choose a tab, then select a package.\n" +
             "3. Use the actions shown for that tab.\n\n" +
             "Tabs\n" +
             "Installed: uninstall or launch packages on the head unit.\n" +
-            "Updates: newer versions found on USB.\n" +
-            "Available: USB packages ready to install.\n" +
+            "Updates: newer versions found in the selected source.\n" +
+            "Available: packages in the selected source ready to install.\n" +
             "Scripts: tasks to run on the head unit; check their instructions first.\n\n" +
             "Adding or updating packages\n" +
-            "Use the USB companion on your computer to copy releases to USB. Back here, tap Refresh, select the package, and confirm Install or Update.\n\n" +
+            "Browse registry releases directly, or use the USB companion to copy releases to USB. Select a package and confirm Install or Update.\n\n" +
+            "Search and filters\nType to filter names, package IDs, descriptions or publishers. Cloud searches run after a short pause; Enter searches immediately. Clear removes the search. Filters selects package type and name or download-size order; Reset restores defaults. Installed search works offline. In cloud mode, Installed > Details > Choose version explicitly checks registry versions, including versions whose ordering is unknown.\n\n" +
             "Need more information?\n" +
             "Details shows versions, file locations, and errors. Versions saved after successful manager installs are marked in Details. To update, copy a newer installer to USB and use Updates.\n" +
             "Uninstall removes the package from the head unit and keeps its USB files. To remove Package Manager itself, use NEMESIS Manager > Packages.\n\n" +

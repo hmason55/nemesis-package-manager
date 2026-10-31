@@ -1,4 +1,5 @@
-import { el, inputField, action } from "./ui";
+import { el, link } from "./ui";
+import { deviceProfile } from "./settings";
 export type Profile = { vehicle: string; firmware: string; nemesis: string };
 export function advice(declarations: any, profile: Profile) {
   const results = (
@@ -53,81 +54,30 @@ export function advice(declarations: any, profile: Profile) {
   };
 }
 export function profileCheck(parent: HTMLElement, declarations: any) {
-  const details = el("details");
-  details.append(el("summary", "Compare with your device (optional)"));
-  const form = el("form");
-  let saved: Profile = { vehicle: "", firmware: "", nemesis: "" };
-  try {
-    saved = {
-      ...saved,
-      ...JSON.parse(localStorage.getItem("nemesis-device-profile") || "{}"),
-    };
-  } catch {}
-  const vehicle = inputField(
-      form,
-      "Vehicle model",
-      "vehicle",
-      "text",
-      saved.vehicle,
+  const result = advice(declarations, deviceProfile()),
+    output = el("div", "", "callout");
+  output.append(
+    el(
+      "strong",
+      result.status === "mismatch"
+        ? "Compatibility warning"
+        : result.status === "match"
+          ? "Declared values match"
+          : "Compatibility unknown",
     ),
-    firmware = inputField(
-      form,
-      "Firmware version",
-      "firmware",
-      "text",
-      saved.firmware,
-    ),
-    nemesis = inputField(
-      form,
-      "NEMESIS version",
-      "nemesis",
-      "text",
-      saved.nemesis,
-    );
-  form.append(
     el(
       "p",
-      "Saved only in this browser. Exact values and * can be compared; free-form ranges may remain unknown.",
-      "hint",
+      "Advisory only. Downloads and installation remain available; matching values do not establish hardware support.",
     ),
+    link("Change device profile in Settings", "#settings"),
   );
-  const output = el("div", "", "callout");
-  output.setAttribute("role", "status");
-  function compare() {
-    const profile = {
-      vehicle: vehicle.value,
-      firmware: firmware.value,
-      nemesis: nemesis.value,
-    };
-    try {
-      localStorage.setItem("nemesis-device-profile", JSON.stringify(profile));
-    } catch {}
-    const result = advice(declarations, profile);
-    output.replaceChildren(
-      el(
-        "strong",
-        result.status === "mismatch"
-          ? "Compatibility warning"
-          : result.status === "unknown"
-            ? "Compatibility unknown"
-            : "Declared values match",
-      ),
-      el(
-        "p",
-        "Advisory only. Downloads and installation remain available; matching values do not establish hardware support.",
-      ),
-    );
-    for (const row of result.results)
-      output.append(
-        el("p", row.field + ": " + row.status + " — " + row.detail),
-      );
-  }
-  form.append(action("Compare requirements", compare, "primary"), output);
-  form.onsubmit = (e) => {
-    e.preventDefault();
-    compare();
-  };
-  details.append(form);
-  parent.append(details);
-  compare();
+  if (result.status === "mismatch")
+    for (const row of result.results.filter((r) => r.status === "mismatch"))
+      output.append(el("p", row.field + ": " + row.detail));
+  const details = el("details");
+  details.append(el("summary", "Comparison details"));
+  for (const row of result.results)
+    details.append(el("p", row.field + ": " + row.status + " — " + row.detail));
+  output.append(details);
+  parent.append(output);
 }

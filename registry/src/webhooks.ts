@@ -72,8 +72,14 @@ export async function webhook(request: Request, env: Env) {
   )
     changes.push(
       env.DB.prepare(
-        "INSERT OR IGNORE INTO release_events(repository_id,release_id) VALUES(?,?)",
-      ).bind(input.repository.id, input.release.id),
+        "INSERT OR IGNORE INTO release_events(repository_id,release_id,actor_id) VALUES(?,?,?)",
+      ).bind(
+        input.repository.id,
+        input.release.id,
+        Number.isSafeInteger(input.sender?.id) && input.sender.id > 0
+          ? input.sender.id
+          : null,
+      ),
     );
   await env.DB.batch(changes);
   return Response.json({ accepted: true }, { status: 202 });
@@ -127,6 +133,7 @@ export async function synchronize(env: Env) {
             release_id: release.id,
             asset_id: assets[0].id,
           },
+          event.actor_id,
         );
       await env.DB.prepare(
         "UPDATE release_events SET status='submitted' WHERE repository_id=? AND release_id=?",

@@ -22,7 +22,7 @@ export const guides: Guide[] = [
       {
         title: "Choose your path",
         steps: [
-          "Have a working vehicle internet connection? Use Cloud Registry in the vehicle to browse and download approved packages.",
+          "Have a working vehicle internet connection? Use Cloud Registry in the vehicle to browse and download published packages.",
           "Prefer USB or need offline access? Run USB Companion on your computer, select your drive, and prepare installers manually or from the registry.",
           "Downloading or copying an installer does not install it. Read its requirements and confirm installation in the parked vehicle.",
         ],
@@ -112,7 +112,7 @@ export const guides: Guide[] = [
     title: "Prepare USB packages from the registry",
     audience: "Computer users",
     intro:
-      "Browse approved packages inside Companion and copy verified installers to USB without a separate browser download/import step.",
+      "Browse published packages inside Companion and copy verified installers to USB without a separate browser download/import step.",
     figure: "companion-registry.svg",
     alt: "Illustrative Companion registry connection, search, version selection, preparation, and results.",
     sections: [
@@ -150,8 +150,8 @@ export const guides: Guide[] = [
       {
         title: "Find the right release",
         steps: [
-          "Use Packages search and category filters. Sort by name or recently published; recently published does not necessarily mean a newer version.",
-          "Open a package, check publisher and repository links, then select an exact approved version. Read Overview, Compatibility, Release notes, and Versions.",
+          "Start typing in Packages search to see results update automatically. Filter by category, publisher, or maximum download size; sort by name, recently published, or smallest download. Recently published does not necessarily mean a newer version.",
+          "Open a package, check publisher and repository links, then select an exact published version. Read Overview, Compatibility, Release notes, and Versions. To compare support declarations with your device, optionally save a device profile in Settings; mismatches remain advisory.",
           "Download the installer ZIP for manual Companion import, browse the same release inside Companion, or use Cloud Registry in the vehicle.",
           "Check integrity information when sharing a package link. A withdrawn release stops new registry downloads and must not silently redirect you to another version.",
         ],
@@ -172,7 +172,7 @@ export const guides: Guide[] = [
         title: "Connect your GitHub repository",
         steps: [
           "Choose Publish → Sign in with GitHub. Authorize the registry App for your GitHub identity. Reloading the site may require signing in again because the registry token stays in memory.",
-          "Use the Install GitHub App link in the publisher screen. Select the account and only the public repositories you want to publish. The App requires read-only Contents and Metadata access.",
+          "Use Connect repository on GitHub in the publisher screen. Select the account and only the public repositories you want to publish. The App requires read-only Contents and Metadata access.",
           "Return to Publish and register the public owner/repository name. Your signed-in user must have write, maintain, or administrator permission on it.",
           "If the repository was transferred, App access removed, or permissions changed, restore the intended App installation/access and re-register to reauthorize publishing.",
         ],
@@ -192,13 +192,13 @@ export const guides: Guide[] = [
         title: "Confirm your submission and follow validation",
         steps: [
           "In Publish, choose the registered repository, release, and exact installer asset. When several ZIPs exist, explicitly select the right one.",
-          "Enter the exact internal ID/version, a useful name/description, categories, release notes, and optional compatibility declarations. Review the ZIP filename and destination release identity.",
+          "Enter the exact internal ID/version and a useful name/description. Expand More package details for optional categories, release notes, and compatibility declarations. A square icon.png at the repository root supplies a custom package icon; otherwise the GitHub publisher avatar is used. Review the ZIP filename and destination release identity.",
           "Acknowledge that you have permission to redistribute the ZIP through the registry, then submit at the final confirmation step.",
           "Follow status: Queued → Validating → Finishing publication → Published. Trusted validation downloads the exact asset, checks all archive bytes/identity, and never runs package scripts or repository code. Successful validation publishes automatically; no administrator approval is required.",
-          "If validation fails, read the report and fix the artifact. Administrators can retry failed jobs. A rejected or corrected artifact may require a new release asset and version. A repository or publisher may have up to 20 active queued/validating/finishing jobs; if the queue is full, wait for jobs to finish before submitting more.",
+          "If validation fails, read the report and fix the artifact. Administrators can retry failed jobs. A stopped or corrected submission may require a new release asset and version. A repository or publisher may have up to 20 active queued/validating/finishing jobs; if the queue is full, wait for jobs to finish before submitting more.",
           "Successful publication reserves ownership of the global package ID for the repository. Later versions and listing metadata changes use the same authorization, trusted validation, and automatic publication path.",
         ],
-        note: "Approved version bytes are immutable. Use a new version when bytes change. Withdrawal stops new registry discovery/downloads; it does not uninstall packages or erase existing offline copies.",
+        note: "Published version bytes are immutable. Use a new version when bytes change. Withdrawal stops new registry discovery/downloads; it does not uninstall packages or erase existing offline copies.",
       },
       {
         title: "Synchronize and declare support",
@@ -224,7 +224,7 @@ export const guides: Guide[] = [
         title: "Choose a safe next action",
         steps: [
           "Registry unavailable: retain installed-package access, switch to USB when needed, and retry the cloud operation after connectivity returns. Do not disable HTTPS certificate or hostname checks.",
-          "Hash, size, manifest, or unsafe archive error: do not import or install those bytes. Obtain the approved release again or ask the publisher to submit a corrected new version.",
+          "Hash, size, manifest, or unsafe archive error: do not import or install those bytes. Obtain the published release again or ask the publisher to submit a corrected new version.",
           "USB removed, changed, or wrong destination: reconnect and explicitly select the drive again. Keep recovery files mentioned by an importer error and inspect per-package results before retrying.",
           "Installation failed: read Details and the NEMESIS result. Do not treat a failed installed-state query as evidence that a package was uninstalled.",
           "Publisher cannot see a repository/release: check public visibility, signed-in repository permissions, selected App installation, release publication, and the chosen ZIP asset.",

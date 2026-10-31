@@ -1,3 +1,7 @@
+import { renderSettings } from "./settings";
+import { renderManagement } from "./management";
+import { searchControl } from "./search-control";
+import { icon } from "./icons";
 import { renderGuides } from "./guides";
 import { API, api, setToken } from "./client";
 import { parseRoute, catalogLink } from "./routes";
@@ -7,6 +11,7 @@ import { renderPublish, statusLabels } from "./publish-view";
 const $ = (id: string) => document.getElementById(id)!;
 let user: any = null,
   generation = 0;
+let activeRouteHash = "";
 function notify(text: string, error = false) {
   const node = $("notice");
   node.textContent = text;
@@ -58,13 +63,20 @@ function navigate(hash: string) {
   if (location.hash === hash) void run(renderRoute);
   else location.hash = hash;
 }
-async function renderRoute() {
+async function renderRoute(preserveFocus = false) {
+  activeRouteHash = location.hash;
+  const focused = document.activeElement as HTMLElement | null;
+  const control = focused?.dataset.catalogControl;
   const token = ++generation,
     route = parseRoute(location.hash),
     root = $("content");
-  root.replaceChildren(el("p", "Loading…", "loading"));
+  const filterOpen = preserveFocus
+    ? root.querySelector<HTMLDetailsElement>("[data-catalog-filters]")?.open
+    : undefined;
+  if (!preserveFocus) root.replaceChildren(el("p", "Loading…", "loading"));
+  $("search-status").textContent = "Loading packages…";
   root.setAttribute("aria-busy", "true");
-  for (const id of ["browse", "publish", "moderate", "help"]) {
+  for (const id of ["browse", "publish", "moderate", "help", "settings"]) {
     const node = $(id);
     if (
       (route.page === "package" && id === "browse") ||
@@ -78,7 +90,9 @@ async function renderRoute() {
   const target = el("div", "", "page-content");
   try {
     if (route.page === "packages") {
-      ($("search-query") as HTMLInputElement).value = route.query;
+      if (!preserveFocus || document.activeElement !== $("search-query"))
+        ($("search-query") as HTMLInputElement).value = route.query;
+      searchBox.updateClear();
       const data = await api(
         "/v1/packages?" +
           new URLSearchParams({
@@ -86,6 +100,8 @@ async function renderRoute() {
             category: route.category,
             sort: route.sort,
             page: String(route.number),
+            publisher: route.publisher,
+            max_size: route.maxSize,
           }),
       );
       if (token !== generation) return;
@@ -96,7 +112,8 @@ async function renderRoute() {
         route.category,
         route.sort,
         route.number,
-        navigate,
+        liveNavigate,
+        { publisher: route.publisher, maxSize: route.maxSize, filterOpen },
       );
     } else if (route.page === "package") {
       const data = await api("/v1/packages/" + encodeURIComponent(route.id));
@@ -115,91 +132,29 @@ async function renderRoute() {
         throw new Error(
           "Sign in with an administrator account to manage registry submissions.",
         );
-      const submissions = await api("/v1/admin/submissions");
+      const [submissions, blocks] = await Promise.all([
+        api("/v1/admin/submissions"),
+        api("/v1/admin/blocks"),
+      ]);
       if (token !== generation) return;
-      heading(
-        target,
-        "Registry management",
-        "Inspect validation reports, retry failed jobs, and withdraw abusive or broken releases. Authorized publishers publish automatically after trusted validation.",
-      );
-      for (const submission of submissions) {
-        const data = JSON.parse(submission.metadata),
-          card = el("article", "", "review-card");
-        card.append(
-          el("h2", submission.package_id + " " + submission.version),
-          el(
-            "span",
-            statusLabels[submission.status] || submission.status,
-            "status-badge",
-          ),
-          el(
-            "p",
-            submission.repository +
-              " · " +
-              (submission.publisher || "GitHub release synchronization"),
-          ),
-          el("p", data.description),
-          el("p", submission.report || "Waiting for validation"),
-          external(
-            "Inspect source and releases",
-            "https://github.com/" + submission.repository + "/releases",
-          ),
-        );
-        const integrity = el("details");
-        integrity.append(
-          el("summary", "Metadata and artifact identity"),
-          el("pre", JSON.stringify(data, null, 2), "notes"),
-          el("code", submission.sha256 || "No validated artifact yet", "hash"),
-        );
-        card.append(integrity);
-        const actions = el("div", "", "actions");
-        const allowed =
-          submission.status === "review"
-            ? []
-            : submission.status === "approved"
-              ? ["withdraw"]
-              : submission.status === "failed"
-                ? ["retry", "reject"]
-                : ["queued", "validating"].includes(submission.status)
-                  ? ["reject"]
-                  : [];
-        for (const operation of allowed)
-          actions.append(
-            action(
-              operation[0].toUpperCase() + operation.slice(1),
-              () =>
-                run(async () => {
-                  if (
-                    !confirm(
-                      operation +
-                        " " +
-                        submission.package_id +
-                        " " +
-                        submission.version +
-                        "?",
-                    )
-                  )
-                    return;
-                  const reason = prompt("Reason for this action");
-                  if (reason === null) return;
-                  await api(
-                    "/v1/admin/submissions/" + submission.id + "/" + operation,
-                    { reason },
-                  );
-                  await renderRoute();
-                }),
-              "quiet",
-            ),
-          );
-        card.append(actions);
-        target.append(card);
-      }
+      renderManagement(target, submissions, blocks, {
+        run,
+        refresh: renderRoute,
+      });
+    } else if (route.page === "settings") {
+      renderSettings(target);
     } else {
       renderGuides(target, route.page === "guides" ? route.id : "");
     }
     if (token !== generation) return;
     root.replaceChildren(target);
-    root.focus({ preventScroll: true });
+    if (!preserveFocus) root.focus({ preventScroll: true });
+    else if (control)
+      root
+        .querySelector<HTMLElement>('[data-catalog-control="' + control + '"]')
+        ?.focus({ preventScroll: true });
+    $("search-status").textContent =
+      route.page === "packages" ? "Results updated." : "";
     if (
       route.page === "guides" &&
       Number.isSafeInteger(route.section) &&
@@ -225,15 +180,56 @@ async function renderRoute() {
       action("Try again", () => run(renderRoute), "primary"),
       link("Package help", "#help", "text-link"),
     );
+    $("search-status").textContent =
+      "Search could not be completed. Try again.";
     notify("The registry request could not be completed.", true);
   } finally {
     if (token === generation) root.setAttribute("aria-busy", "false");
   }
 }
-$("search").onsubmit = (event) => {
-  event.preventDefault();
-  navigate(catalogLink(($("search-query") as HTMLInputElement).value.trim()));
-};
+function liveNavigate(hash: string) {
+  searchBox.cancel();
+  const next = parseRoute(hash);
+  if (next.page === "packages")
+    hash = catalogLink(
+      ($("search-query") as HTMLInputElement).value.trim(),
+      next.category,
+      next.sort,
+      next.number,
+      next.publisher,
+      next.maxSize,
+    );
+  history.replaceState(null, "", location.pathname + location.search + hash);
+  void run(() => renderRoute(true));
+}
+const searchBox = searchControl(
+  $("search-query") as HTMLInputElement,
+  $("search") as HTMLFormElement,
+  $("search-clear") as HTMLButtonElement,
+  () => {
+    generation++;
+    $("content").setAttribute("aria-busy", "true");
+    $("search-status").textContent = "Searching…";
+  },
+  (query) => {
+    const route = parseRoute(location.hash);
+    liveNavigate(
+      route.page === "packages"
+        ? catalogLink(
+            query,
+            route.category,
+            route.sort,
+            1,
+            route.publisher,
+            route.maxSize,
+          )
+        : catalogLink(query),
+    );
+  },
+);
+$("search-submit").prepend(icon("search"));
+$("browse").prepend(icon("package"));
+$("help").prepend(icon("guide"));
 $("signin").onclick = () => void run(signin);
 $("signout").onclick = () =>
   void run(async () => {
@@ -249,13 +245,18 @@ window.addEventListener("registry-session-expired", () => {
   if (["publish", "moderate"].includes(parseRoute(location.hash).page))
     void run(renderRoute);
 });
-window.addEventListener("hashchange", () => void run(renderRoute));
+window.addEventListener("hashchange", () => {
+  if (location.hash === activeRouteHash) return;
+  searchBox.cancel();
+  void run(renderRoute);
+});
 function theme() {
   let choice = "";
   try {
     choice = localStorage.getItem("nemesis-theme") || "";
   } catch {}
   if (choice) document.documentElement.dataset.theme = choice;
+  else delete document.documentElement.dataset.theme;
   const dark = choice
     ? choice === "dark"
     : window.matchMedia("(prefers-color-scheme: dark)").matches;
@@ -270,6 +271,7 @@ $("theme").onclick = () => {
   } catch {}
   theme();
 };
+window.addEventListener("nemesis-theme-changed", theme);
 theme();
 void run(async () => {
   const code = new URLSearchParams(location.hash.slice(1)).get("auth_code");

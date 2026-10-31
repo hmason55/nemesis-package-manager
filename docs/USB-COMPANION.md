@@ -211,6 +211,10 @@ Open [NEMESIS user and publisher guides](https://hmason55.github.io/nemesis-pack
 
 ### Registry connection and publication
 
+Routine setup is **select drive → prepare packages → eject and install**. The **Settings** dialog contains manual drive-path selection, automatic launch, registry connection and optional device profile controls. Search stays visible; open **Filter results** for extra filters and **Version details** for longer compatibility notes. Select a package to reveal its version and destination controls. Safety confirmations still appear before files are replaced or removed.
+
+Type in **Search registry packages** to update results automatically after a short pause. Enter searches immediately. Combine **Category**, **Publisher**, **Maximum download**, and **Sort by**; **Reset filters** clears the search and filters. The size filter applies to the latest published ZIP; inspect your selected version before preparing it. Selections apply to the visible results. On the **Packages** tab, **Search USB packages** filters the selected drive immediately, alongside the installer, script, and needs-attention filters. Manual imports still work offline.
+
 Companion has a built-in staging registry address, so Cloud registry browsing needs
 no connection setup or account by default. Settings → Registry HTTPS address → Save registry can override it;
 manual USB imports remain available offline. Publishers sign in with GitHub and
