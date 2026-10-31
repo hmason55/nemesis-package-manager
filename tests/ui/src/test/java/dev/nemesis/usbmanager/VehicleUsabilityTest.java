@@ -134,4 +134,61 @@ public class VehicleUsabilityTest {
         AlertDialog dialog=(AlertDialog)ShadowDialog.getLatestDialog();assertEquals(sources.size(),dialog.getListView().getCount());
         for(int row:new int[]{6,7,8}) assertTrue(dialog.getListView().getAdapter().getItem(row).toString().contains(expected.get(row).target.getParentFile().getName()+"/installer.zip"));
     }
+    @Test public void backDismissesKeyboardForEveryFieldWithoutClosingSettingsOrLosingEdits()throws Exception {
+        AlertDialog dialog=picker();
+        android.view.inputmethod.InputMethodManager keyboard=(android.view.inputmethod.InputMethodManager)activity.getSystemService(android.content.Context.INPUT_METHOD_SERVICE);
+        ShadowInputMethodManager shadow=org.robolectric.shadow.api.Shadow.extract(keyboard);
+        int count=0;
+        for(View view:views(dialog.getWindow().getDecorView())) if(view instanceof EditText) {
+            EditText field=(EditText)view;
+            field.setText("unsaved " + count++);
+            assertTrue(field.requestFocus());
+            keyboard.showSoftInput(field,0);
+            assertTrue(shadow.isSoftInputVisible());
+            assertTrue(field.dispatchKeyEventPreIme(new android.view.KeyEvent(android.view.KeyEvent.ACTION_DOWN,android.view.KeyEvent.KEYCODE_BACK)));
+            assertTrue(field.dispatchKeyEventPreIme(new android.view.KeyEvent(android.view.KeyEvent.ACTION_UP,android.view.KeyEvent.KEYCODE_BACK)));
+            assertFalse(shadow.isSoftInputVisible());
+            assertFalse(field.hasFocus());
+            assertTrue(dialog.isShowing());
+            assertEquals("unsaved " + (count-1),field.getText().toString());
+            // Hiding the IME must not prevent editing the field again.
+            assertTrue(field.requestFocus());
+            keyboard.showSoftInput(field,0);
+            assertTrue(shadow.isSoftInputVisible());
+            field.onEditorAction(android.view.inputmethod.EditorInfo.IME_ACTION_DONE);
+            assertFalse(shadow.isSoftInputVisible());
+            assertFalse(field.hasFocus());
+            assertEquals(android.view.inputmethod.EditorInfo.IME_FLAG_NO_FULLSCREEN,field.getImeOptions() & android.view.inputmethod.EditorInfo.IME_FLAG_NO_FULLSCREEN);
+        }
+        assertEquals(5,count);
+        assertFalse(activity.getPreferences(0).contains("browser_query"));
+    }
+
+    @Test public void hardwareEnterAndHideButtonReleaseEditorAndKeepSettingsOpen()throws Exception {
+        AlertDialog dialog=picker();
+        android.view.inputmethod.InputMethodManager keyboard=(android.view.inputmethod.InputMethodManager)activity.getSystemService(android.content.Context.INPUT_METHOD_SERVICE);
+        ShadowInputMethodManager shadow=org.robolectric.shadow.api.Shadow.extract(keyboard);
+        for(View view:views(dialog.getWindow().getDecorView())) if(view instanceof EditText) {
+            EditText field=(EditText)view;
+            field.requestFocus();keyboard.showSoftInput(field,0);
+            field.dispatchKeyEvent(new android.view.KeyEvent(android.view.KeyEvent.ACTION_DOWN,android.view.KeyEvent.KEYCODE_ENTER));
+            field.dispatchKeyEvent(new android.view.KeyEvent(android.view.KeyEvent.ACTION_UP,android.view.KeyEvent.KEYCODE_ENTER));
+            assertFalse(shadow.isSoftInputVisible());assertFalse(field.hasFocus());assertTrue(dialog.isShowing());
+            field.requestFocus();keyboard.showSoftInput(field,0);
+            dialog.getButton(android.content.DialogInterface.BUTTON_NEUTRAL).performClick();
+            assertFalse(shadow.isSoftInputVisible());assertFalse(field.hasFocus());assertTrue(dialog.isShowing());
+        }
+    }
+
+    @Test public void browserBackHidesKeyboardAndPreservesSearch()throws Exception {
+        EditText search=(EditText)get("browserSearch");
+        android.view.inputmethod.InputMethodManager keyboard=(android.view.inputmethod.InputMethodManager)activity.getSystemService(android.content.Context.INPUT_METHOD_SERVICE);
+        search.setText("demo");search.requestFocus();keyboard.showSoftInput(search,0);
+        assertTrue(search.dispatchKeyEventPreIme(new android.view.KeyEvent(android.view.KeyEvent.ACTION_DOWN,android.view.KeyEvent.KEYCODE_BACK)));
+        assertTrue(search.dispatchKeyEventPreIme(new android.view.KeyEvent(android.view.KeyEvent.ACTION_UP,android.view.KeyEvent.KEYCODE_BACK)));
+        assertFalse(((ShadowInputMethodManager)org.robolectric.shadow.api.Shadow.extract(keyboard)).isSoftInputVisible());
+        assertFalse(search.hasFocus());assertEquals("demo",search.getText().toString());
+        assertFalse(activity.isFinishing());
+        assertTrue(search.requestFocus());
+    }
 }

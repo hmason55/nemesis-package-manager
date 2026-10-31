@@ -32,6 +32,10 @@ Existing drives need the new launcher to run once for this change. It never repl
 
 Choose **USB Storage** at the startup source prompt and tap **Continue**. You can change the source later in **Settings**.
 
+The initial package scan starts after you close the source prompt. Dialogs use a consistent dark theme so their text remains readable when the head unit is in light mode.
+
+To dismiss the keyboard while editing settings, tap **Done**, press **Back**, or use **Hide keyboard**. These actions keep settings open and preserve your edits; tap **Save** to apply them. In the package search field, **Back** or **Done** hides the keyboard and keeps your search text.
+
 ## D. Install and update packages
 
 See [tabs and actions](USER-GUIDE.md#find-your-way-around) for screen examples, or follow the [update walkthrough](USER-GUIDE.md#update-a-community-package) to replace a release on USB and then install it in the vehicle.
