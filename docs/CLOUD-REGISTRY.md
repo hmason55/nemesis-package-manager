@@ -80,8 +80,10 @@ Apps and secrets. Never put any secret in a `VITE_` variable.
    ordinary main pushes run checks without deploying the cloud components.
 
 GitHub user tokens are encrypted in D1; registry bearer tokens are stored as
-hashes. Browser bearer tokens stay in memory and expire after one hour. Reloading
-the website requires sign-in again. OAuth handoff codes expire in 60 seconds and
+hashes. Browser bearer tokens are kept in tab-scoped session storage, scoped to
+the configured API, and expire after one hour. Navigation and reloads restore
+the signed-in user after server verification; sign-out and authenticated HTTP
+401 responses clear the saved session. OAuth handoff codes expire in 60 seconds and
 require the originating browser verifier. Cookie-based cross-site API sessions
 are not required. An API encryption-key change invalidates outstanding sessions.
 
