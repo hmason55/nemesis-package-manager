@@ -115,4 +115,23 @@ public class VehicleUsabilityTest {
         search.requestFocus();keyboard.showSoftInput(search,0);search.onEditorAction(android.view.inputmethod.EditorInfo.IME_ACTION_DONE);
         assertFalse(((ShadowInputMethodManager)org.robolectric.shadow.api.Shadow.extract(keyboard)).isSoftInputVisible());assertFalse(search.hasFocus());assertFalse((Boolean)get("busy"));
     }
+    @Test public void repeatedArbitraryVersionsHaveStableOrderingAcrossUsbFolders()throws Exception {
+        ArrayList<PackageScanner.Item> all=(ArrayList<PackageScanner.Item>)get("allItems");
+        String[] labels={"release-red","release-blue","release-red","10","2","v2","2.0",null,""};
+        ArrayList<PackageScanner.Item> sources=new ArrayList<PackageScanner.Item>();
+        for(int i=0;i<labels.length;i++) {
+            PackageScanner.Item item=new PackageScanner.Item();item.id="example.app";item.title="Example";item.kind=PackageScanner.INSTALL;item.version=labels[i];item.target=new java.io.File("/usb/"+(char)('a'+i)+"/installer.zip");sources.add(item);
+        }
+        // Numeric releases descend; equivalent numeric versions and repeated labels use source paths.
+        List<PackageScanner.Item> expected=Arrays.asList(sources.get(3),sources.get(4),sources.get(5),sources.get(6),sources.get(7),sources.get(8),sources.get(1),sources.get(0),sources.get(2));
+        Method versions=MainActivity.class.getDeclaredMethod("packageVersions",PackageScanner.Item.class);versions.setAccessible(true);
+        Random random=new Random(47);
+        for(int attempt=0;attempt<100;attempt++) {
+            all.clear();all.addAll(sources);Collections.shuffle(all,random);
+            assertEquals("Input order must not change version ordering",expected,versions.invoke(activity,sources.get(0)));
+        }
+        Method picker=MainActivity.class.getDeclaredMethod("choosePackageVersion",PackageScanner.Item.class);picker.setAccessible(true);picker.invoke(activity,sources.get(0));
+        AlertDialog dialog=(AlertDialog)ShadowDialog.getLatestDialog();assertEquals(sources.size(),dialog.getListView().getCount());
+        for(int row:new int[]{6,7,8}) assertTrue(dialog.getListView().getAdapter().getItem(row).toString().contains(expected.get(row).target.getParentFile().getName()+"/installer.zip"));
+    }
 }

@@ -625,12 +625,14 @@ public final class MainActivity extends Activity {
             if (selectedItem.id != null && selectedItem.id.equals(item.id) && !PackageScanner.EXECUTE.equals(item.kind) && !PackageScanner.BROKEN.equals(item.kind) && !"installed".equals(item.kind)) versions.add(item);
         Collections.sort(versions, new Comparator<PackageScanner.Item>() {
             public int compare(PackageScanner.Item a, PackageScanner.Item b) {
-                Integer order = PackagePresentation.compareVersions(a.version, b.version);
-                if (order != null) return -order;
                 boolean numericA = PackagePresentation.compareVersions(a.version, "0") != null;
                 boolean numericB = PackagePresentation.compareVersions(b.version, "0") != null;
                 if (numericA != numericB) return numericA ? -1 : 1;
-                return PackagePresentation.key(a).compareTo(PackagePresentation.key(b));
+                // Arbitrary labels have no release chronology; sort them by label consistently.
+                int order = numericA ? -PackagePresentation.compareVersions(a.version, b.version) :
+                    (a.version == null ? "" : a.version).compareTo(b.version == null ? "" : b.version);
+                // Equal labels and equivalent numeric releases retain a stable source ordering.
+                return order != 0 ? order : PackagePresentation.key(a).compareTo(PackagePresentation.key(b));
             }
         });
         return versions;
