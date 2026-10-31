@@ -1,6 +1,6 @@
 // @vitest-environment happy-dom
 import { describe, it, expect } from "vitest";
-import { existsSync } from "node:fs";
+import { existsSync, readFileSync } from "node:fs";
 import { guides, renderGuides } from "./guides";
 import { parseRoute } from "./routes";
 import { advice, profileCheck } from "./compatibility";
@@ -8,6 +8,40 @@ import fixtures from "../../contracts/fixtures/compatibility.json";
 import { statusLabels } from "./publish-view";
 
 describe("published task guides", () => {
+  it("keeps repository and site dialog illustrations identical and correctly described", () => {
+    for (const [name, title] of [
+      ["manager-source", "Package Manager: choose source"],
+      ["vehicle-settings", "Package Manager settings"],
+    ]) {
+      const site = readFileSync(
+        new URL("../public/guides/" + name + ".svg", import.meta.url),
+        "utf8",
+      );
+      const repo = readFileSync(
+        new URL("../../docs/images/" + name + ".svg", import.meta.url),
+        "utf8",
+      );
+      expect(site).toBe(repo);
+      expect(site).toContain('<title id="title">' + title + "</title>");
+    }
+  });
+  it("documents actual restore controls, stable artifact identity, and keyboard recovery", () => {
+    const publish = document.createElement("div");
+    renderGuides(publish, "publish");
+    expect(publish.textContent).toContain("My submissions");
+    expect(publish.textContent).toContain("Republish version");
+    expect(publish.textContent).toContain("original URL and SHA-256");
+    expect(publish.textContent).toContain(
+      "Administrator and older withdrawals require administrator recovery",
+    );
+    const vehicle = document.createElement("div");
+    renderGuides(vehicle, "vehicle");
+    expect(vehicle.textContent).toContain("Back");
+    expect(vehicle.textContent).toContain("Save applies settings");
+    expect(vehicle.textContent).toContain(
+      "scan starts after the prompt closes",
+    );
+  });
   it("explains automatic trusted publication without presenting a maintainer gate", () => {
     const root = document.createElement("div");
     renderGuides(root, "publish");

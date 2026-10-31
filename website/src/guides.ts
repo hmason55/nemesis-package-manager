@@ -51,9 +51,9 @@ export const guides: Guide[] = [
       {
         title: "Choose a source",
         steps: [
-          "On startup, choose Cloud Registry or USB Storage and press Continue. Use Don't show again on startup only if you want the saved source to open automatically.",
+          "On startup, choose Cloud Registry or USB Storage and press Continue. The initial scan starts after the prompt closes; Cancel loads the current source. Use Don't show again on startup only if you want the saved source to open automatically.",
           "Open Settings near Help/Refresh to change your source, registry address, startup preference, or known vehicle/firmware/NEMESIS information.",
-          "For USB Storage, connect the prepared drive and press Refresh. Search packages filters the current tab; Clear removes the search. Filters contains package type and sort order. Submit the search or use Done/OK to dismiss its keyboard; Settings also has a fixed Hide keyboard button.",
+          "For USB Storage, connect the prepared drive and press Refresh. Search packages filters the current tab; Clear removes the search. Filters contains package type and sort order. Press Back or Done/OK to hide the search keyboard without losing the query; submitting a search also closes it. In Settings, Back, Done/OK, or Hide keyboard closes the keyboard and keeps edits; Save applies settings. Dialogs keep a readable dark theme in head-unit light mode.",
         ],
         note: "Cloud is optional. Keep a prepared USB drive for offline use. Installed packages remain manageable independently of the selected discovery source.",
       },
@@ -202,7 +202,7 @@ export const guides: Guide[] = [
           "In Publish, choose the registered repository, release, and exact installer asset. When several ZIPs exist, explicitly select the right one.",
           "Enter the exact internal ID/version and a useful name/description. Expand More package details for optional categories, release notes, and compatibility declarations. An optional icon.png beside NEMESIS.data inside the installer ZIP supplies artwork: still, non-interlaced PNG, at most 512 × 512 pixels and 256 KiB. Otherwise the GitHub publisher avatar is used. Review the ZIP filename and destination release identity.",
           "Acknowledge that you have permission to redistribute the ZIP through the registry, then submit at the final confirmation step.",
-          "Follow status: Queued → Validating → Finishing publication → Published. Trusted validation downloads the exact asset, checks all archive bytes/identity, and never runs package scripts or repository code. Successful validation publishes automatically; no administrator approval is required.",
+          "Follow status: Waiting for validation → Validation in progress → Finishing publication → Published. Trusted validation downloads the exact asset, checks all archive bytes/identity, and never runs package scripts or repository code. Successful validation publishes automatically; no administrator approval is required.",
           "If validation fails, read the report and fix the artifact. Administrators can retry failed jobs. A stopped or corrected submission may require a new release asset and version. A repository or publisher may have up to 20 active queued/validating/finishing jobs; if the queue is full, wait for jobs to finish before submitting more.",
           "Successful publication reserves ownership of the global package ID for the repository. Later versions and listing metadata changes use the same authorization, trusted validation, and automatic publication path.",
         ],
@@ -213,9 +213,19 @@ export const guides: Guide[] = [
         steps: [
           "Sign in with the GitHub account that successfully published the package. Open Publish → My published packages and choose Unpublish package.",
           "Confirm that all published versions will be withdrawn and pending publication stopped, then enter a reason. Only personally published packages are eligible; repository registration or collaboration alone is insufficient. Current GitHub repository permission and authorization are checked again.",
-          "Registry downloads stop, but GitHub releases, stored artifacts, audit history, package ID ownership, and existing offline copies remain. Published version bytes cannot be replaced. A newly published version can make the package visible again.",
+          "Registry downloads stop, but GitHub releases, stored artifacts, audit history, package ID ownership, and existing offline copies remain. Published version bytes cannot be replaced.",
         ],
         note: "Maintainers can use Manage registry → Remove package for any package. Unpublishing does not uninstall packages from vehicles.",
+      },
+      {
+        title: "Republish a withdrawn version",
+        steps: [
+          "To restore a version you unpublished, open Publish → My submissions, find its Withdrawn row, and choose Republish version.",
+          "Confirm the original package ID/version and ZIP/hash, then enter a reason. Current repository authorization, publishing blocks, ownership, and artifact availability are checked again.",
+          "The original URL and SHA-256 are restored; changed bytes require a new version. Each version is restored separately, including its retained icon. Stopped pending submissions do not restart.",
+          "Administrator and older withdrawals require administrator recovery; contact a registry administrator when My submissions shows that instruction. Maintainers use Manage registry → Republish version on a Withdrawn row and confirm the same identity and reason.",
+        ],
+        note: "If restoration fails, resolve the displayed authorization, block, or missing-artifact error before retrying. Republishing does not reinstall packages on vehicles or replace existing offline copies.",
       },
       {
         title: "Synchronize and declare support",

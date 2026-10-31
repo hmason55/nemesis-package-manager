@@ -37,7 +37,7 @@ Prefer to copy files yourself? Follow [manual Windows setup](SETUP-WINDOWS.md#b-
 
 1. With the vehicle parked and the head unit fully booted, insert the drive.
 2. Approve the NEMESIS execution prompt. The launcher installs Package Manager if missing, then opens it. It does not install the community packages automatically.
-3. At the source prompt choose **USB Storage** and tap **Continue**. Tap **Refresh**, choose a tab, and select a package.
+3. At the source prompt choose **USB Storage** and tap **Continue**. The initial scan starts after the prompt closes; choose a tab and select a package. **Refresh** reloads the list when needed.
 
 On later visits, open **NEMESIS Manager > Packages > Package Manager > Launch**. After successful first setup, the drive disables its execution prompt unless automatic launch is enabled in companion Settings. See [first-launch details](SETUP-WINDOWS.md#c-first-launch) if you are updating an existing drive or still see that prompt.
 
@@ -60,9 +60,9 @@ A package with an update appears in both **Installed** and **Updates**. **Availa
 
 ## Startup, keyboard, and release selection
 
-The startup prompt asks only for **Cloud Registry** or **USB Storage** and whether to hide the prompt next time. The registry defaults to the Cloudflare Worker used by the project. Open **Settings** to edit its HTTPS address and the optional vehicle, firmware, and NEMESIS profile. Existing source and startup preferences are preserved.
+The startup prompt asks only for **Cloud Registry** or **USB Storage** and whether to hide the prompt next time. The registry defaults to the Cloudflare Worker used by the project. Open **Settings** to edit its HTTPS address and the optional vehicle, firmware, and NEMESIS profile. Existing source and startup preferences are preserved. The prompt appears before scanning, and **Cancel** closes it and loads the current source. Dialogs keep a readable dark theme when the head unit uses light mode.
 
-Use the keyboard's **Done/OK** action or the fixed **Hide keyboard** button in Settings to dismiss it. Submitting the browser search also closes its keyboard. Typing still filters and searches live; **Filters** retains package-type and sorting controls.
+Press **Back**, use the keyboard's **Done/OK** action, or tap **Hide keyboard** in Settings to dismiss it without closing settings or losing edits. Tap **Save** to apply settings. **Back** or **Done** hides the browser-search keyboard while preserving the query; submitting a search also closes it. Typing still filters and searches live; **Filters** retains package-type and sorting controls.
 
 Each package ID has one browser row and counts once per tab. Comparable versions default to the newest installable release; differing arbitrary version labels require manual choice. **Install** or **Update** opens a version picker when several releases exist, and **Details > Choose version** also exposes them. USB choices show their source location so separate installers retain their own files and data. Scripts and invalid installers keep separate entries. Installed cloud packages still discover published versions on demand, and installed management works offline.
 

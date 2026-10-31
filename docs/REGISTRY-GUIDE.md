@@ -22,11 +22,11 @@ A withdrawn or unavailable version cannot be downloaded through the registry. Se
 
 ![Publishing workflow from GitHub release selection through trusted validation to automatic publication](images/publishing.svg)
 
-1. Choose **Publish > Sign in with GitHub**. Use **Connect repository on GitHub** to install the App on the intended public repository, then return and register `owner/repository`. Your account needs write, maintain, or administrator permission. Reloading the site may require signing in again.
+1. Choose **Publish > Sign in with GitHub**. Use **Connect repository on GitHub** to install the App on the intended public repository, then return and register `owner/repository`. Your account needs write, maintain, or administrator permission. Sign-in survives navigation and reloads in the same tab until sign-out or the one-hour session expiry.
 2. Build a directly installable ZIP with `NEMESIS.data` at its root or under one enclosing directory. Keep the package ID stable and set the exact release version in the manifest. USB wrapper bundles, source-code archives, standalone scripts, and the reserved `usb.package.manager` ID are not accepted here.
 3. Publish a GitHub Release with the finished ZIP attached as a release asset. In **Publish**, select the registered repository, published release, and exact installer asset.
 4. Enter the internal ID/version, name, and description. Expand **More package details** for categories, release notes, and compatibility declarations. Review the asset and acknowledge redistribution permission before submitting.
-5. Follow **Queued → Validating → Finishing publication → Published**. Successful trusted validation publishes automatically; there is no separate maintainer approval queue. If validation fails, read its report and correct the artifact before resubmitting.
+5. Follow **Waiting for validation → Validation in progress → Finishing publication → Published**. Successful trusted validation publishes automatically; there is no separate maintainer approval queue. If validation fails, read its report and correct the artifact before resubmitting.
 
 For a custom icon, put an optional `icon.png` beside the package manifest **inside the installer ZIP**. Use a still, non-interlaced PNG no larger than 512 × 512 pixels and 256 KiB. Without artwork, the site uses the publisher avatar and a local fallback.
 
@@ -40,7 +40,13 @@ Sign in with the GitHub account that published the package and open **Publish > 
 
 Publishers can remove only packages they have personally published successfully; registering or collaborating on a repository alone does not grant this right. The server also rechecks current GitHub publishing permissions and repository authorization. Maintainers retain **Manage registry > Remove package** for any package.
 
-Unpublishing stops new registry downloads and icons. It does not delete GitHub releases, recall offline copies, uninstall vehicle packages, erase audit records, or release ownership of the package ID. Published versions remain immutable. A later newly published version can make the package visible again.
+Unpublishing stops new registry downloads and icons. It does not delete GitHub releases, recall offline copies, uninstall vehicle packages, erase audit records, or release ownership of the package ID. Published versions remain immutable.
+
+## Republish a withdrawn version
+
+To restore a version you unpublished, open **Publish > My submissions**, find its **Withdrawn** row, and choose **Republish version**. Confirm the package ID/version and original ZIP/hash, then enter a reason. Current GitHub permissions, repository ownership, publishing blocks, and stored-artifact availability are checked again. Each restored version becomes downloadable under its original URL with the same SHA-256. Changed ZIP bytes require a new version.
+
+Administrator withdrawals and older withdrawals without a recorded withdrawing publisher require administrator recovery. Open **Manage registry**, find the **Withdrawn** version, choose **Republish version**, confirm its identity and original artifact, and supply a reason. Missing artifacts, revoked repository authorization, and blocked accounts prevent restoration; resolve the cause before retrying. Republish restores one version at a time, including its icon, and does not resume stopped submissions or reinstall anything on vehicles.
 
 ## If something goes wrong
 

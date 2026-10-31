@@ -137,3 +137,48 @@ it("manages removal and repository-owner blocks without manual approval controls
   await Promise.all(tasks);
   expect(api).toHaveBeenCalledTimes(3);
 });
+
+it("offers an explicit administrator restore only for withdrawn versions", async () => {
+  const root = document.createElement("main"),
+    tasks: Promise<unknown>[] = [];
+  const refresh = vi.fn().mockResolvedValue(undefined);
+  vi.stubGlobal(
+    "confirm",
+    vi.fn(() => true),
+  );
+  vi.stubGlobal(
+    "prompt",
+    vi.fn(() => "Recovered"),
+  );
+  renderManagement(
+    root,
+    ["withdrawn", "failed", "approved"].map((status) => ({
+      id: status,
+      package_id: "example.app",
+      version: "1.2",
+      metadata: "{}",
+      status,
+      repository: "owner/repo",
+    })),
+    [],
+    {
+      refresh,
+      run: (task) => {
+        const result = task();
+        tasks.push(result);
+        return result.then(() => {});
+      },
+    },
+  );
+  const buttons = [...root.querySelectorAll("button")].filter(
+    (node) => node.textContent === "Republish version",
+  );
+  expect(buttons).toHaveLength(1);
+  buttons[0].click();
+  await Promise.all(tasks);
+  expect(api).toHaveBeenCalledWith(
+    "/v1/admin/submissions/withdrawn/republish",
+    { reason: "Recovered" },
+  );
+  expect(refresh).toHaveBeenCalledOnce();
+});

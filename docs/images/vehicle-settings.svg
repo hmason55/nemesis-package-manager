@@ -1,4 +1,4 @@
-<svg xmlns="http://www.w3.org/2000/svg" width="1024" height="700" viewBox="0 0 1024 700" role="img" aria-labelledby="title desc"><title id="title">Package Manager: Updates</title><desc id="desc">Example USB browser with search in the header, Settings, tabs, Clear, Filters and actions for the selected tab.</desc><g font-family="Arial, Helvetica, sans-serif">
+<svg xmlns="http://www.w3.org/2000/svg" width="1024" height="700" viewBox="0 0 1024 700" role="img" aria-labelledby="title desc"><title id="title">Package Manager settings</title><desc id="desc">Scrollable Settings dialog for package source, startup preference, registry address and optional device profile, with Hide keyboard, Cancel and Save.</desc><g font-family="Arial, Helvetica, sans-serif">
 <rect x="0" y="0" width="1024" height="700" rx="6" fill="#14181e"/>
 <text x="20" y="46" font-size="20" fill="#ebeef4" font-weight="700">Package Manager</text>
 <rect x="200" y="18" width="350" height="48" rx="6" fill="#0d121a" stroke="#5b748f"/>

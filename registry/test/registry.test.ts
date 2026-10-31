@@ -132,6 +132,127 @@ describe("publisher package removal", () => {
       .mockReset()
       .mockRejectedValue(new Error("Unauthorized repository"));
   });
+  it("republishes a self-unpublished version with the original download and hash", async () => {
+    expect(
+      (
+        await call(
+          "/v1/publisher/packages/example.app/remove",
+          "POST",
+          { reason: "Temporary pause" },
+          token,
+        )
+      ).status,
+    ).toBe(200);
+    expect(
+      (await call("/v1/packages/example.app/versions/1.2/download")).status,
+    ).toBe(404);
+    const path = "/v1/publisher/submissions/" + submission + "/republish";
+    expect(
+      (await call(path, "POST", { reason: "Ready again" }, token)).status,
+    ).toBe(200);
+    const download = await call(
+      "/v1/packages/example.app/versions/1.2/download",
+    );
+    expect(download.status).toBe(200);
+    expect(await download.text()).toBe("zip");
+    const details: any = await (await call("/v1/packages/example.app")).json();
+    expect(details.versions[0]).toMatchObject({
+      version: "1.2",
+      sha256: sha,
+      size: 3,
+      asset_id: 40,
+    });
+    expect(
+      (await call("/v1/publisher/packages", "GET", undefined, token)).status,
+    ).toBe(200);
+    expect(
+      (
+        await bindings.DB.prepare(
+          "SELECT action FROM audit WHERE subject=? ORDER BY id DESC LIMIT 1",
+        )
+          .bind(submission)
+          .first<any>()
+      ).action,
+    ).toBe("republish");
+    expect((await call(path, "POST", { reason: "Again" }, token)).status).toBe(
+      403,
+    );
+  });
+  it("does not let collaborators or revoked repository permissions restore another user's withdrawal", async () => {
+    await call(
+      "/v1/publisher/packages/example.app/remove",
+      "POST",
+      { reason: "Pause" },
+      token,
+    );
+    const path = "/v1/publisher/submissions/" + submission + "/republish";
+    expect((await call(path, "POST", { reason: "Restore" })).status).toBe(401);
+    expect(
+      (await call(path, "POST", { reason: "Restore" }, otherToken)).status,
+    ).toBe(403);
+    expect((await call(path, "POST", { reason: " " }, token)).status).toBe(400);
+    vi.mocked(checkRepository).mockRejectedValueOnce(
+      new HttpError(403, "Access revoked"),
+    );
+    expect(
+      (await call(path, "POST", { reason: "Restore" }, token)).status,
+    ).toBe(403);
+    expect(
+      (await call("/v1/packages/example.app/versions/1.2/download")).status,
+    ).toBe(404);
+  });
+  it("reserves administrator and historical withdrawals for administrator recovery", async () => {
+    await bindings.DB.prepare(
+      "UPDATE submissions SET status='withdrawn',withdrawn_by=NULL",
+    ).run();
+    expect(
+      (
+        await call(
+          "/v1/publisher/submissions/" + submission + "/republish",
+          "POST",
+          { reason: "Restore" },
+          token,
+        )
+      ).status,
+    ).toBe(403);
+    expect(
+      (
+        await call(
+          "/v1/admin/submissions/" + submission + "/republish",
+          "POST",
+          { reason: "Restore" },
+          token,
+        )
+      ).status,
+    ).toBe(403);
+  });
+  it("rechecks the withdrawal owner atomically before restoration", async () => {
+    await call(
+      "/v1/publisher/packages/example.app/remove",
+      "POST",
+      { reason: "Pause" },
+      token,
+    );
+    vi.mocked(github).mockImplementationOnce(async () => {
+      await bindings.DB.prepare(
+        "UPDATE submissions SET withdrawn_by=NULL",
+      ).run();
+      return { id: 10, owner: { id: 1 }, private: false };
+    });
+    expect(
+      (
+        await call(
+          "/v1/publisher/submissions/" + submission + "/republish",
+          "POST",
+          { reason: "Restore" },
+          token,
+        )
+      ).status,
+    ).toBe(409);
+    expect(
+      (await call("/v1/packages/example.app/versions/1.2/download")).status,
+    ).toBe(404);
+  });
   async function addVersion(
     id: string,
     version: string,
@@ -392,6 +513,77 @@ describe("publisher package removal", () => {
 });
 
 describe("public catalog and moderation", () => {
+  it("allows administrators to restore a withdrawn version but never bypass validation or replace its artifact", async () => {
+    const path = "/v1/admin/submissions/" + submission + "/republish";
+    expect(
+      (await call(path, "POST", { reason: "Restore" }, token)).status,
+    ).toBe(409);
+    await call(
+      "/v1/admin/submissions/" + submission + "/approve",
+      "POST",
+      {},
+      token,
+    );
+    await call(
+      "/v1/admin/submissions/" + submission + "/withdraw",
+      "POST",
+      { reason: "Pause" },
+      token,
+    );
+    expect((await call(path, "POST", {}, token)).status).toBe(400);
+    await expect(
+      createSubmission(bindings, { id: 10, owner_id: 1 }, 1, {
+        package_id: "example.app",
+        version: "1.2",
+        metadata,
+      }),
+    ).rejects.toMatchObject({ status: 409 });
+    expect(
+      (await call(path, "POST", { reason: "Recovered" }, token)).status,
+    ).toBe(200);
+    expect(
+      await (
+        await call("/v1/packages/example.app/versions/1.2/download")
+      ).text(),
+    ).toBe("zip");
+    expect((await call(path, "POST", { reason: "Repeat" }, token)).status).toBe(
+      409,
+    );
+  });
+  it.each([
+    "missing artifact",
+    "blocked publisher",
+    "suspended repository",
+    "changed owner",
+  ])("keeps a withdrawn version private after %s", async (failure) => {
+    await bindings.DB.prepare(
+      "UPDATE submissions SET status='withdrawn'",
+    ).run();
+    if (failure === "missing artifact")
+      await bindings.PACKAGES.delete("sha256/" + sha + ".zip");
+    if (failure === "blocked publisher")
+      await bindings.DB.prepare(
+        "INSERT INTO blocked_publishers VALUES(1,'blocked',1,99)",
+      ).run();
+    if (failure === "suspended repository")
+      await bindings.DB.prepare("UPDATE repositories SET active=0").run();
+    if (failure === "changed owner")
+      vi.mocked(github).mockResolvedValueOnce({
+        id: 10,
+        owner: { id: 2 },
+        private: false,
+      });
+    const response = await call(
+      "/v1/admin/submissions/" + submission + "/republish",
+      "POST",
+      { reason: "Restore" },
+      token,
+    );
+    expect(response.status).toBe(failure === "missing artifact" ? 409 : 403);
+    expect(
+      (await call("/v1/packages/example.app/versions/1.2/download")).status,
+    ).toBe(404);
+  });
   it("enforces blocked release authors and webhook actors through automatic publication", async () => {
     const repo = await bindings.DB.prepare(
       "SELECT * FROM repositories WHERE id=10",
