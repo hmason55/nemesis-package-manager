@@ -1,0 +1,36 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1024" height="700" viewBox="0 0 1024 700" role="img" aria-labelledby="title desc"><title id="title">Registry: choose a published package version</title><desc id="desc">Illustrative registry package page with exact version selector, installer download, metadata tabs, publisher repository and integrity disclosure.</desc><g font-family="Arial, Helvetica, sans-serif">
+<rect x="0" y="0" width="1024" height="700" rx="6" fill="#14181e"/>
+<text x="32" y="44" font-size="25" fill="#ebeef4" font-weight="700">NEMESIS Registry</text>
+<text x="370" y="44" font-size="17" fill="#92c5ff" font-weight="400">Packages</text>
+<text x="508" y="44" font-size="17" fill="#92c5ff" font-weight="400">Publish</text>
+<text x="620" y="44" font-size="17" fill="#92c5ff" font-weight="400">Guides</text>
+<text x="732" y="44" font-size="17" fill="#92c5ff" font-weight="400">Settings</text>
+<text x="864" y="44" font-size="17" fill="#92c5ff" font-weight="400">Sign in</text>
+<text x="32" y="100" font-size="18" fill="#92c5ff" font-weight="400">← Packages</text>
+<text x="32" y="152" font-size="32" fill="#ebeef4" font-weight="700">example.player</text>
+<text x="32" y="186" font-size="19" fill="#a5b2c5" font-weight="400">Example Player • by example-publisher</text>
+<rect x="32" y="222" width="606" height="216" rx="6" fill="#121821" stroke="#5b748f"/>
+<text x="56" y="262" font-size="23" fill="#ebeef4" font-weight="700">Get this package</text>
+<rect x="56" y="282" width="250" height="48" rx="6" fill="#0d121a" stroke="#5b748f"/>
+<text x="70" y="312" font-size="17" fill="#a5b2c5" font-weight="400">Version: 1.5 ▾</text>
+<rect x="322" y="282" width="292" height="48" rx="6" fill="#196389" stroke="#5b748f"/>
+<text x="468.0" y="312" font-size="17" fill="#ebeef4" font-weight="400" text-anchor="middle">Download installer ZIP</text>
+<text x="56" y="368" font-size="18" fill="#a5b2c5" font-weight="400">12 MiB • Confirm installation in the vehicle</text>
+<text x="56" y="410" font-size="17" fill="#92c5ff" font-weight="400">Copy download link</text>
+<rect x="662" y="222" width="330" height="398" rx="6" fill="#121821" stroke="#5b748f"/>
+<text x="686" y="264" font-size="22" fill="#ebeef4" font-weight="700">Package details</text>
+<text x="686" y="310" font-size="18" fill="#ebeef4" font-weight="400">Publisher</text>
+<text x="686" y="342" font-size="18" fill="#ebeef4" font-weight="400">example-publisher</text>
+<text x="686" y="390" font-size="18" fill="#ebeef4" font-weight="400">Project</text>
+<text x="686" y="422" font-size="18" fill="#92c5ff" font-weight="400">Source repository</text>
+<text x="686" y="470" font-size="18" fill="#ebeef4" font-weight="400">Published versions: 3</text>
+<text x="686" y="550" font-size="18" fill="#92c5ff" font-weight="400">▸ Integrity information</text>
+<text x="32" y="488" font-size="17" fill="#92c5ff" font-weight="400">Overview</text>
+<text x="170" y="488" font-size="17" fill="#92c5ff" font-weight="400">Compatibility</text>
+<text x="352" y="488" font-size="17" fill="#92c5ff" font-weight="400">Versions</text>
+<text x="482" y="488" font-size="17" fill="#92c5ff" font-weight="400">Release notes</text>
+<text x="32" y="540" font-size="18" fill="#ebeef4" font-weight="400">Read requirements and release notes for this version.</text>
+<text x="32" y="576" font-size="17" fill="#a5b2c5" font-weight="400">A matching profile is advisory, not verified vehicle support.</text>
+<rect x="0" y="660" width="1024" height="40" rx="0" fill="#14181e"/>
+<text x="24" y="686" font-size="14" fill="#a5b2c5" font-weight="400">Illustrative guide • Fictional packages and versions • Not a vehicle screenshot</text>
+</g></svg>

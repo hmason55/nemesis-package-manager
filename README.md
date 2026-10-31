@@ -1,6 +1,6 @@
-# Package Manager
+# Package Manager 1.0
 
-Browse and install NEMESIS community packages from one USB drive on a compatible Gen5W head unit. Package Manager uses NEMESIS to install, update, launch, and uninstall packages; it does not replace NEMESIS Manager.
+Browse and install NEMESIS community packages from USB or the Cloud Registry on a compatible Gen5W head unit. Package Manager uses NEMESIS to install, update, launch, and uninstall packages; it does not replace NEMESIS Manager.
 
 **Requires NEMESIS already installed.** Development prereleases are experimental and debug signed. Check each community package's vehicle and firmware requirements before installing it.
 
@@ -8,18 +8,21 @@ Browse and install NEMESIS community packages from one USB drive on a compatible
 
 *Screen mockup with example packages and versions. See the [illustrated user guide](docs/USER-GUIDE.md) for the full walkthrough.*
 
-## What the two apps help you do
+## Choose where to start
 
 Keep community releases together on one USB drive, prepare them on your computer, and choose what to install or run from the head unit. See what is on the drive, what is installed, and which USB releases are newer without rebuilding the drive around a single package.
 
 | App | Where you use it | What it helps with |
 | --- | --- | --- |
 | **Package Manager** | The vehicle's head unit, with NEMESIS already installed | Browse installed packages and USB releases in one place; compare versions; confirm installs, updates, and scripts; launch or uninstall supported packages; inspect results and history. |
+| **Registry website** | A browser on your computer | Search published packages, compare versions and requirements, download installer ZIPs, and read user and publisher guides. Sign in with GitHub only to publish or manage packages. |
 | **USB companion** | A local browser window on a Windows or Linux computer | Set up the package drive, import downloaded releases into package folders, inspect installer versions and layout errors, and replace installers while preserving each folder's USB `data/`. Standalone downloads include the runtime. |
 
 Copying a release onto USB is preparation; installation happens on the head unit after you confirm it. You can also prepare the drive manually or with the optional Python tools.
 
-Neither app downloads community releases automatically or decides vehicle compatibility. The companion shows versions **on USB**; Package Manager also reads installed versions from the head unit.
+Both apps can download a selected published release from the Cloud Registry after you choose it. Manual USB imports work offline. The companion shows versions **on USB**; Package Manager also reads installed versions from the head unit. Compatibility declarations are advisory.
+
+Open the [registry and online guides](https://hmason55.github.io/nemesis-package-manager/) or follow the [registry walkthrough](docs/REGISTRY-GUIDE.md). The clients currently default to the staging registry; see [deployment status](docs/CLOUD-DEPLOYMENT.md) and [head-unit validation requirements](docs/CLOUD-VALIDATION.md) before treating direct cloud installation as validated on your vehicle.
 
 ## Firmware compatibility and tested vehicles
 
@@ -37,7 +40,7 @@ No broader Package Manager firmware version range has been verified. Other vehic
 
 1. **Download on your computer.** Get the USB companion for your computer, `usb-package-manager-ready.zip`, and the community releases you want from their release pages. The manager and companion are on the [releases page](https://github.com/hmason55/nemesis-package-manager/releases).
 2. **Prepare your USB drive.** In the companion, select the drive. Use **Drive setup** to add Package Manager, then **Add package** to copy your downloaded releases.
-3. **Install in the parked vehicle.** With the head unit fully booted, insert USB and approve the NEMESIS execution prompt. Package Manager opens. Tap **Refresh**, choose **Available**, select a package, and confirm **Install**.
+3. **Install in the parked vehicle.** With the head unit fully booted, insert USB and approve the NEMESIS execution prompt. Package Manager opens. Choose **USB Storage** at the source prompt, tap **Continue**, then **Refresh**, choose **Available**, select a package, and confirm **Install**.
 4. **Wait for the result.** Keep USB connected until the result popup. Your installed package is then listed in **Installed**.
 
 After first setup, reopen through **NEMESIS Manager > Packages > Package Manager > Launch**. Follow the [illustrated user guide](docs/USER-GUIDE.md#get-started) for each screen, or [Windows setup](docs/SETUP-WINDOWS.md) to prepare files manually.
@@ -52,7 +55,8 @@ Start in **Installed**, or choose **Updates**, **Available**, or **Scripts**. In
 
 ## Updates
 
-- **Other packages:** replace the installer in the same `packages/<Name>/` folder, preserving `data/`. Open the app, Refresh, select the package, and confirm **Update**.
+- **Registry packages:** choose **Cloud Registry**, refresh, review the selected version, and confirm **Update** for a confirmed newer release.
+- **USB packages:** replace the installer in the same `packages/<Name>/` folder, preserving `data/`. Open the app, Refresh, select the package, and confirm **Update**.
 - **Package Manager:** use NEMESIS's installer with the new `usb.package.manager.zip`; see [the manager update steps](docs/UPDATING.md#update-package-manager). Package Manager is excluded from its own lists and actions.
 - **Removal:** use NEMESIS Manager's Packages screen to uninstall Package Manager itself.
 
@@ -63,6 +67,7 @@ See the [illustrated update walkthrough](docs/USER-GUIDE.md#update-a-community-p
 | Guide | What you will find |
 | --- | --- |
 | [Illustrated user guide](docs/USER-GUIDE.md) | Getting started, tabs, actions, confirmation, progress, results, and troubleshooting |
+| [Registry website and publishing](docs/REGISTRY-GUIDE.md) | Search, version selection, downloads, GitHub publishing, and validation status |
 | [USB companion](docs/USB-COMPANION.md) | Computer downloads, drive preparation, package imports, and recovery |
 | [Windows setup](docs/SETUP-WINDOWS.md) | Manual setup and optional source-checkout tools |
 | [Updating packages](docs/UPDATING.md) | Community updates, manager updates, version rules, and failures |

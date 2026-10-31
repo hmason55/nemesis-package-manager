@@ -32,8 +32,8 @@ export const guides: Guide[] = [
         title: "Install Package Manager itself",
         steps: [
           "Download a tested Package Manager release from the repository’s Releases page. Choose the USB-ready bundle for initial drive setup, not the source-code archive.",
-          "Open Companion → Drive setup, select the existing USB drive and the manager release bundle, then choose Set up drive. Preserve any other drive files you need.",
-          "Follow the dedicated NEMESIS Manager installation/update instructions supplied with that release. Copying a newer manager onto USB does not replace an already-installed manager.",
+          "Open Companion, select the USB drive, then open Drive setup. Choose usb-package-manager-ready.zip and Set up drive. Preserve any other drive files you need.",
+          "Safely eject the drive. In the parked vehicle, insert it after the head unit boots and approve the NEMESIS execution prompt. The launcher installs Package Manager if missing and opens it. An existing manager needs the separate NEMESIS update procedure; copying a ZIP does not update the installed app.",
         ],
         note: "Package Manager self-update stays separate from ordinary community package updates. Follow the release’s signing and firmware instructions; never bypass certificate verification.",
       },
@@ -53,7 +53,7 @@ export const guides: Guide[] = [
         steps: [
           "On startup, choose Cloud Registry or USB Storage and press Continue. Use Don't show again on startup only if you want the saved source to open automatically.",
           "Open Settings near Help/Refresh to change your source, registry address, startup preference, or known vehicle/firmware/NEMESIS information.",
-          "For USB Storage, connect the prepared drive and press Refresh. Cloud searches must not filter your USB installers or scripts.",
+          "For USB Storage, connect the prepared drive and press Refresh. Search packages filters the current tab; Clear removes the search. Filters contains package type and sort order. Submit the search or use Done/OK to dismiss its keyboard; Settings also has a fixed Hide keyboard button.",
         ],
         note: "Cloud is optional. Keep a prepared USB drive for offline use. Installed packages remain manageable independently of the selected discovery source.",
       },
@@ -61,7 +61,7 @@ export const guides: Guide[] = [
         title: "Browse, download, and install",
         steps: [
           "Choose Available for new packages or Updates for confirmed newer versions. Select a package and read Details, supported versions, and release notes.",
-          "In cloud mode choose the required version and download it. Wait for integrity/archive checks. A cancelled or failed download must not start installation.",
+          "Each package ID has one row. Install or Update opens a version picker when multiple releases exist; Details → Choose version also exposes them. In cloud mode, select the release and wait for download and integrity checks before the final confirmation. A cancelled or failed download does not start installation.",
           "Review the final installation confirmation, including compatibility warnings. Confirm only after checking the publisher’s instructions; wait for the NEMESIS result and refresh installed state.",
         ],
         note: "A mismatch is advisory and does not remove your ability to confirm. Unknown compatibility is not a statement of support. An incomparable version is a manual selection, not a confirmed upgrade.",
@@ -90,7 +90,7 @@ export const guides: Guide[] = [
         title: "Select and prepare a drive",
         steps: [
           "Launch the standalone Companion or run python -m tools.usb_companion from the repository. Keep its local server window open.",
-          "Choose your USB drive. Use Drive not listed? to select its existing mount path, then confirm the displayed drive and free space.",
+          "Choose your USB drive. Use Settings → Drive not listed? to select its existing mount path, then confirm the displayed drive and free space.",
           "For first-time Package Manager setup, open Drive setup and choose the manager USB-ready release bundle. For community installers, use Packages → Add package.",
         ],
         note: "Companion prepares USB files on your computer. It does not install packages on the vehicle, and it never formats a drive as part of ordinary package import.",
@@ -103,7 +103,7 @@ export const guides: Guide[] = [
           "Wait for copying to finish. The importer keeps existing data/ directories when replacing an installer. If import fails, inspect the error and retain any reported recovery files.",
           "Safely eject the drive. In the vehicle choose USB Storage → Refresh, select the package, and confirm Install or Update.",
         ],
-        note: "The internal package ID is the identity; a folder name is only a location. If multiple folders contain the same ID, explicitly choose the destination. Loose installer ZIPs are inspection-only replacement targets.",
+        note: "The internal package ID is the identity; a folder name is only a location. If multiple folders contain the same ID, explicitly choose the destination. Loose installer ZIPs can be inspected and removed, but cannot be replaced in place.",
       },
     ],
   },
@@ -119,12 +119,20 @@ export const guides: Guide[] = [
       {
         title: "Connect and choose packages",
         steps: [
-          "Open Companion → Cloud registry. The built-in staging registry address is ready to use; no setup is needed for the default connection. To use another registry, open Settings in the top bar, enter Registry HTTPS address and choose Save registry. Clear the address and save to disconnect. Operators can also override the default with --registry-url or NEMESIS_REGISTRY_URL; an explicit empty value disables it. Startup does not contact the registry. Manual imports remain available offline.",
-          "In Settings, optionally fill Vehicle, Firmware and NEMESIS version and choose Apply profile and refresh results. This profile is saved only in this browser. Select a USB drive. Search the registry, open package information, and review supported vehicles, firmware, NEMESIS versions, and release notes. Public browsing and downloads need no GitHub account.",
-          "Choose exact versions and select the packages to prepare. Use Check USB updates to compare the installers currently on that drive; this is not a query of versions installed in the vehicle.",
+          "Select your USB drive, then scroll to Cloud registry below the USB tabs. The built-in staging registry address is ready to use. Public browsing and downloads need no GitHub account. Manual imports remain available offline.",
+          "Type in Search registry packages. Results update after a short pause; Enter searches immediately. Filter results contains category, publisher, maximum download size and sort order. Reset filters clears the search and filters.",
+          "Select a package to reveal its version and destination controls. Choose the exact version, read release notes, and expand Version details for requirements. Check USB updates compares installers on the drive, not versions installed in the vehicle.",
           "Choose a destination if several managed folders match an ID, then confirm Prepare selected versions.",
         ],
         note: "An arbitrary version string that cannot be ordered is not advertised as a definite upgrade. Select that version manually after reading its release instructions.",
+      },
+      {
+        title: "Change the connection or optional profile",
+        steps: [
+          "To use another registry, open Settings, enter Registry HTTPS address, and choose Save registry. Clear the address and save to disconnect. This override lasts for the companion session; startup itself does not contact the registry.",
+          "Optionally enter Vehicle, Firmware and NEMESIS version, then choose Apply profile and refresh results. The profile is saved in this browser and supplies advisory comparisons only.",
+        ],
+        note: "Operators can also use --registry-url or NEMESIS_REGISTRY_URL. An explicitly empty override disables the default connection. USB browsing and manual ZIP imports continue offline.",
       },
       {
         title: "Follow progress and recover safely",
@@ -144,8 +152,8 @@ export const guides: Guide[] = [
     audience: "Everyone",
     intro:
       "The registry lists validated releases from authorized GitHub publishers. Browsing and downloading are public; sign-in is needed to publish or manage the registry.",
-    figure: "workflow.svg",
-    alt: "A publisher release passes trusted validation and publishes automatically after authorization and ownership checks.",
+    figure: "registry-package.svg",
+    alt: "Example registry package page with exact version selection, download, metadata tabs and integrity information.",
     sections: [
       {
         title: "Find the right release",
@@ -192,7 +200,7 @@ export const guides: Guide[] = [
         title: "Confirm your submission and follow validation",
         steps: [
           "In Publish, choose the registered repository, release, and exact installer asset. When several ZIPs exist, explicitly select the right one.",
-          "Enter the exact internal ID/version and a useful name/description. Expand More package details for optional categories, release notes, and compatibility declarations. A square icon.png at the repository root supplies a custom package icon; otherwise the GitHub publisher avatar is used. Review the ZIP filename and destination release identity.",
+          "Enter the exact internal ID/version and a useful name/description. Expand More package details for optional categories, release notes, and compatibility declarations. An optional icon.png beside NEMESIS.data inside the installer ZIP supplies artwork: still, non-interlaced PNG, at most 512 × 512 pixels and 256 KiB. Otherwise the GitHub publisher avatar is used. Review the ZIP filename and destination release identity.",
           "Acknowledge that you have permission to redistribute the ZIP through the registry, then submit at the final confirmation step.",
           "Follow status: Queued → Validating → Finishing publication → Published. Trusted validation downloads the exact asset, checks all archive bytes/identity, and never runs package scripts or repository code. Successful validation publishes automatically; no administrator approval is required.",
           "If validation fails, read the report and fix the artifact. Administrators can retry failed jobs. A stopped or corrected submission may require a new release asset and version. A repository or publisher may have up to 20 active queued/validating/finishing jobs; if the queue is full, wait for jobs to finish before submitting more.",
@@ -271,7 +279,7 @@ export function renderGuides(root: HTMLElement, id = "") {
       el("summary", "Illustration library — example screens"),
       el(
         "p",
-        "These labeled illustrations explain tasks; package names, versions, and screenshots are examples, not evidence of vehicle compatibility.",
+        "These labeled illustrations explain tasks; package names, versions, and screen layouts are examples, not evidence of vehicle compatibility.",
         "hint",
       ),
     );
@@ -288,6 +296,13 @@ export function renderGuides(root: HTMLElement, id = "") {
       "manager-result",
       "manager-scripts",
       "manager-updates",
+      "manager-source",
+      "manager-versions",
+      "vehicle-settings",
+      "companion-registry",
+      "registry-package",
+      "publishing",
+      "workflow",
     ];
     const gallery = el("div", "", "guide-cards");
     for (const name of illustrations) {

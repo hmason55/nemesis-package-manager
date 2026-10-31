@@ -156,10 +156,13 @@ transaction. Cancellation stops before the next USB publication; an already-runn
 directory swap finishes. Duplicate USB identities require an explicit destination.
 Loose ZIPs remain view-only replacement targets.
 
-On the vehicle choose **Change Source**, enter the registry HTTPS address, and
-optionally save vehicle/firmware notes and a search term. Choose **Remember my
-selection** to skip the picker next time. Installed packages remain available in
-either source. Cloud versions are individually selectable rows; **Details → Choose
+On first launch in the vehicle, choose **Cloud Registry** or **USB Storage** and
+press **Continue**. **Don’t show again on startup** saves the startup preference.
+Open **Settings** to change the source, registry HTTPS address, or optional device
+profile; use **Hide keyboard** or the keyboard's Done/OK action, then **Save**.
+The browser has live **Search packages**, **Clear**, and type/sort **Filters**.
+Installed management remains available offline. Each package ID has one browser
+row; multiple releases open a version picker before Install/Update; **Details → Choose
 version** also exposes versions for installed packages, including versions whose
 ordering is unknown. Equal/older versions keep the existing no-downgrade behavior. Downloads are
 bounded to a 512 MiB private installer cache, verified before confirmation, and

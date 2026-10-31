@@ -15,6 +15,16 @@ companion builds. Reusable jobs check out and report the selected exact commit.
 The publisher rejects unsuccessful, skipped, cancelled, missing, or stale results
 before creating a tag. It never substitutes a previous run's successful check.
 
+## Version 1.0 candidate
+
+The 1.0 documentation targets stable version **`1.0.0`**. Merge the documentation
+PR, select the final `main` commit, and validate it with `stable_version=1.0.0`
+and `candidate_sha` set, leaving **publish_stable** unchecked. Review its quality,
+signing, artifact, and hardware evidence before explicit stable publication.
+The documentation PR alone does not publish a release or establish new vehicle
+or cloud compatibility. Local source defaults and development versioning remain
+independent of the selected stable candidate.
+
 ## Stable release prerequisites
 
 Stable publication requires issue
