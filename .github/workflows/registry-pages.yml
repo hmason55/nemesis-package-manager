@@ -1,5 +1,7 @@
 name: Deploy registry website
 on:
+  push:
+    branches: [main]
   workflow_dispatch:
 permissions:
   contents: read
@@ -7,13 +9,16 @@ permissions:
   id-token: write
 concurrency:
   group: registry-pages
-  cancel-in-progress: false
+  cancel-in-progress: true
 jobs:
   build:
     if: github.ref == 'refs/heads/main'
     runs-on: ubuntu-24.04
     steps:
       - uses: actions/checkout@v6
+        with:
+          ref: main
+          persist-credentials: false
       - uses: actions/setup-node@v5
         with:
           node-version: '24'
