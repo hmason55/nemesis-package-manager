@@ -119,6 +119,52 @@ export async function renderPublish(
   };
   connect.append(registration);
   root.append(connect);
+  function republishButton(submission: any) {
+    const ownWithdrawal =
+      Number.isSafeInteger(user.id) && submission.withdrawn_by === user.id;
+    if (!ownWithdrawal && !user.admin) return null;
+    const button = action(
+      "Republish version",
+      () => {
+        if (button.disabled) return;
+        void controls.run(async () => {
+          if (
+            !confirm(
+              "Republish " +
+                submission.package_id +
+                " " +
+                submission.version +
+                " using its original validated ZIP and SHA-256? Registry downloads will become available again.",
+            )
+          )
+            return;
+          const reason = prompt("Reason for republishing");
+          if (reason === null) return;
+          if (!reason.trim())
+            throw new Error("Enter a reason for republishing.");
+          button.disabled = true;
+          try {
+            await api(
+              (ownWithdrawal ? "/v1/publisher" : "/v1/admin") +
+                "/submissions/" +
+                submission.id +
+                "/republish",
+              { reason: reason.trim() },
+            );
+            if (!controls.active()) return;
+            await controls.refresh();
+            controls.notify(
+              "Version republished with its original validated ZIP.",
+            );
+          } finally {
+            button.disabled = false;
+          }
+        });
+      },
+      "primary",
+    );
+    return button;
+  }
   if (repos.length) {
     const form = el("form", "", "publish-wizard");
     form.noValidate = true;
@@ -241,14 +287,12 @@ export async function renderPublish(
     );
     sections[1].append(optional);
     const review = el("div");
-    sections[2].append(
-      review,
-      el(
-        "p",
-        "The registry checks your ZIP and permission to publish it. If the checks pass, your package is published automatically.",
-        "callout",
-      ),
+    const submissionHint = el(
+      "p",
+      "The registry checks your ZIP and permission to publish it. If the checks pass, your package is published automatically.",
+      "callout",
     );
+    sections[2].append(review, submissionHint);
     const buttons = el("div", "", "wizard-actions"),
       back = action("Back", () => show(step - 1), "quiet"),
       next = el("button", "Continue", "primary");
@@ -265,6 +309,7 @@ export async function renderPublish(
         else item.removeAttribute("aria-current");
       });
       back.hidden = step === 0;
+      next.hidden = false;
       labelAction(next, step === 2 ? "Submit for validation" : "Continue");
       if (step === 2) renderReview();
       const legend = sections[step].querySelector("legend")!;
@@ -297,10 +342,64 @@ export async function renderPublish(
         },
       };
     }
+    function publishedVersion() {
+      const value = payload();
+      return submissions.find(
+        (submission: any) =>
+          submission.repository_id === value.repository_id &&
+          submission.package_id.toLowerCase() ===
+            value.package_id.toLowerCase() &&
+          submission.version === value.version &&
+          ["approved", "withdrawn"].includes(submission.status),
+      );
+    }
     function renderReview() {
       const value = payload(),
         release = releaseData.find((x) => x.id === Number(releases.value)),
         asset = release?.assets.find((x: any) => x.id === Number(assets.value));
+      const existing = publishedVersion();
+      next.hidden = !!existing;
+      submissionHint.hidden = !!existing;
+      if (existing) {
+        review.replaceChildren(
+          el("h2", existing.package_id + " " + existing.version),
+          el(
+            "p",
+            existing.status === "withdrawn"
+              ? "This version was withdrawn. Republish it to make the original download available again."
+              : "This version is already published.",
+          ),
+          el(
+            "p",
+            "To upload a changed ZIP or change the package details, use a new version.",
+          ),
+        );
+        if (existing.status === "withdrawn") {
+          const restore = republishButton(existing);
+          review.append(
+            el(
+              "p",
+              "Republishing keeps the original ZIP and package details. The ZIP and edits selected above will not be submitted.",
+            ),
+          );
+          if (restore) review.append(restore);
+          else
+            review.append(
+              el(
+                "p",
+                "Contact a registry administrator to republish this withdrawn version.",
+                "callout",
+              ),
+            );
+        } else
+          review.append(
+            link(
+              "View package",
+              "#packages/" + encodeURIComponent(existing.package_id),
+            ),
+          );
+        return;
+      }
       review.replaceChildren(
         el("h2", value.metadata.name),
         el("p", value.package_id + " " + value.version, "byline"),
@@ -382,6 +481,12 @@ export async function renderPublish(
           }
         } else if (step === 1) show(2);
         else {
+          // The restore action uses the retained artifact and its own endpoint.
+          // Never send the selected ZIP as a replacement for a published version.
+          if (publishedVersion()) {
+            renderReview();
+            return;
+          }
           next.disabled = true;
           try {
             await api("/v1/publisher/submissions", payload());
@@ -435,41 +540,8 @@ export async function renderPublish(
           ),
         );
       if (submission.status === "withdrawn") {
-        if (
-          Number.isSafeInteger(user.id) &&
-          submission.withdrawn_by === user.id
-        )
-          row.append(
-            action(
-              "Republish version",
-              () =>
-                controls.run(async () => {
-                  if (
-                    !confirm(
-                      "Republish " +
-                        submission.package_id +
-                        " " +
-                        submission.version +
-                        " using its original validated ZIP and SHA-256? Registry downloads will become available again.",
-                    )
-                  )
-                    return;
-                  const reason = prompt("Reason for republishing");
-                  if (reason === null) return;
-                  if (!reason.trim())
-                    throw new Error("Enter a reason for republishing.");
-                  await api(
-                    "/v1/publisher/submissions/" + submission.id + "/republish",
-                    { reason: reason.trim() },
-                  );
-                  await controls.refresh();
-                  controls.notify(
-                    "Version republished with its original validated ZIP.",
-                  );
-                }),
-              "quiet",
-            ),
-          );
+        const restore = republishButton(submission);
+        if (restore) row.append(restore);
         else
           row.append(
             el(
