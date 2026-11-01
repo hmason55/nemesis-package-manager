@@ -223,11 +223,11 @@ export const guides: Guide[] = [
         title: "Connect your GitHub repository",
         steps: [
           "Open [Publish](#publish) and choose Sign in with GitHub.",
-          "Select Connect repository on GitHub. Give the NEMESIS GitHub App access to the public repository you want to publish.",
+          "Open [Connect your repository](https://github.com/apps/nemesis-registry-staging/installations/new), choose your GitHub account, and give the app access to the public repository you want to publish.",
           "Return to [Publish](#publish). Enter the repository as owner/repository, confirm your permission to share its releases, and choose Register repository.",
           "If the repository is missing, check that it is public and that your GitHub account has write, maintain, or administrator access.",
         ],
-        note: "Your session lasts one hour. If repository ownership or App access changes, restore access and register the repository again.",
+        note: "View the [NEMESIS registry GitHub App](https://github.com/apps/nemesis-registry-staging). Your session lasts one hour. If repository ownership or app access changes, restore access and register the repository again.",
       },
       {
         title: "Prepare the installer ZIP",
