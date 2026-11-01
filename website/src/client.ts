@@ -52,8 +52,24 @@ export async function api(path: string, body?: unknown): Promise<any> {
     if (typeof window !== "undefined")
       window.dispatchEvent(new Event("registry-session-expired"));
   }
-  const result = await response.json();
-  if (!response.ok) throw new Error(result.error || "Registry request failed");
+  let result: any;
+  try {
+    result = await response.json();
+  } catch {
+    throw new Error(
+      response.status === 404
+        ? "This feature is not available on the registry yet. Please try again after the registry is updated."
+        : response.ok
+          ? "The registry returned an unreadable response. Please try again."
+          : "The registry could not complete this request. Please try again.",
+    );
+  }
+  if (!response.ok)
+    throw new Error(
+      typeof result?.error === "string"
+        ? result.error
+        : "The registry could not complete this request. Please try again.",
+    );
   return result;
 }
 export function element<K extends keyof HTMLElementTagNameMap>(
