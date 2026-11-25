@@ -8,7 +8,7 @@ version stays separate so the UI says Unknown instead of guessing app versions.
 
 import shutil
 from tools.companion_identity import validate_package_id
-from tools.release_metadata import read_config
+from tools.release_metadata import package_version, read_config
 from tools.companion_drives import checked_path
 from tools.companion_scan import package_locations
 from tools.companion_launcher import launcher_state
@@ -56,7 +56,7 @@ def describe_package(root, folder):
                 else {**cfg, "version": ""}
             )
         elif cfg.get("id"):
-            metadata = dict(cfg)
+            metadata = {**cfg, "version": package_version(cfg)}
         else:
             raise ValueError("Unrecognized package descriptor.")
         if result["kind"] != "execute" or metadata.get("id"):

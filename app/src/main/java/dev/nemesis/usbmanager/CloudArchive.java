@@ -45,7 +45,11 @@ final class CloudArchive {
             if (manifest == null || manifest.getSize() > 65536) throw new IOException("Installer manifest missing or too large");
             InputStream meta = zip.getInputStream(manifest); Map<String,String> values;
             try { values = PackageScanner.parse(meta); } finally { meta.close(); }
-            if (!record.id.equals(values.get("id")) || !record.version.equals(values.get("version")) || (values.get("type") != null && values.get("type").length() > 0)) throw new IOException("Installer identity mismatch");
+            String type = values.get("type");
+            if (!record.id.equals(values.get("id")) || !record.version.equals(PackageScanner.packageVersion(values))
+                    || (type != null && type.length() > 0)) {
+                throw new IOException("Installer identity mismatch");
+            }
         } finally { zip.close(); }
     }
 }

@@ -11,6 +11,11 @@ def read_config(content):
     return cfg["nemesis"]
 
 
+def package_version(cfg):
+    """Prefer the NEMESIS package release, with a fallback for legacy installers."""
+    return cfg.get("package-version", cfg.get("version", ""))
+
+
 def detect(z):
     names = [x.filename for x in z.infolist() if not x.is_dir()]
     if "NEMESIS.data" in names:

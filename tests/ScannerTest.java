@@ -18,7 +18,7 @@ public class ScannerTest {
     }
     public static void main(String[] args) throws Exception {
         File root = new File(args[0]); root.mkdirs();
-        String meta="[nemesis]\nid=aaa.test\nname=Test\nversion=1.2\ntypes=application\n[app.0]\nkind=sh\npath=bin/go.sh\n";
+        String meta="[nemesis]\nid=aaa.test\nname=Test\nversion=1.1\npackage-version=0.1.0\ntypes=application\n[app.0]\nkind=sh\npath=bin/go.sh\n";
         File named = new File(root,"packages/Named");
         zip(new File(named,"packages/one.zip"),meta,false);
         write(new File(named,"NEMESIS.data"),"[nemesis]\ntype=install\npath=packages/one.zip\nname=Named\n");
@@ -36,6 +36,7 @@ public class ScannerTest {
         for(PackageScanner.Item i:rows) byName.put(i.title,i);
         check("install".equals(byName.get("Named").kind),"installer");
         check("aaa.test".equals(byName.get("Named").id),"zip metadata");
+        check("0.1.0".equals(byName.get("Named").version),"USB wrapper uses the package release");
         check("execute".equals(byName.get("Script").kind),"execute");
         PackageScanner.Item source = null, wrapped = null;
         for (PackageScanner.Item item : rows) {
@@ -45,7 +46,8 @@ public class ScannerTest {
         check(source != null && "Test".equals(source.title),"source");
         check("invalid".equals(byName.get("Bad").kind),"unsafe traversal rejected");
         check(wrapped != null && "install".equals(wrapped.kind),"wrapped zip");
-        check("Test".equals(wrapped.title) && "1.2".equals(wrapped.version),"friendly ZIP name and version");
+        check("Test".equals(wrapped.title) && "0.1.0".equals(wrapped.version),"friendly ZIP name and version");
+        check("0.1.0".equals(source.version),"source uses the package release");
         check(wrapped.dataDir().getPath().contains("wrapped"),"unique data dir");
         zip(new File(root, "manager/usb.package.manager.zip"), meta.replace("aaa.test", "usb.package.manager"), false);
         ArrayList<PackageScanner.Item> withManager = PackageScanner.scan(root);

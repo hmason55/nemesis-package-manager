@@ -18,11 +18,15 @@ from tools.registry_client import RegistryClient, NoRedirect
 from tools.registry_versions import compare_versions
 
 
-def installer(path, version="1.2", extra=None):
+def installer(path, version="1.2", extra=None, *, descriptor_version=None):
+    if descriptor_version is None:
+        manifest_version = f"version={version}\n"
+    else:
+        manifest_version = f"version={descriptor_version}\npackage-version={version}\n"
     with zipfile.ZipFile(path, "w") as archive:
         archive.writestr(
             "NEMESIS.data",
-            f"[nemesis]\nid=example.app\nname=Example\nversion={version}\n",
+            f"[nemesis]\nid=example.app\nname=Example\n{manifest_version}",
         )
         archive.writestr("install.sh", "echo not executed")
         if extra:
@@ -101,6 +105,16 @@ class RegistryTests(unittest.TestCase):
         ):
             with self.assertRaises(ValueError):
                 validate_artifact(self.archive, *values)
+
+    def test_explicit_package_version_takes_precedence_over_descriptor_version(self):
+        for version in ("0.1.0", ""):
+            with self.subTest(version=version):
+                installer(self.archive, version, descriptor_version="1.1")
+                if version:
+                    result = validate_artifact(self.archive, "example.app", version)
+                    self.assertEqual(result["version"], version)
+                with self.assertRaisesRegex(ValueError, "Installer ID or version"):
+                    validate_artifact(self.archive, "example.app", "1.1")
 
     def test_rejects_unsafe_zip_and_wrapper(self):
         installer(self.archive, extra="../outside")

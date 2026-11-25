@@ -30,8 +30,13 @@ public class CloudRegistryTest {
     private Integer nextPage;
     private byte[] overrideJson;
     private byte[] zip(String id, String version, String extra) throws Exception {
+        return zip(id, version, null, extra);
+    }
+    private byte[] zip(String id, String descriptorVersion, String packageVersion, String extra) throws Exception {
+        String manifest = "[nemesis]\nid=" + id + "\nversion=" + descriptorVersion + "\n";
+        if (packageVersion != null) manifest += "package-version=" + packageVersion + "\n";
         ByteArrayOutputStream bytes = new ByteArrayOutputStream(); ZipOutputStream zip = new ZipOutputStream(bytes);
-        zip.putNextEntry(new ZipEntry("NEMESIS.data")); zip.write(("[nemesis]\nid="+id+"\nversion="+version+"\n").getBytes("UTF-8")); zip.closeEntry();
+        zip.putNextEntry(new ZipEntry("NEMESIS.data")); zip.write(manifest.getBytes("UTF-8")); zip.closeEntry();
         if(extra!=null) {zip.putNextEntry(new ZipEntry(extra));zip.write("content".getBytes("UTF-8"));zip.closeEntry();} zip.close();return bytes.toByteArray();
     }
     private String digest(byte[] bytes) throws Exception {StringBuilder result=new StringBuilder();for(byte b:MessageDigest.getInstance("SHA-256").digest(bytes))result.append(String.format("%02x",b&255));return result.toString();}
@@ -89,6 +94,30 @@ public class CloudRegistryTest {
         }
         byte[] bytes=zip("wrong.app",record.version,null);File file=temporary.newFile();try(FileOutputStream output=new FileOutputStream(file)){output.write(bytes);}record.size=bytes.length;record.sha256=digest(bytes);try{CloudArchive.validate(file,record);fail();}catch(IOException expected){}
     }
+    @Test public void explicitPackageVersionControlsInstallerAcquisition() throws Exception {
+        archive = zip(record.id, "1.1", "0.1.0", null);
+        record.version = "0.1.0";
+        record.downloadUrl = base + "/v1/packages/example.app/versions/0.1.0/download";
+        record.sha256 = digest(archive);
+        record.size = archive.length;
+        PackageScanner.Item item = source().acquire(record, progress(false));
+        assertEquals("0.1.0", item.version);
+
+        for (String packageVersion : new String[]{"0.1.0", ""}) {
+            archive = zip(record.id, "1.1", packageVersion, null);
+            record.version = "1.1";
+            record.downloadUrl = base + "/v1/packages/example.app/versions/1.1/download";
+            record.sha256 = digest(archive);
+            record.size = archive.length;
+            try {
+                source().acquire(record, progress(false));
+                fail("Descriptor version must not override an explicit package-version");
+            } catch (IOException expected) {
+                assertEquals("Installer identity mismatch", expected.getMessage());
+            }
+        }
+    }
+
     @Test public void metadataCannotRedirectToUnapprovedHostsAndHttpsIsRequired()throws Exception{
         overrideDownload="https://evil.test/package.zip";try{source().list("");fail();}catch(IOException expected){}
         for(String url:new String[]{"http://registry.test","https://user:password@registry.test","https://registry.test?q=1"})try{new CloudPackageSource(url,temporary.getRoot());fail(url);}catch(IOException expected){}
