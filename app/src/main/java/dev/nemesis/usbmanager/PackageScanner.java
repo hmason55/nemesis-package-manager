@@ -119,12 +119,13 @@ public final class PackageScanner {
                     Map<String,String> metadata = readZipMetadata(i.target);
                     if (metadata == null) throw new IOException("Referenced ZIP lacks a valid package NEMESIS.data");
                     i.id = value(metadata, "id");
-                    i.version = value(metadata, "version");
+                    i.version = packageVersion(metadata);
                     i.types = value(metadata, "types");
                     if (friendly.length() == 0 && value(metadata, "name").length() > 0) i.title = value(metadata, "name");
                 }
             } else if (type.length() == 0 && validId(i.id)) {
                 i.kind = RAW; i.target = folder; i.error = null;
+                i.version = packageVersion(data);
                 i.detail = "Source folder; temporarily zipped before installation";
             } else {
                 throw new IOException("Unsupported descriptor: type=" + type);
@@ -145,7 +146,7 @@ public final class PackageScanner {
             Map<String,String> metadata = readZipMetadata(zip);
             if (metadata == null) throw new IOException("ZIP missing installable package metadata; extract USB bundle with import_release.py");
             i.kind = INSTALL; i.target = zip; i.id = value(metadata, "id"); i.error = null;
-            i.version = value(metadata, "version"); i.types = value(metadata, "types");
+            i.version = packageVersion(metadata); i.types = value(metadata, "types");
             if (value(metadata, "name").length() > 0) i.title = value(metadata, "name");
             i.detail = zip.getAbsolutePath();
         } catch (Exception e) { i.error = e.getMessage(); }
@@ -225,6 +226,11 @@ public final class PackageScanner {
         }
         return data;
     }
+    /** Read the package release; use the legacy field only when package-version is absent. */
+    static String packageVersion(Map<String,String> data) {
+        return value(data, data.containsKey("package-version") ? "package-version" : "version");
+    }
+
     private static String value(Map<String,String> m, String key) {
         String s = m.get(key); return s == null ? "" : s;
     }

@@ -15,13 +15,15 @@ from test_registry import installer
 class ValidationRunnerTests(unittest.TestCase):
     def test_ingests_exact_public_asset_and_never_sends_download_credentials(self):
         with tempfile.TemporaryDirectory() as directory:
-            raw = installer(Path(directory) / "release.zip").read_bytes()
+            raw = installer(
+                Path(directory) / "release.zip", "0.1.0", descriptor_version="1.1"
+            ).read_bytes()
         job = {
             "repository": "owner/repo",
             "release_id": 10,
             "asset_id": 20,
             "package_id": "example.app",
-            "version": "1.2",
+            "version": "0.1.0",
         }
         asset = {
             "id": 20,
@@ -63,6 +65,7 @@ class ValidationRunnerTests(unittest.TestCase):
                 "https://registry.test", "validator", "a" * 64
             )
         self.assertEqual(completed[0]["package_id"], "example.app")
+        self.assertEqual(completed[0]["version"], "0.1.0")
 
     def test_failed_validation_never_uploads_and_records_safe_error(self):
         job = {
